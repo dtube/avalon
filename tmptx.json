@@ -1,0 +1,10 @@
+{
+    "type": 3,
+    "data": {
+        "receiver": "sylvain",
+        "amount": 55
+    },
+    "sender": "master",
+    "hash": "e243c4fb444b4e4b625b98cbe6b058f3e8a0d8d64d2bccd04b18401675d488be",
+    "signature": "BhvEiHV62XA5RrChpCCRcrcTfEQQc3dKqjparQd35mrkkxuPzmJs3xRbUNc9xFyz9v73L47qEtDRj3BQ43xvriU"
+}

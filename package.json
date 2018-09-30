@@ -1,0 +1,22 @@
+{
+  "name": "avalon",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "node src/main.js",
+    "cli": "node src/cli.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "bs58": "^4.0.1",
+    "crypto-js": "^3.1.6",
+    "express": "~4.11.1",
+    "mongodb": "^3.1.6",
+    "run-series": "^1.1.8",
+    "secp256k1": "^3.5.2",
+    "ws": "^1.1.0"
+  },
+  "engines": {
+    "node": ">=4.3.2"
+  }
+}
