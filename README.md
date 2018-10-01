@@ -2,7 +2,9 @@
 
 ## Quick start
 * `npm install`
-* add your keys to `start.sh`
+* Get your own keys with `node src/cli.js keypair`
+* Save your keys
+* Add your keys to `start.sh`
 * `chmod +x start.sh`
 * `./start.sh`
 

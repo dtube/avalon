@@ -26,7 +26,7 @@ var mongo = {
                         pub: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
                         balance: 1000000,
                         approves: ['master'],
-                        node_owner_approval: 1000000
+                        node_appr: 1000000
                     })
                     // then init genesis block if no block
                     db.collection('blocks').findOne({}, function(err, block) {

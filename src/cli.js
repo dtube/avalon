@@ -2,8 +2,12 @@ var command = process.argv[2]
 var CryptoJS = require("crypto-js");
 const secp256k1 = require('secp256k1')
 const bs58 = require('bs58')
+const chain = require('./chain.js')
 
 switch (command) {
+    case 'keypair':
+        var tx = chain.getNewKeyPair()
+        break;
     case 'sign':
         // usage: npm run cli sign <privKey> <username> <raw_transaction>
         // will return a new transaction with a hash and a signature

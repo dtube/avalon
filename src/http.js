@@ -34,17 +34,11 @@ var http = {
 
         // this suggests the node to produce a block and submit it
         app.get('/mineBlock', (req, res) => {
-            var data = tempTxs.sort(function(a,b){return b.ts-a.ts})
-            tempTxs = []
             res.sendStatus(200)
-            var newBlock = chain.prepareNextBlock(data);
-            // at this point our database is unrevertable
-            chain.addBlock(newBlock, function(wasAdded) {
-                if (!wasAdded) {
-                    return
-                }
-                p2p.broadcast({type: 'new_block', data: newBlock});
-                console.log('block #'+newBlock._id+': '+data.length+' tx(s) mined by '+newBlock.minedBy);
+            chain.mineBlock(function(error, finalBlock) {
+                if (error)
+                    console.log('ERROR refused block', finalBlock)
+                console.log('block #'+finalBlock._id+': '+finalBlock.txs.length+' tx(s) mined by '+finalBlock.miner);
             })
         });
 

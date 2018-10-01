@@ -16,13 +16,13 @@ var TransactionType = {
 };
 
 class Block {
-    constructor(index, previousHash, timestamp, data, minedBy, signature, hash) {
+    constructor(index, phash, timestamp, txs, miner, signature, hash) {
         this._id = index;
-        this.previousHash = previousHash.toString();
+        this.phash = phash.toString();
         this.timestamp = timestamp;
-        this.data = data;
-        this.minedBy = minedBy;
-        this.hash = hash.toString();
+        this.txs = txs;
+        this.miner = miner;
+        this.hash = hash;
         this.signature = signature;
     }
 }
@@ -46,50 +46,63 @@ chain = {
             0,
             "0",
             0,
-            "[]",
+            [],
             "master",
             "0000000000000000000000000000000000000000000000000000000000000000",
             "0000000000000000000000000000000000000000000000000000000000000000"
         );
     },
-    prepareNextBlock: (blockData) => {
-        var previousBlock = chain.getLatestBlock();
-        var nextIndex = previousBlock._id + 1;
-        var nextTimestamp = new Date().getTime();
-        var minedBy = process.env.NODE_OWNER
-        var nextHash = chain.calculateHash(nextIndex, previousBlock.hash, nextTimestamp, blockData, minedBy);
+    prepareBlock: () => {
+        var previousBlock = chain.getLatestBlock()
+        var nextIndex = previousBlock._id + 1
+        var nextTimestamp = new Date().getTime()
+        // grab transactions and empty it
+        var txs = tempTxs.sort(function(a,b){return a.ts-b.ts})
+        tempTxs = []
+        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, null, null, null);
+    },
+    hashAndSignBlock: (block) => {
+        var miner = process.env.NODE_OWNER
+        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, miner);
         var signature = secp256k1.sign(new Buffer(nextHash, "hex"), bs58.decode(process.env.NODE_OWNER_PRIV));
         signature = bs58.encode(signature.signature)
-
-        return new Block(nextIndex, previousBlock.hash, nextTimestamp, blockData, minedBy, signature, nextHash);
+        return new Block(block._id, block.phash, block.timestamp, block.txs, miner, signature, nextHash);
+        
     },
-    addBlock: (newBlock, cb) => {
-        chain.isValidNewBlock(newBlock, function(isValid) {
-            if (!isValid) {
-                console.log('block refused')
-                cb(false); return
+    mineBlock: (cb) => {
+        var newBlock = chain.prepareBlock()
+        chain.executeTransactions(newBlock, function(validTxs) {
+            newBlock.txs = validTxs
+            newBlock = chain.hashAndSignBlock(newBlock)
+
+            chain.isValidNewBlock(newBlock, function(isValid) {
+                if (!isValid)
+                    cb(true, newBlock); return
+    
+                chain.addBlock(newBlock, function(added) {
+                    cb(null, newBlock)
+                    // and broadcast to p2p TODO
+                    // if (added)
+                    //     p2p.broadcast...
+                })
+            })
+        })
+    },
+    addBlock: (block, cb) => {
+        // add the block in our own db
+        db.collection('blocks').insertOne(block, function(err) {
+            if (err) throw err;
+            tempBlocks.push(block)
+
+            // if block id is mult of 20, reschedule next 20 blocks
+            if (block._id%20 == 0) {
+                chain.minerSchedule(block, function(minerSchedule) {
+                    schedule = minerSchedule
+                })
             }
 
-            chain.executeTransactions(newBlock, function(success) {
-                if (!success) throw 'Error executing transactions for block'
-
-                // if block id is mult of 20, reschedule next 20 blocks
-                if (newBlock._id%20 == 0) {
-                    chain.minerSchedule(newBlock, function(minerSchedule) {
-                        schedule = minerSchedule
-                    })
-                }
-
-                // finally add the block in our own db
-                db.collection('blocks').insertOne(newBlock);
-                tempBlocks.push(newBlock)
-
-
-                cb(true)
-            })
-
-            // and broadcast to p2p TODO
-        })
+            cb(true)
+        });
     },
     isValidSignature: (user, hash, sign, cb) => {
         // verify signature
@@ -120,9 +133,9 @@ chain = {
 
         // check if miner is scheduled witness
         var isMinerAuthorized = false;
-        if (schedule.shuffle[(newBlock._id-1)%20].name == newBlock.minedBy) {
+        if (schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) {
             isMinerAuthorized = true;
-        } else if (newBlock.minedBy == chain.getLatestBlock().minedBy) {
+        } else if (newBlock.miner == chain.getLatestBlock().miner) {
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - chain.getLatestBlock().timestamp < 6000) {
                 console.log('block too early for backup witness')
@@ -138,7 +151,7 @@ chain = {
             cb(false); return
         }
 
-        chain.isValidSignature(newBlock.minedBy, newBlock.hash, newBlock.signature, function(isSigned) {
+        chain.isValidSignature(newBlock.miner, newBlock.hash, newBlock.signature, function(isSigned) {
             if (!isSigned) {
                 console.log('invalid signature')
                 cb(false); return
@@ -149,8 +162,8 @@ chain = {
                 console.log('invalid index')
                 cb(false); return
             }
-            if (previousBlock.hash !== newBlock.previousHash) {
-                console.log('invalid previoushash')
+            if (previousBlock.hash !== newBlock.phash) {
+                console.log('invalid phash')
                 cb(false); return
             }
             var theoreticalHash = chain.calculateHashForBlock(newBlock)
@@ -165,7 +178,7 @@ chain = {
     isPublishedTx: (tx) => {
         if (!tx.hash) return
         for (let i = 0; i < tempBlocks.length; i++) {
-            const txs = tempBlocks[i].data;
+            const txs = tempBlocks[i].txs
             for (let y = 0; y < txs.length; y++) {
                 if (txs[y].hash == tx.hash)
                     return true
@@ -303,8 +316,8 @@ chain = {
                 function() {
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
-                        var node_owner_approval = Math.floor(acc.balance/acc.approves.length)
-                        var node_owner_approval_before = Math.floor(acc.balance/(acc.approves.length-1))
+                        var node_appr = Math.floor(acc.balance/acc.approves.length)
+                        var node_appr_before = Math.floor(acc.balance/(acc.approves.length-1))
                         var node_owners = []
                         for (let i = 0; i < acc.approves.length; i++)
                             if (acc.approves[i] != tx.data.target)
@@ -312,10 +325,10 @@ chain = {
 
                         db.collection('accounts').updateMany(
                             {name: {$in: node_owners}},
-                            {$inc: {node_owner_approval: node_owner_approval-node_owner_approval_before}}, function() {
+                            {$inc: {node_appr: node_appr-node_appr_before}}, function() {
                             db.collection('accounts').updateOne(
                                 {name: tx.data.target},
-                                {$inc: {node_owner_approval: node_owner_approval}}, function() {
+                                {$inc: {node_appr: node_appr}}, function() {
                                     cb(true)
                                 }
                             )
@@ -331,8 +344,8 @@ chain = {
                 function() {
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
-                        var node_owner_approval = Math.floor(acc.balance/acc.approves.length)
-                        var node_owner_approval_before = Math.floor(acc.balance/(acc.approves.length+1))
+                        var node_appr = Math.floor(acc.balance/acc.approves.length)
+                        var node_appr_before = Math.floor(acc.balance/(acc.approves.length+1))
                         var node_owners = []
                         for (let i = 0; i < acc.approves.length; i++)
                             if (acc.approves[i] != tx.data.target)
@@ -340,10 +353,10 @@ chain = {
 
                         db.collection('accounts').updateMany(
                             {name: {$in: node_owners}},
-                            {$inc: {node_owner_approval: node_owner_approval-node_owner_approval_before}}, function() {
+                            {$inc: {node_appr: node_appr-node_appr_before}}, function() {
                             db.collection('accounts').updateOne(
                                 {name: tx.data.target},
-                                {$inc: {node_owner_approval: -node_owner_approval}}, function() {
+                                {$inc: {node_appr: -node_appr}}, function() {
                                     cb(true)
                                 }
                             )
@@ -361,14 +374,14 @@ chain = {
                     // and update his node_owners approvals values
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
-                        var node_owner_approval = Math.floor(acc.balance/acc.approves.length)
-                        var node_owner_approval_before = Math.floor((acc.balance+tx.data.amount)/acc.approves.length)
+                        var node_appr = Math.floor(acc.balance/acc.approves.length)
+                        var node_appr_before = Math.floor((acc.balance+tx.data.amount)/acc.approves.length)
                         var node_owners = []
                         for (let i = 0; i < acc.approves.length; i++)
                             node_owners.push(acc.approves[i])
                         db.collection('accounts').updateMany(
                             {name: {$in: node_owners}},
-                            {$inc: {node_owner_approval: node_owner_approval-node_owner_approval_before}}
+                            {$inc: {node_appr: node_appr-node_appr_before}}
                         ).then(function() {
                             cb(true)
                         })
@@ -384,14 +397,14 @@ chain = {
                     db.collection('accounts').findOne({name: tx.data.receiver}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.approves) acc.approves = []
-                        var node_owner_approval = Math.floor(acc.balance/acc.approves.length)
-                        var node_owner_approval_before = Math.floor((acc.balance+tx.data.amount)/acc.approves.length)
+                        var node_appr = Math.floor(acc.balance/acc.approves.length)
+                        var node_appr_before = Math.floor((acc.balance+tx.data.amount)/acc.approves.length)
                         var node_owners = []
                         for (let i = 0; i < acc.approves.length; i++)
                             node_owners.push(acc.approves[i])
                         db.collection('accounts').updateMany(
                             {name: {$in: node_owners}},
-                            {$inc: {node_owner_approval: node_owner_approval-node_owner_approval_before}}
+                            {$inc: {node_appr: node_appr-node_appr_before}}
                         )
                     })
                 })
@@ -413,9 +426,9 @@ chain = {
         }
 
         var executions = []
-        for (let i = 0; i < block.data.length; i++) {
+        for (let i = 0; i < block.txs.length; i++) {
             executions.push(function(callback) {
-                var transaction = block.data[i]
+                var transaction = block.txs[i]
                 chain.isValidTx(transaction, function(isValid) {
                     if (isValid) {
                         chain.executeTransaction(transaction, function(executed) {
@@ -431,18 +444,15 @@ chain = {
         var i = 0
         series(executions, function(err, results) {
             if (err) throw err;
-            var executedSuccesfully = true
+            var executedSuccesfully = []
             for (let i = 0; i < results.length; i++) {
-                if (results[i] != true) {
-                    executedSuccesfully = false
-                    console.log(i, block.data[i])
-                } 
+                if (results[i] != true)
+                    console.log('non-executed tx', i, block.txs[i])
+                else
+                    executedSuccesfully.push(block.txs[i])
             }
-            if (!executedSuccesfully)
-                throw 'Tx execution failure'
                 
-            else
-                cb(true)
+            cb(executedSuccesfully)
         })
     },
     minerSchedule: (block, cb) => {
@@ -469,8 +479,8 @@ chain = {
         })
     },
     generateTop20Witness: (cb) => {
-        db.collection('accounts').find({node_owner_approval: {$gt: 0}}, {
-            sort: {node_owner_approval: -1},
+        db.collection('accounts').find({node_appr: {$gt: 0}}, {
+            sort: {node_appr: -1},
             limit: 20
         }).toArray(function(err, accounts) {
             if (err) throw err;
@@ -478,10 +488,10 @@ chain = {
         })
     },
     calculateHashForBlock: (block) => {
-        return chain.calculateHash(block._id, block.previousHash, block.timestamp, block.data, block.minedBy);
+        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner);
     },
-    calculateHash: (index, previousHash, timestamp, data, minedBy) => {
-        return CryptoJS.SHA256(index + previousHash + timestamp + data + minedBy).toString();
+    calculateHash: (index, phash, timestamp, txs, miner) => {
+        return CryptoJS.SHA256(index + phash + timestamp + txs + miner).toString();
     },    
     // handleBlockchainResponse: (message) => {
     //     var receivedBlocks = JSON.parse(message.data).sort((b1, b2) => (b1.index - b2.index));
@@ -489,7 +499,7 @@ chain = {
     //     var latestBlockHeld = getLatestBlock();
     //     if (latestBlockReceived.index > latestBlockHeld.index) {
     //         console.log('blockchain possibly behind. We got: ' + latestBlockHeld.index + ' Peer got: ' + latestBlockReceived.index);
-    //         if (latestBlockHeld.hash === latestBlockReceived.previousHash) {
+    //         if (latestBlockHeld.hash === latestBlockReceived.phash) {
     //             console.log("We can append the received block to our chain");
     //             db.collection('blocks').insertOne(latestBlockReceived);
     //             broadcast(responseLatestMsg());
