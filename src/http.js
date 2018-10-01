@@ -2,6 +2,7 @@ var http_port = process.env.HTTP_PORT || 3001;
 var express = require("express");
 var bodyParser = require('body-parser');
 const series = require('run-series')
+const transaction = require('./transaction.js')
 
 var http = {
     init: () => {
@@ -38,7 +39,6 @@ var http = {
             chain.mineBlock(function(error, finalBlock) {
                 if (error)
                     console.log('ERROR refused block', finalBlock)
-                console.log('block #'+finalBlock._id+': '+finalBlock.txs.length+' tx(s) mined by '+finalBlock.miner);
             })
         });
 
@@ -49,7 +49,7 @@ var http = {
                 res.sendStatus(500)
                 return
             }
-            chain.isValidTx(tx, function(isValid) {
+            transaction.isValid(tx, function(isValid) {
                 if (!isValid) {
                     console.log('Invalid tx', tx)
                     res.sendStatus(500)

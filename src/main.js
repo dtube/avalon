@@ -2,6 +2,7 @@ http = require('./http.js')
 p2p = require('./p2p.js')
 mongo = require('./mongo.js')
 chain = require('./chain.js')
+transaction = require('./transaction.js')
 
 tempBlocks = []
 tempTxs = []
@@ -28,4 +29,13 @@ mongo.init(function() {
         // and connect to peers
         p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
     })
+});
+
+process.on('SIGINT', function() {
+    console.log('...');
+    chain.shuttingDown = true
+    setTimeout(function() {
+        console.log('Exit');
+        process.exit(0);
+    }, 3000);
 });

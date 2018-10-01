@@ -47,11 +47,11 @@ var mongo = {
     },
     fillInMemoryBlocks: (cb) => {
         db.collection('blocks').find({}, {
-            sort: {index: -1},
+            sort: {_id: -1},
             limit: 100
         }).toArray(function(err, blocks) {
             if (err) throw err;
-            tempBlocks = blocks
+            tempBlocks = blocks.reverse()
             cb()
         })
     }
