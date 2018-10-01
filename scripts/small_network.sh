@@ -19,3 +19,9 @@ curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJw
 curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":1,"data":{"target":"miner2"}}') http://localhost:3001/transact
 curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":1,"data":{"target":"miner3"}}') http://localhost:3001/transact
 curl http://localhost:3001/mineBlock
+sleep 3
+
+# miner1 approves himself
+curl -H "Content-type:application/json" --data $(node src/cli.js sign 8cxx3Ly7xkDAghFnZRqM8Wi1xhwM8CBCkaAPL6NMgCRS miner1 '{"type":1,"data":{"target":"miner1"}}') http://localhost:3001/transact
+curl http://localhost:3001/mineBlock
+sleep 3

@@ -49,7 +49,7 @@ var http = {
                 res.sendStatus(500)
                 return
             }
-            transaction.isValid(tx, function(isValid) {
+            transaction.isValid(tx, new Date().getTime(), function(isValid) {
                 if (!isValid) {
                     console.log('Invalid tx', tx)
                     res.sendStatus(500)

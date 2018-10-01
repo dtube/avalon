@@ -25,6 +25,9 @@ var mongo = {
                         name: 'master',
                         pub: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
                         balance: 1000000,
+                        bw: {v:0,t:0},
+                        vt: {v:0,t:0},
+                        // we set those arbitrarily
                         approves: ['master'],
                         node_appr: 1000000
                     })

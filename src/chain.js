@@ -134,7 +134,7 @@ chain = {
         });
     },
     isValidSignature: (user, hash, sign, cb) => {
-        // verify signature
+        // verify signature and bandwidth
         db.collection('accounts').findOne({name: user}, function(err, account) {
             if (err) throw err;
             var minerPub = account.pub;
@@ -142,7 +142,7 @@ chain = {
                 new Buffer(hash, "hex"),
                 bs58.decode(sign),
                 bs58.decode(minerPub)))
-                cb(true)
+                cb(account)
             else
                 cb(false)
         })
@@ -205,8 +205,8 @@ chain = {
         }
 
         // finally, verify the signature of the miner
-        chain.isValidSignature(newBlock.miner, newBlock.hash, newBlock.signature, function(isSigned) {
-            if (!isSigned) {
+        chain.isValidSignature(newBlock.miner, newBlock.hash, newBlock.signature, function(legitUser) {
+            if (!legitUser) {
                 console.log('invalid miner signature')
                 cb(false); return
             }
@@ -227,9 +227,9 @@ chain = {
         for (let i = 0; i < block.txs.length; i++) {
             executions.push(function(callback) {
                 var tx = block.txs[i]
-                transaction.isValid(tx, function(isValid) {
+                transaction.isValid(tx, block.timestamp, function(isValid) {
                     if (isValid) {
-                        transaction.execute(tx, function(executed) {
+                        transaction.execute(tx, block.timestamp, function(executed) {
                             if (!executed)
                                 console.log('Non executed transaction')
                             callback(null, executed)
