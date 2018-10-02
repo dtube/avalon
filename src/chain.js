@@ -6,18 +6,22 @@ const series = require('run-series')
 const transaction = require('./transaction.js')
 
 class Block {
-    constructor(index, phash, timestamp, txs, miner, signature, hash) {
-        this._id = index;
-        this.phash = phash.toString();
-        this.timestamp = timestamp;
-        this.txs = txs;
-        this.miner = miner;
-        this.hash = hash;
-        this.signature = signature;
+    constructor(index, phash, timestamp, txs, miner, missedBy, signature, hash) {
+        this._id = index
+        this.phash = phash.toString()
+        this.timestamp = timestamp
+        this.txs = txs
+        this.miner = miner
+        if (missedBy)
+            this.missedBy = missedBy
+        this.hash = hash
+        this.signature = signature
     }
 }
 
 chain = {
+    schedule: null,
+    recentBlocks: [],
     getNewKeyPair: () => {
         const msg = randomBytes(32)
         let privKey, pubKey
@@ -38,6 +42,7 @@ chain = {
             0,
             [],
             "master",
+            null,
             "0000000000000000000000000000000000000000000000000000000000000000",
             "0000000000000000000000000000000000000000000000000000000000000000"
         );
@@ -47,15 +52,15 @@ chain = {
         var nextIndex = previousBlock._id + 1
         var nextTimestamp = new Date().getTime()
         // grab all transactions and sort by ts
-        var txs = tempTxs.sort(function(a,b){return a.ts-b.ts})
+        var txs = transaction.pool.sort(function(a,b){return a.ts-b.ts})
         var miner = process.env.NODE_OWNER
         return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner, null, null);
     },
     hashAndSignBlock: (block) => {
-        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner);
+        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy);
         var signature = secp256k1.sign(new Buffer(nextHash, "hex"), bs58.decode(process.env.NODE_OWNER_PRIV));
         signature = bs58.encode(signature.signature)
-        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, signature, nextHash);
+        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, signature, nextHash);
         
     },
     canMineBlock: (cb) => {
@@ -78,10 +83,18 @@ chain = {
             if (err) {
                 cb(true, newBlock); return
             }
+
             chain.executeBlock(newBlock, function(validTxs) {
                 // only add the valid transactions into the block
                 newBlock.txs = validTxs
-                tempTxs = []
+
+                // remove all transactions from the pool (invalid ones too)
+                transaction.pool = []
+
+                // always record the failure of others
+                if (chain.schedule.shuffle[(newBlock._id-1)%20].name != process.env.NODE_OWNER)
+                    newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%20].name
+
                 // hash and sign the block with our private key
                 newBlock = chain.hashAndSignBlock(newBlock)
                 
@@ -102,9 +115,14 @@ chain = {
             }
                 
             chain.executeBlock(newBlock, function(validTxs) {
+                // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
                 if (newBlock.txs.length != validTxs.length) {
                     cb(true, newBlock); return
                 }
+
+                // remove all transactions from this block from our transaction pool
+                transaction.removeFromPool(newBlock.txs)
+
                 chain.addBlock(newBlock, function(added) {
                     // and broadcast to peers
                     p2p.broadcastBlock(newBlock)
@@ -115,20 +133,42 @@ chain = {
             
         })
     },
+    minerWorker: (block) => {
+        if (p2p.recovering) return;
+        // if we are the next miner or backup miner, prepare to mine
+        clearTimeout(chain.worker)
+        if (block.miner == process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%20].name == process.env.NODE_OWNER) {
+            var mineInMs = 3000
+            if (chain.schedule.shuffle[(block._id)%20].name != process.env.NODE_OWNER)
+                mineInMs += 3000
+            chain.worker = setTimeout(function(){
+                chain.mineBlock(function(error, finalBlock) {
+                    if (error)
+                        console.log('ERROR refused block', finalBlock)
+                })
+            }, mineInMs)
+        }
+    },
     addBlock: (block, cb) => {
         // add the block in our own db
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err;
-            tempBlocks.push(block)
+            chain.recentBlocks.push(block)
 
             // if block id is mult of 20, reschedule next 20 blocks
             if (block._id%20 == 0) {
                 chain.minerSchedule(block, function(minerSchedule) {
-                    schedule = minerSchedule
+                    chain.schedule = minerSchedule
+                    chain.minerWorker(block)
                 })
+            } else {
+                chain.minerWorker(block)
             }
 
-            console.log('block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner);
+            var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
+            if (block.missedBy)
+                output += ' missed by '+block.missedBy
+            console.log(output);
 
             cb(true)
         });
@@ -137,6 +177,9 @@ chain = {
         // verify signature and bandwidth
         db.collection('accounts').findOne({name: user}, function(err, account) {
             if (err) throw err;
+            if (!account) {
+                cb(false); return
+            }
             var minerPub = account.pub;
             if (secp256k1.verify(
                 new Buffer(hash, "hex"),
@@ -173,18 +216,17 @@ chain = {
             cb(false); return
         }
 
-        // check if miner is scheduled witness
+        // check if miner is scheduled
         var isMinerAuthorized = false;
-        if (schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) {
+        if (chain.schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) {
             isMinerAuthorized = true;
         } else if (newBlock.miner == previousBlock.miner) {
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - previousBlock.timestamp < 6000) {
-                console.log('block too early for backup witness')
+                console.log('block too early for backup miner')
                 cb(false); return
             } else {
                 isMinerAuthorized = true;
-                newBlock.missedBy = schedule.shuffle[(newBlock._id-1)%20].name
             }
         }
         if (!isMinerAuthorized) {
@@ -215,14 +257,6 @@ chain = {
         })
     },
     executeBlock: (block, cb) => {
-        // count how many missed blocks by witnesses
-        if (block.missedBy) {
-            db.collection('accounts').updateOne(
-                {name: block.missedBy},
-                {$inc: {missedBlocks: 1}}
-            )
-        }
-
         var executions = []
         for (let i = 0; i < block.txs.length; i++) {
             executions.push(function(callback) {
@@ -260,7 +294,7 @@ chain = {
         var hash = block.hash
         console.log('Generating miners schedule ' + hash)
         var rand = parseInt("0x"+hash.substr(hash.length-6))
-        chain.generateTop20Witness(function(miners) {
+        chain.generateTop20Miner(function(miners) {
             var shuffledMiners = []
             while (miners.length > 0) {
                 var i = rand%miners.length
@@ -280,7 +314,7 @@ chain = {
             })
         })
     },
-    generateTop20Witness: (cb) => {
+    generateTop20Miner: (cb) => {
         db.collection('accounts').find({node_appr: {$gt: 0}}, {
             sort: {node_appr: -1},
             limit: 20
@@ -290,16 +324,19 @@ chain = {
         })
     },
     calculateHashForBlock: (block) => {
-        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner);
+        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy);
     },
-    calculateHash: (index, phash, timestamp, txs, miner) => {
-        return CryptoJS.SHA256(index + phash + timestamp + txs + miner).toString();
+    calculateHash: (index, phash, timestamp, txs, miner, missedBy) => {
+        if (missedBy)
+            return CryptoJS.SHA256(index + phash + timestamp + txs + miner + missedBy).toString();
+        else
+            return CryptoJS.SHA256(index + phash + timestamp + txs + miner).toString();
     },    
     getLatestBlock: () => {
-        return tempBlocks[tempBlocks.length-1]
+        return chain.recentBlocks[chain.recentBlocks.length-1]
     },    
     getFirstMemoryBlock: () => {
-        return tempBlocks[0]
+        return chain.recentBlocks[0]
     }
 }
 

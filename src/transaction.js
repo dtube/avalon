@@ -11,10 +11,41 @@ var TransactionType = {
 };
 
 transaction = {
+    pool: [],
+    addToPool: (txs) => {
+        for (let y = 0; y < txs.length; y++) {
+            var exists = false;
+            for (let i = 0; i < transaction.pool.length; i++)
+                if (transaction.pool[i].hash == txs[y].hash)
+                    exists = true
+            
+            if (!exists)
+                transaction.pool.push(txs[y])
+        }
+        
+    },
+    removeFromPool: (txs) => {
+        for (let y = 0; y < txs.length; y++)
+            for (let i = 0; i < transaction.pool.length; i++)
+                if (transaction.pool[i].hash == txs[y].hash) {
+                    transaction.pool.splice(i, 1)
+                    break
+                }
+                    
+    },
+    isInPool: (tx) => {
+        var isInPool = false
+        for (let i = 0; i < transaction.pool.length; i++)
+            if (transaction.pool[i].hash == tx.hash) {
+                isInPool = true
+                break
+            }
+        return isInPool
+    },
     isPublished: (tx) => {
         if (!tx.hash) return
-        for (let i = 0; i < tempBlocks.length; i++) {
-            const txs = tempBlocks[i].txs
+        for (let i = 0; i < chain.recentBlocks.length; i++) {
+            const txs = chain.recentBlocks[i].txs
             for (let y = 0; y < txs.length; y++) {
                 if (txs[y].hash == tx.hash)
                     return true

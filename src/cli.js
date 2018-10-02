@@ -19,9 +19,9 @@ switch (command) {
         // add timestamp to seed the hash (avoid transactions reuse)
         tx.ts = new Date().getTime()
         // hash the transaction
-        tx.hash = CryptoJS.SHA256(JSON.stringify(tx)).toString();
+        tx.hash = CryptoJS.SHA256(JSON.stringify(tx)).toString()
         // sign the transaction
-        var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), bs58.decode(privKey));
+        var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), bs58.decode(privKey))
         tx.signature = bs58.encode(signature.signature)
         
         break;

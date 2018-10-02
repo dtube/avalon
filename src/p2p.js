@@ -81,11 +81,23 @@ var p2p = {
                             p2p.recovering = false
                     })
                     break;
+                case MessageType.NEW_TX:
+                    var tx = message.d
+                    transaction.isValid(tx, new Date().getTime(), function(isValid) {
+                        if (!isValid) {
+                            console.log('Invalid tx', tx)
+                        } else {
+                            if (!transaction.isInPool(tx)) {
+                                transaction.addToPool([tx])
+                                p2p.broadcast({t:5, d:tx})
+                            } 
+                        }
+                    })
+                    break;
             }
         });
     },
     recoverAfterCrash: () => {
-        p2p.recovering = true
         if (!p2p.sockets || p2p.sockets.length == 0) return;
         // shuffle so it uses a random one
         var shuffledSockets = []
@@ -103,6 +115,7 @@ var p2p = {
         
         for (let i = 0; i < shuffledSockets.length; i++) {
             if (shuffledSockets[i].node_status.head_block>chain.getLatestBlock()._id) {
+                p2p.recovering = true
                 p2p.sendJSON(shuffledSockets[i], {t: MessageType.QUERY_BLOCK, d:chain.getLatestBlock()._id+1})
                 break;
             }

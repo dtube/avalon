@@ -50,11 +50,12 @@ var http = {
                 return
             }
             transaction.isValid(tx, new Date().getTime(), function(isValid) {
+                p2p.broadcast({t:5, d:tx})
                 if (!isValid) {
                     console.log('Invalid tx', tx)
                     res.sendStatus(500)
                 } else {
-                    tempTxs.push(tx)
+                    transaction.addToPool([tx])
                     res.sendStatus(200);
                 }
             })
@@ -73,7 +74,7 @@ var http = {
 
         // look at the miner schedule
         app.get('/schedule', (req, res) => {
-            res.send(schedule);
+            res.send(chain.schedule);
         });
 
         app.listen(http_port, () => console.log('Listening http on port: ' + http_port));
