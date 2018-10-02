@@ -108,6 +108,7 @@ chain = {
         })
     },
     validateAndAddBlock: (newBlock, cb) => {
+        // when we receive an outside block and check whether we should add it to our chain or not
         if (chain.shuttingDown) return;
         chain.isValidNewBlock(newBlock, true, function(isValid) {
             if (!isValid) {
@@ -191,6 +192,41 @@ chain = {
         })
     },
     isValidNewBlock: (newBlock, verifyHashAndSignature, cb) => {
+        // verify all block fields one by one
+        if (!newBlock._id || typeof newBlock._id !== "number") {
+            console.log('invalid block _id')
+            cb(false); return
+        }
+        if (!newBlock.phash || typeof newBlock.phash !== "string") {
+            console.log('invalid block phash')
+            cb(false); return
+        }
+        if (!newBlock.timestamp || typeof newBlock.timestamp !== "number") {
+            console.log('invalid block timestamp')
+            cb(false); return
+        }
+        if (!newBlock.txs || typeof newBlock.txs !== "object" || !Array.isArray(newBlock.txs)) {
+            console.log('invalid block txs')
+            cb(false); return
+        }
+        if (!newBlock.miner || typeof newBlock.miner !== "string") {
+            console.log('invalid block miner')
+            cb(false); return
+        }
+        if (verifyHashAndSignature && (!newBlock.hash || typeof newBlock.hash !== "string")) {
+            console.log('invalid block hash')
+            cb(false); return
+        }
+        if (verifyHashAndSignature && (!newBlock.signature || typeof newBlock.signature !== "string")) {
+            console.log('invalid block signature')
+            cb(false); return
+        }
+        if (newBlock.missedBy && typeof newBlock.missedBy !== "string") {
+            console.log('invalid block missedBy')
+        }
+        
+
+
         // verify that its indeed the next block
         var previousBlock = chain.getLatestBlock()
         if (previousBlock._id + 1 !== newBlock._id) {
