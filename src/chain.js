@@ -304,7 +304,7 @@ chain = {
             
             var i = 0;
             while (shuffledMiners.length < 20) {
-                shuffledMiners.push(shuffledMiners[0])
+                shuffledMiners.push(shuffledMiners[i])
                 i++
             }
             //console.log(shuffledMiners.map(m => m.name))
