@@ -11,7 +11,7 @@ var TransactionType = {
 };
 
 transaction = {
-    pool: [],
+    pool: [], // the pool holds temporary txs that havent been published on chain yet
     addToPool: (txs) => {
         for (let y = 0; y < txs.length; y++) {
             var exists = false;
@@ -54,8 +54,33 @@ transaction = {
         return false
     },
     isValid: (tx, ts, cb) => {
-        if (!tx.sender || !tx.hash || !tx.signature || !tx.ts) {
-            console.log('missing required variable')
+        if (!tx) {
+            console.log('no transaction')
+            cb(false); return
+        }
+        // checking required variables one by one
+        if (!tx.type || typeof tx.type !== "number") {
+            console.log('invalid tx type')
+            cb(false); return
+        }
+        if (!tx.data || typeof tx.data !== "object") {
+            console.log('invalid tx data')
+            cb(false); return
+        }
+        if (!tx.sender || typeof tx.sender !== "string") {
+            console.log('invalid tx sender')
+            cb(false); return
+        }
+        if (!tx.ts || typeof tx.ts !== "number") {
+            console.log('invalid tx ts')
+            cb(false); return
+        }
+        if (!tx.hash || typeof tx.hash !== "string") {
+            console.log('invalid tx hash')
+            cb(false); return
+        }
+        if (!tx.signature || typeof tx.signature !== "string") {
+            console.log('invalid tx signature')
             cb(false); return
         }
 
@@ -89,9 +114,17 @@ transaction = {
             // check transaction specifics
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
-                    if (!tx.data.name
-                    || !tx.data.pub
-                    || tx.sender != 'master') {
+                    if (!tx.data.name || typeof tx.data.name !== "string") {
+                        console.log('invalid tx data.name')
+                        cb(false); return
+                    }
+                    if (!tx.data.pub || typeof tx.data.pub !== "string") {
+                        console.log('invalid tx data.pub')
+                        cb(false); return
+                    }
+
+                    // only master is allowed to create accounts !!
+                    if (tx.sender !== "master") {
                         cb(false); return
                     }
 
@@ -105,7 +138,8 @@ transaction = {
                     break;
                 
                 case TransactionType.APPROVE_NODE_OWNER:
-                    if (!tx.data.target) {
+                    if (!tx.data.target || typeof tx.data.target !== "string") {
+                        console.log('invalid tx data.target')
                         cb(false); return
                     }
 
@@ -130,7 +164,8 @@ transaction = {
                     break;
 
                 case TransactionType.DISAPROVE_NODE_OWNER:
-                    if (!tx.data.target) {
+                    if (!tx.data.target || typeof tx.data.target !== "string") {
+                        console.log('invalid tx data.target')
                         cb(false); return
                     }
 
@@ -151,10 +186,15 @@ transaction = {
                     break;
 
                 case TransactionType.TRANSFER:
-                    if (!tx.data.receiver
-                    || !tx.data.amount) {
+                    if (!tx.data.receiver || typeof tx.data.receiver !== "string") {
+                        console.log('invalid tx data.receiver')
                         cb(false); return
                     }
+                    if (!tx.data.amount || typeof tx.data.amount !== "number") {
+                        console.log('invalid tx data.amount')
+                        cb(false); return
+                    }
+                    
                     db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
                         if (err) throw err;
                         if (account.balance < tx.data.amount)

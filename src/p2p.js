@@ -37,7 +37,12 @@ var p2p = {
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
-            var message = JSON.parse(data);
+            try {
+                var message = JSON.parse(data);
+            } catch(e) {
+                console.log('Received non-JSON, doing nothing ;)')
+            }
+            
             //console.log('Received message ' + JSON.stringify(message.t));
             switch (message.t) {
                 case MessageType.QUERY_NODE_STATUS:
