@@ -4,6 +4,8 @@
 // config can also have: min, max.
 // maybe use BigInt one day here
 
+
+
 module.exports = class GrowInt {
     constructor(raw, config) {
         if (!config.min)
@@ -25,12 +27,6 @@ module.exports = class GrowInt {
         var tmpValue = this.v
         tmpValue += (time-this.t)*this.config.growth
         
-        if (this.config.max && tmpValue > this.config.max)
-            tmpValue = this.config.max
-
-        if (this.config.min && tmpValue < this.config.min)
-            tmpValue = this.config.min
-
         if (this.config.growth > 0) {
             var newValue = Math.floor(tmpValue)
             var newTime = Math.ceil(this.t + ((newValue-this.v)/this.config.growth))
@@ -39,10 +35,17 @@ module.exports = class GrowInt {
             var newTime = Math.floor(this.t + ((newValue-this.v)/this.config.growth))
         }
 
+        if (this.config.max && newValue > this.config.max)
+            newValue = this.config.max
+
+        if (this.config.min && newValue < this.config.min)
+            newValue = this.config.min
+
         return {
             v: newValue,
             t: newTime
         }
     }
+    
 }
 

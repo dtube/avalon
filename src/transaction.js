@@ -59,7 +59,7 @@ transaction = {
             cb(false); return
         }
         // checking required variables one by one
-        if (!tx.type || typeof tx.type !== "number") {
+        if (typeof tx.type !== "number") {
             console.log('invalid tx type')
             cb(false); return
         }
@@ -104,9 +104,7 @@ transaction = {
             }
 
             // checking if the user has enough bandwidth
-            var bandwidth = new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000)})
-            var needed_bytes = JSON.stringify(tx).length;
-            if (bandwidth.grow(ts).v < needed_bytes) {
+            if (JSON.stringify(tx).length > new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000), max:1048576}).grow(ts).v) {
                 console.log('not enough bandwidth')
                 cb(false); return
             }
@@ -195,7 +193,7 @@ transaction = {
                     break;
 
                 case TransactionType.TRANSFER:
-                    if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.target.length > 25) {
+                    if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.receiver.length > 25) {
                         console.log('invalid tx data.receiver')
                         cb(false); return
                     }
@@ -251,6 +249,13 @@ transaction = {
                         cb(false); return
                     }
 
+                    // commenting costs 1 vote token as a forced self-upvote
+                    var vt = new GrowInt(legitUser.vt, {growth:account.balance/(3600000)}).grow(ts)
+                    if (vt.v < 1) {
+                        console.log('not enough vt for comment')
+                        cb(false); return
+                    }
+
                     cb(true)
                     break;
 
@@ -261,7 +266,7 @@ transaction = {
         })
     },
     execute: (tx, ts, cb) => {
-        transaction.collectBandwidth(tx, ts, function(success) {
+        transaction.collectGrowInts(tx, ts, function(success) {
             if (!success) throw 'Error collecting bandwidth'
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
@@ -344,7 +349,7 @@ transaction = {
                             if (err) throw err;
                             // update his bandwidth
                             acc.balance += tx.data.amount
-                            transaction.updateBandwidth(acc, ts, function(success) {
+                            transaction.updateGrowInts(acc, ts, function(success) {
                                 if (!acc.approves) acc.approves = []
                                 // and update node_appr for miners he votes for
                                 var node_appr_before = Math.floor(acc.balance/acc.approves.length)
@@ -369,7 +374,7 @@ transaction = {
                                             if (err) throw err;
                                             // update his bandwidth
                                             acc.balance -= tx.data.amount
-                                            transaction.updateBandwidth(acc, ts, function(success) {
+                                            transaction.updateGrowInts(acc, ts, function(success) {
                                                 if (!acc.approves) acc.approves = []
                                                 // and update his node_owners approvals values too
                                                 var node_appr_before = Math.floor(acc.balance/acc.approves.length)
@@ -412,6 +417,8 @@ transaction = {
                         cb(true)
                     })
                     break;
+
+
     
                 default:
                     cb(false)
@@ -420,22 +427,48 @@ transaction = {
         })
 
     },
-    collectBandwidth: (tx, ts, cb) => {
+    collectGrowInts: (tx, ts, cb) => {
         db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
-            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(60000)})
+            // collect bandwidth
+            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576})
             var needed_bytes = JSON.stringify(tx).length;
             var bw = bandwidth.grow(ts)
             bw.v -= needed_bytes
-            db.collection('accounts').updateOne({name: account.name}, {$set: {bw: bw}}, function(err) {
+
+            // collect voting tokens when needed
+            switch (tx.type) {
+                case TransactionType.COMMENT:
+                    var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
+                    vt.v -= 1
+                    break;
+            
+                default:
+                    break;
+            }
+
+            // update both at the same time !
+            var changes = {bw: bw}
+            if (vt) changes.vt = vt
+            db.collection('accounts').updateOne(
+                {name: account.name},
+                {$set: changes},
+            function(err) {
                 if (err) throw err;
                 cb(true)
             })
         })
     },
-    updateBandwidth: (account, ts, cb) => {
-        var bandwidth = new GrowInt(account.bw, {growth:account.balance/(60000)})
-        var bw = bandwidth.grow(ts)
-        db.collection('accounts').updateOne({name: account.name}, {$set: {bw: bw}}, function(err) {
+    updateGrowInts: (account, ts, cb) => {
+        // updates the bandwidth and vote tokens when the growth changes (transfer)
+        var bw = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576}).grow(ts)
+        var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
+        db.collection('accounts').updateOne(
+            {name: account.name},
+            {$set: {
+                bw: bw,
+                vt: vt
+            }},
+        function(err) {
             if (err) throw err;
             cb(true)
         })
