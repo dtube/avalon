@@ -223,9 +223,7 @@ chain = {
         }
         if (newBlock.missedBy && typeof newBlock.missedBy !== "string") {
             console.log('invalid block missedBy')
-        }
-        
-
+        }   
 
         // verify that its indeed the next block
         var previousBlock = chain.getLatestBlock()
@@ -301,7 +299,7 @@ chain = {
                     if (isValid) {
                         transaction.execute(tx, block.timestamp, function(executed) {
                             if (!executed)
-                                console.log('Non executed transaction')
+                                console.log('CRITICAL ERROR: Tx execution failure', tx)
                             callback(null, executed)
                         })
                     } else {
@@ -317,9 +315,7 @@ chain = {
             if (err) throw err;
             var executedSuccesfully = []
             for (let i = 0; i < results.length; i++) {
-                if (results[i] != true)
-                    console.log('ERROR: non-executed tx', i, block.txs[i])
-                else
+                if (results[i])
                     executedSuccesfully.push(block.txs[i])
             }
                 

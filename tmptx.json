@@ -1,10 +1,1 @@
-{
-    "type": 3,
-    "data": {
-        "receiver": "sylvain",
-        "amount": 55
-    },
-    "sender": "master",
-    "hash": "e243c4fb444b4e4b625b98cbe6b058f3e8a0d8d64d2bccd04b18401675d488be",
-    "signature": "BhvEiHV62XA5RrChpCCRcrcTfEQQc3dKqjparQd35mrkkxuPzmJs3xRbUNc9xFyz9v73L47qEtDRj3BQ43xvriU"
-}
+{"type":4,"data":{"link":"hello-world","pa":"","pp":"","json":"{\"tags\":[\"steemit\",\"example\",\"tags\"]}"},"sender":"master","ts":1538513399993,"hash":"6b5d947ddd40ebb4ef50a699dd9eb9c14295e7dc4e0a2f28906edbc0365479c8","signature":"4LUpxGG4E3NvX5QGfqWU7By9VaTxuw4S6W1fk3e2FAS5GuWUcM87oAELxtqjsajoFLwCiZ6y11kmq8xSErfBojha"}

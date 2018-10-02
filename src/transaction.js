@@ -114,13 +114,22 @@ transaction = {
             // check transaction specifics
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
-                    if (!tx.data.name || typeof tx.data.name !== "string") {
+                    if (!tx.data.name || typeof tx.data.name !== "string" || tx.data.name.length > 25) {
                         console.log('invalid tx data.name')
                         cb(false); return
                     }
-                    if (!tx.data.pub || typeof tx.data.pub !== "string") {
+                    if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50) {
                         console.log('invalid tx data.pub')
                         cb(false); return
+                    }
+
+                    for (let i = 0; i < tx.data.name.length; i++) {
+                        const c = tx.data.name[i];
+                        // allowed username chars
+                        if ('abcdefghijklmnopqrstuvwxyz0123456789'.indexOf(c) == -1) {
+                            console.log('invalid tx data.name char')
+                            cb(false); return
+                        }
                     }
 
                     // only master is allowed to create accounts !!
@@ -138,7 +147,7 @@ transaction = {
                     break;
                 
                 case TransactionType.APPROVE_NODE_OWNER:
-                    if (!tx.data.target || typeof tx.data.target !== "string") {
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
                         console.log('invalid tx data.target')
                         cb(false); return
                     }
@@ -164,7 +173,7 @@ transaction = {
                     break;
 
                 case TransactionType.DISAPROVE_NODE_OWNER:
-                    if (!tx.data.target || typeof tx.data.target !== "string") {
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
                         console.log('invalid tx data.target')
                         cb(false); return
                     }
@@ -186,7 +195,7 @@ transaction = {
                     break;
 
                 case TransactionType.TRANSFER:
-                    if (!tx.data.receiver || typeof tx.data.receiver !== "string") {
+                    if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.target.length > 25) {
                         console.log('invalid tx data.receiver')
                         cb(false); return
                     }
@@ -207,6 +216,42 @@ transaction = {
                             })
                         }
                     })
+                    break;
+
+                case TransactionType.COMMENT:
+                    // permlink
+                    if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
+                        console.log('invalid tx data.link')
+                        cb(false); return
+                    }
+                    // parent author
+                    if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== "string" || tx.data.pa.length > 25)) {
+                        console.log('invalid tx data.pa')
+                        cb(false); return
+                    }
+                    // parent permlink
+                    if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== "string" || tx.data.pp.length > 25)) {
+                        console.log('invalid tx data.pp')
+                        cb(false); return
+                    }
+                    // handle arbitrary json input
+                    console.log(typeof tx.data.json)
+                    if (!tx.data.json || typeof tx.data.json !== "string" || tx.data.json.length > 250000) {
+                        console.log('invalid tx data.json')
+                        cb(false); return
+                    }
+                    try {
+                        var parsedJson = JSON.parse(tx.data.json);
+                    } catch(e) {
+                        console.log('unparsable tx data.json')
+                        cb(false); return
+                    }
+                    if (!parsedJson || typeof parsedJson !== "object") {
+                        console.log('invalid tx data.json parsed')
+                        cb(false); return
+                    }
+
+                    cb(true)
                     break;
 
                 default:
@@ -347,9 +392,24 @@ transaction = {
                                     })
                                 })
                             })
-
-                            
                         })
+                    })
+                    break;
+
+                case TransactionType.COMMENT:
+                    db.collection('contents').replaceOne({
+                        author: tx.sender,
+                        link: tx.data.link
+                    },{
+                        author: tx.sender,
+                        link: tx.data.link,
+                        pa: tx.data.pa,
+                        pp: tx.data.pp,
+                        json: JSON.parse(tx.data.json),
+                    }, {
+                        upsert: true
+                    }).then(function(){
+                        cb(true)
                     })
                     break;
     
