@@ -446,7 +446,7 @@ transaction = {
                         vt: tx.data.vt
                     }
                     db.collection('contents').updateOne({
-                        author: tx.sender,
+                        author: tx.data.author,
                         link: tx.data.link
                     },{$push: {
                         votes: vote
