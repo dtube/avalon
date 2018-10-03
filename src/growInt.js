@@ -4,8 +4,6 @@
 // config can also have: min, max.
 // maybe use BigInt one day here
 
-
-
 module.exports = class GrowInt {
     constructor(raw, config) {
         if (!config.min)

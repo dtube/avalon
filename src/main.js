@@ -18,19 +18,19 @@ mongo.init(function() {
         })
 
         // start the http server
-        http.init();
+        http.init()
         // start the websocket server
-        p2p.init();
+        p2p.init()
         // and connect to peers
         p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
     })
 });
 
 process.on('SIGINT', function() {
-    console.log('...');
+    console.log('...')
     chain.shuttingDown = true
     setTimeout(function() {
-        console.log('Exit');
-        process.exit(0);
+        console.log('Exit')
+        process.exit(0)
     }, 3000);
 });
