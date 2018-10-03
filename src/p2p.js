@@ -78,13 +78,19 @@ var p2p = {
                     break;
 
                 case MessageType.NEW_BLOCK:
+                    if (!p2p.sockets[p2p.sockets.indexOf(ws)].node_status) return
                     p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = message.d._id
-                    chain.validateAndAddBlock(message.d, function(err, newBlock) {
-                        if (err)
-                            console.log('Error', newBlock)
-                        else
-                            p2p.recovering = false
-                    })
+                    if (!p2p.processing) {
+                        p2p.processing = true
+                        chain.validateAndAddBlock(message.d, function(err, newBlock) {
+                            p2p.processing = false
+                            if (err)
+                                console.log('Error', newBlock)
+                            else {
+                                p2p.recovering = false
+                            }
+                        })
+                    }
                     break;
                 case MessageType.NEW_TX:
                     var tx = message.d
