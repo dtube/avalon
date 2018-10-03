@@ -138,7 +138,7 @@ var p2p = {
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
     broadcastBlock: (block) => {
         for (let i = 0; i < p2p.sockets.length; i++)
-            if (p2p.sockets[i].node_status.head_block < block._id)
+            if (p2p.sockets[i].node_status && p2p.sockets[i].node_status.head_block < block._id)
                 p2p.broadcast({t:4,d:block})
     }
 }
