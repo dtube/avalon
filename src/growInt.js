@@ -35,10 +35,10 @@ module.exports = class GrowInt {
             var newTime = Math.floor(this.t + ((newValue-this.v)/this.config.growth))
         }
 
-        if (this.config.max && newValue > this.config.max)
+        if (newValue > this.config.max)
             newValue = this.config.max
 
-        if (this.config.min && newValue < this.config.min)
+        if (newValue < this.config.min)
             newValue = this.config.min
 
         return {

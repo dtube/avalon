@@ -250,12 +250,33 @@ transaction = {
                     }
 
                     // commenting costs 1 vote token as a forced self-upvote
-                    var vt = new GrowInt(legitUser.vt, {growth:account.balance/(3600000)}).grow(ts)
+                    var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < 1) {
                         console.log('not enough vt for comment')
                         cb(false); return
                     }
 
+                    cb(true)
+                    break;
+
+                case TransactionType.VOTE:
+                    if (!tx.data.author || typeof tx.data.author !== "string" || tx.data.author.length > 25) {
+                        console.log('invalid tx data.author')
+                        cb(false); return
+                    }
+                    if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
+                        console.log('invalid tx data.link')
+                        cb(false); return
+                    }
+                    if (!tx.data.vt || typeof tx.data.vt !== "number") {
+                        console.log('invalid tx data.vt')
+                        cb(false); return
+                    }
+                    var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
+                    if (vt.v < tx.data.vt) {
+                        console.log('invalid tx not enough vt')
+                        cb(false); return
+                    }
                     cb(true)
                     break;
 
@@ -418,7 +439,23 @@ transaction = {
                     })
                     break;
 
-
+                case TransactionType.VOTE:
+                    var vote = {
+                        u: tx.sender,
+                        ts: ts,
+                        vt: tx.data.vt
+                    }
+                    db.collection('contents').updateOne({
+                        author: tx.sender,
+                        link: tx.data.link
+                    },{$push: {
+                        votes: vote
+                    }}, {
+                        upsert: true
+                    }).then(function(){
+                        cb(true)
+                    })
+                    break;
     
                 default:
                     cb(false)
@@ -440,6 +477,11 @@ transaction = {
                 case TransactionType.COMMENT:
                     var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
                     vt.v -= 1
+                    break;
+
+                case TransactionType.VOTE:
+                    var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
+                    vt.v -= Math.abs(tx.data.vt)
                     break;
             
                 default:

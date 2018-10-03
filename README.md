@@ -54,6 +54,18 @@ Or all-in-one example:
 curl -H "Content-type:application/json" --data $(node src/cli.js sign <key> <user> '{"type":3,"data":{"receiver": "miner1", "amount":55}}') http://localhost:3001/transact
 ```
 
+#### Add a post
+```
+node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":4,"data":{"link":"hello-world", "pa":"", "pp":"","json":"{\"tags\":[\"steemit\",\"example\",\"tags\"]}"}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+#### Vote a post
+```
+node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":5,"data":{"link":"hello-world", "author":"master", "vt": 100}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
 #### Try to mine a block (will fail if you cant)
 ```
 curl  http://localhost:3001/mineBlock
@@ -72,9 +84,4 @@ db.blocks.findOne({_id: 0})
 ```
 
 ## Reset the chain
-Shut everything down, then
-```
-db.blocks.remove({})
-db.accounts.remove({})
-```
-And restart
+Shut everything down, then `db.dropDatabase()` in mongo, and restart
