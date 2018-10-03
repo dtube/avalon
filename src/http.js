@@ -77,6 +77,14 @@ var http = {
             res.send(chain.schedule);
         });
 
+        // get new contents
+        app.get('/new', (req, res) => {
+            db.collection('contents').find({}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                res.send(contents)
+                console.log(err, contents)
+            })
+        })
+
         app.listen(http_port, () => console.log('Listening http on port: ' + http_port));
     }
 }
