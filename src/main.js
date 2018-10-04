@@ -1,3 +1,4 @@
+logr = require('./logger.js');
 http = require('./http.js')
 p2p = require('./p2p.js')
 mongo = require('./mongo.js')
@@ -9,7 +10,7 @@ originHash = "0000000000000000000000000000000000000000000000000000000000000001"
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {
     mongo.fillInMemoryBlocks(function() {
-        console.log('#' + chain.getLatestBlock()._id + ' is the latest block in our db')
+        logr.info('#' + chain.getLatestBlock()._id + ' is the latest block in our db')
         
         // start miner schedule
         db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id%20)}, function(err, block) {
@@ -29,10 +30,12 @@ mongo.init(function() {
 });
 
 process.on('SIGINT', function() {
-    console.log('...')
+    if (typeof closing !== 'undefined') return
+    closing = true
+    logr.warn('Waiting 3 secs before shut down...')
     chain.shuttingDown = true
     setTimeout(function() {
-        console.log('Exit')
+        logr.trace('Avalon exitted safely')
         process.exit(0)
     }, 3000);
 });

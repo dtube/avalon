@@ -38,7 +38,7 @@ var http = {
             res.sendStatus(200)
             chain.mineBlock(function(error, finalBlock) {
                 if (error)
-                    console.log('ERROR refused block', finalBlock)
+                    logr.error('ERROR refused block', finalBlock)
             })
         });
 
@@ -50,11 +50,11 @@ var http = {
                 return
             }
             transaction.isValid(tx, new Date().getTime(), function(isValid) {
-                p2p.broadcast({t:5, d:tx})
                 if (!isValid) {
-                    console.log('Invalid tx', tx)
+                    logr.warn('Invalid tx', tx)
                     res.sendStatus(500)
                 } else {
+                    p2p.broadcast({t:5, d:tx})
                     transaction.addToPool([tx])
                     res.sendStatus(200);
                 }
@@ -81,11 +81,10 @@ var http = {
         app.get('/new', (req, res) => {
             db.collection('contents').find({}, {sort: {_id: -1}}).toArray(function(err, contents) {
                 res.send(contents)
-                console.log(err, contents)
             })
         })
 
-        app.listen(http_port, () => console.log('Listening http on port: ' + http_port));
+        app.listen(http_port, () => logr.info('Listening http on port: ' + http_port));
     }
 }
 

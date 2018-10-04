@@ -145,7 +145,7 @@ chain = {
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
                     if (error)
-                        console.log('ERROR refused block', finalBlock)
+                        logr.warn('miner worker trying to mine but couldnt', finalBlock)
                 })
             }, mineInMs)
         }
@@ -173,7 +173,7 @@ chain = {
                 var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
                 if (block.missedBy)
                     output += ' missed by '+block.missedBy
-                console.log(output);
+                logr.info(output);
             }
         });
     },
@@ -197,59 +197,59 @@ chain = {
     isValidNewBlock: (newBlock, verifyHashAndSignature, cb) => {
         // verify all block fields one by one
         if (!newBlock._id || typeof newBlock._id !== "number") {
-            console.log('invalid block _id')
+            logr.debug('invalid block _id')
             cb(false); return
         }
         if (!newBlock.phash || typeof newBlock.phash !== "string") {
-            console.log('invalid block phash')
+            logr.debug('invalid block phash')
             cb(false); return
         }
         if (!newBlock.timestamp || typeof newBlock.timestamp !== "number") {
-            console.log('invalid block timestamp')
+            logr.debug('invalid block timestamp')
             cb(false); return
         }
         if (!newBlock.txs || typeof newBlock.txs !== "object" || !Array.isArray(newBlock.txs)) {
-            console.log('invalid block txs')
+            logr.debug('invalid block txs')
             cb(false); return
         }
         if (!newBlock.miner || typeof newBlock.miner !== "string") {
-            console.log('invalid block miner')
+            logr.debug('invalid block miner')
             cb(false); return
         }
         if (verifyHashAndSignature && (!newBlock.hash || typeof newBlock.hash !== "string")) {
-            console.log('invalid block hash')
+            logr.debug('invalid block hash')
             cb(false); return
         }
         if (verifyHashAndSignature && (!newBlock.signature || typeof newBlock.signature !== "string")) {
-            console.log('invalid block signature')
+            logr.debug('invalid block signature')
             cb(false); return
         }
         if (newBlock.missedBy && typeof newBlock.missedBy !== "string") {
-            console.log('invalid block missedBy')
+            logr.debug('invalid block missedBy')
         }   
 
         // verify that its indeed the next block
         var previousBlock = chain.getLatestBlock()
         if (previousBlock._id + 1 !== newBlock._id) {
-            console.log('invalid index')
+            logr.debug('invalid index')
             cb(false); return
         }
         // from the same chain
         if (previousBlock.hash !== newBlock.phash) {
-            console.log('invalid phash')
+            logr.debug('invalid phash')
             cb(false); return
         }
 
         // check if miner isnt trying to fast forward time
         // this might need to be tuned in the future to allow for network delay
         if (newBlock.timestamp > new Date().getTime()) {
-            console.log('timestamp from the future')
+            logr.debug('timestamp from the future')
             cb(false); return
         }
 
         // check if new block isnt too early
         if (newBlock.timestamp - previousBlock.timestamp < 3000) {
-            console.log('block too early')
+            logr.debug('block too early')
             cb(false); return
         }
 
@@ -260,14 +260,14 @@ chain = {
         } else if (newBlock.miner == previousBlock.miner) {
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - previousBlock.timestamp < 6000) {
-                console.log('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
+                logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
                 cb(false); return
             } else {
                 isMinerAuthorized = true;
             }
         }
         if (!isMinerAuthorized) {
-            console.log('unauthorized miner', chain.schedule)
+            logr.debug('unauthorized miner', chain.schedule)
             cb(false); return
         }
 
@@ -278,15 +278,15 @@ chain = {
         // and that the hash is correct
         var theoreticalHash = chain.calculateHashForBlock(newBlock)
         if (theoreticalHash !== newBlock.hash) {
-            console.log(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
-            console.log('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
+            logr.debug(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
+            logr.debug('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
             cb(false); return
         }
 
         // finally, verify the signature of the miner
         chain.isValidSignature(newBlock.miner, newBlock.hash, newBlock.signature, function(legitUser) {
             if (!legitUser) {
-                console.log('invalid miner signature')
+                logr.debug('invalid miner signature')
                 cb(false); return
             }
 
@@ -302,11 +302,11 @@ chain = {
                     if (isValid) {
                         transaction.execute(tx, block.timestamp, function(executed) {
                             if (!executed)
-                                console.log('CRITICAL ERROR: Tx execution failure', tx)
+                                logr.fatal('Tx execution failure', tx)
                             callback(null, executed)
                         })
                     } else {
-                        console.log('Invalid transaction', tx)
+                        logr.error('Invalid transaction', tx)
                         callback(null, false)
                     }
                 })
@@ -327,8 +327,8 @@ chain = {
     },
     minerSchedule: (block, cb) => {
         var hash = block.hash
-        console.log('Generating miners schedule ' + hash)
         var rand = parseInt("0x"+hash.substr(hash.length-6))
+        logr.info('Generating schedule... NRNG: ' + rand)
         chain.generateTop20Miner(function(miners) {
             var shuffledMiners = []
             while (miners.length > 0) {
@@ -342,7 +342,7 @@ chain = {
                 shuffledMiners.push(shuffledMiners[i])
                 i++
             }
-            //console.log(shuffledMiners.map(m => m.name))
+
             cb({
                 block: block,
                 shuffle: shuffledMiners

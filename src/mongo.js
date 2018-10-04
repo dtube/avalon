@@ -7,7 +7,7 @@ var mongo = {
         MongoClient.connect(db_url, { useNewUrlParser: true }, function(err, client) {
             if (err) throw err;
             this.db = client.db(db_name)
-            console.log("Connected to "+db_url+"/"+this.db.databaseName)
+            logr.info("Connected to "+db_url+"/"+this.db.databaseName)
 
             // init genesis account if no account
             db.collection('accounts').findOne({}, function(err, acc) {
@@ -18,7 +18,7 @@ var mongo = {
                     return
                 }
 
-                console.log('NEW CHAIN !!')
+                logr.debug('NEW CHAIN !!')
                 
                 if (!acc) {
                     db.collection('accounts').insertOne({

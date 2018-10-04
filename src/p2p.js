@@ -19,7 +19,7 @@ var p2p = {
     init: () => {
         var server = new WebSocket.Server({port: p2p_port});
         server.on('connection', ws => p2p.handshake(ws));
-        console.log('Listening websocket p2p port on: ' + p2p_port);
+        logr.info('Listening websocket p2p port on: ' + p2p_port);
         setTimeout(function(){p2p.recover()}, 1500)
     },
     connect: (newPeers) => {
@@ -27,7 +27,7 @@ var p2p = {
             var ws = new WebSocket(peer);
             ws.on('open', () => p2p.handshake(ws));
             ws.on('error', () => {
-                console.log('peer connection failed')
+                logr.warn('peer connection failed')
             });
         });
     },
@@ -42,10 +42,9 @@ var p2p = {
             try {
                 var message = JSON.parse(data);
             } catch(e) {
-                console.log('Received non-JSON, doing nothing ;)')
+                logr.warn('Received non-JSON, doing nothing ;)')
             }
             
-            //console.log('Received message ' + JSON.stringify(message.t));
             switch (message.t) {
                 case MessageType.QUERY_NODE_STATUS:
                     var d = {
@@ -63,7 +62,7 @@ var p2p = {
                 case MessageType.QUERY_BLOCK:
                     db.collection('blocks').findOne({_id: message.d}, function(err, block) {
                         if (err)
-                            console.log(err)
+                            throw err;
                         if (block)
                             p2p.sendJSON(ws, {t:MessageType.BLOCK, d:block})
                     })
@@ -80,7 +79,7 @@ var p2p = {
                         function addRecursive(block) {
                             chain.validateAndAddBlock(block, function(err, newBlock) {
                                 if (err)
-                                    console.log('Error', newBlock)
+                                    logr.error('Error Replay', newBlock)
                                 else {
                                     delete p2p.recoveredBlocks[newBlock._id]
                                     p2p.recover()
@@ -110,7 +109,7 @@ var p2p = {
                         chain.validateAndAddBlock(message.d, function(err, newBlock) {
                             p2p.processing = false
                             if (err)
-                                console.log('Error', newBlock)
+                                logr.error('Error New Block', newBlock)
                             else
                                 p2p.recovering = false
                         })
@@ -120,7 +119,7 @@ var p2p = {
                     var tx = message.d
                     transaction.isValid(tx, new Date().getTime(), function(isValid) {
                         if (!isValid) {
-                            console.log('Invalid tx', tx)
+                            logr.warn('Invalid tx', tx)
                         } else {
                             if (!transaction.isInPool(tx)) {
                                 transaction.addToPool([tx])
@@ -153,11 +152,10 @@ var p2p = {
         p2p.recoveringBlocks.push(p2p.recovering)
 
         if (p2p.recovering%2) p2p.recover()
-        
     },
     errorHandler: (ws) => {
         var closeConnection = (ws) => {
-            console.log('p2p co closed')
+            logr.warn('a peer disconnected')
             p2p.sockets.splice(p2p.sockets.indexOf(ws), 1);
         };
         ws.on('close', () => closeConnection(ws));

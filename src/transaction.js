@@ -55,57 +55,57 @@ transaction = {
     },
     isValid: (tx, ts, cb) => {
         if (!tx) {
-            console.log('no transaction')
+            logr.debug('no transaction')
             cb(false); return
         }
         // checking required variables one by one
         if (typeof tx.type !== "number") {
-            console.log('invalid tx type')
+            logr.debug('invalid tx type')
             cb(false); return
         }
         if (!tx.data || typeof tx.data !== "object") {
-            console.log('invalid tx data')
+            logr.debug('invalid tx data')
             cb(false); return
         }
         if (!tx.sender || typeof tx.sender !== "string") {
-            console.log('invalid tx sender')
+            logr.debug('invalid tx sender')
             cb(false); return
         }
         if (!tx.ts || typeof tx.ts !== "number") {
-            console.log('invalid tx ts')
+            logr.debug('invalid tx ts')
             cb(false); return
         }
         if (!tx.hash || typeof tx.hash !== "string") {
-            console.log('invalid tx hash')
+            logr.debug('invalid tx hash')
             cb(false); return
         }
         if (!tx.signature || typeof tx.signature !== "string") {
-            console.log('invalid tx signature')
+            logr.debug('invalid tx signature')
             cb(false); return
         }
 
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
         if (chain.getLatestBlock().timestamp - tx.ts > 60000) {
-            console.log('invalid timestamp')
+            logr.debug('invalid timestamp')
             cb(false); return
         }
         // check if this tx hash was already added to chain recently
         if (transaction.isPublished(tx)) {
-            console.log('transaction already in chain')
+            logr.debug('transaction already in chain')
             cb(false); return
         }
 
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.hash, tx.signature, function(legitUser) {
             if (!legitUser) {
-                console.log('invalid signature')
+                logr.debug('invalid signature')
                 cb(false); return
             }
 
             // checking if the user has enough bandwidth
             if (JSON.stringify(tx).length > new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000), max:1048576}).grow(ts).v) {
-                console.log('not enough bandwidth')
+                logr.debug('not enough bandwidth')
                 cb(false); return
             }
 
@@ -113,11 +113,11 @@ transaction = {
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
                     if (!tx.data.name || typeof tx.data.name !== "string" || tx.data.name.length > 25) {
-                        console.log('invalid tx data.name')
+                        logr.debug('invalid tx data.name')
                         cb(false); return
                     }
                     if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50) {
-                        console.log('invalid tx data.pub')
+                        logr.debug('invalid tx data.pub')
                         cb(false); return
                     }
 
@@ -125,7 +125,7 @@ transaction = {
                         const c = tx.data.name[i];
                         // allowed username chars
                         if ('abcdefghijklmnopqrstuvwxyz0123456789'.indexOf(c) == -1) {
-                            console.log('invalid tx data.name char')
+                            logr.debug('invalid tx data.name char')
                             cb(false); return
                         }
                     }
@@ -146,7 +146,7 @@ transaction = {
                 
                 case TransactionType.APPROVE_NODE_OWNER:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
-                        console.log('invalid tx data.target')
+                        logr.debug('invalid tx data.target')
                         cb(false); return
                     }
 
@@ -172,7 +172,7 @@ transaction = {
 
                 case TransactionType.DISAPROVE_NODE_OWNER:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
-                        console.log('invalid tx data.target')
+                        logr.debug('invalid tx data.target')
                         cb(false); return
                     }
 
@@ -194,15 +194,15 @@ transaction = {
 
                 case TransactionType.TRANSFER:
                     if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.receiver.length > 25) {
-                        console.log('invalid tx data.receiver')
+                        logr.debug('invalid tx data.receiver')
                         cb(false); return
                     }
                     if (!tx.data.amount || typeof tx.data.amount !== "number" || tx.data.amount < 1) {
-                        console.log('invalid tx data.amount')
+                        logr.debug('invalid tx data.amount')
                         cb(false); return
                     }
                     if (tx.data.amount != Math.floor(tx.data.amount)) {
-                        console.log('invalid tx data.amount not an integer')
+                        logr.debug('invalid tx data.amount not an integer')
                         cb(false); return
                     }
                     
@@ -223,40 +223,39 @@ transaction = {
                 case TransactionType.COMMENT:
                     // permlink
                     if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
-                        console.log('invalid tx data.link')
+                        logr.debug('invalid tx data.link')
                         cb(false); return
                     }
                     // parent author
                     if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== "string" || tx.data.pa.length > 25)) {
-                        console.log('invalid tx data.pa')
+                        logr.debug('invalid tx data.pa')
                         cb(false); return
                     }
                     // parent permlink
                     if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== "string" || tx.data.pp.length > 25)) {
-                        console.log('invalid tx data.pp')
+                        logr.debug('invalid tx data.pp')
                         cb(false); return
                     }
                     // handle arbitrary json input
-                    console.log(typeof tx.data.json)
                     if (!tx.data.json || typeof tx.data.json !== "string" || tx.data.json.length > 250000) {
-                        console.log('invalid tx data.json')
+                        logr.debug('invalid tx data.json')
                         cb(false); return
                     }
                     try {
                         var parsedJson = JSON.parse(tx.data.json);
                     } catch(e) {
-                        console.log('unparsable tx data.json')
+                        logr.debug('unparsable tx data.json')
                         cb(false); return
                     }
                     if (!parsedJson || typeof parsedJson !== "object") {
-                        console.log('invalid tx data.json parsed')
+                        logr.debug('invalid tx data.json parsed')
                         cb(false); return
                     }
 
                     // commenting costs 1 vote token as a forced self-upvote
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < 1) {
-                        console.log('not enough vt for comment')
+                        logr.debug('not enough vt for comment')
                         cb(false); return
                     }
 
@@ -265,20 +264,20 @@ transaction = {
 
                 case TransactionType.VOTE:
                     if (!tx.data.author || typeof tx.data.author !== "string" || tx.data.author.length > 25) {
-                        console.log('invalid tx data.author')
+                        logr.debug('invalid tx data.author')
                         cb(false); return
                     }
                     if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
-                        console.log('invalid tx data.link')
+                        logr.debug('invalid tx data.link')
                         cb(false); return
                     }
                     if (!tx.data.vt || typeof tx.data.vt !== "number") {
-                        console.log('invalid tx data.vt')
+                        logr.debug('invalid tx data.vt')
                         cb(false); return
                     }
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < tx.data.vt) {
-                        console.log('invalid tx not enough vt')
+                        logr.debug('invalid tx not enough vt')
                         cb(false); return
                     }
                     cb(true)
