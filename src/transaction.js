@@ -197,8 +197,12 @@ transaction = {
                         console.log('invalid tx data.receiver')
                         cb(false); return
                     }
-                    if (!tx.data.amount || typeof tx.data.amount !== "number") {
+                    if (!tx.data.amount || typeof tx.data.amount !== "number" || tx.data.amount < 1) {
                         console.log('invalid tx data.amount')
+                        cb(false); return
+                    }
+                    if (tx.data.amount != Math.floor(tx.data.amount)) {
+                        console.log('invalid tx data.amount not an integer')
                         cb(false); return
                     }
                     
@@ -362,6 +366,7 @@ transaction = {
     
                 case TransactionType.TRANSFER:
                     // remove funds from sender
+                    tx.data.amount = Math.floor(tx.data.amount)
                     db.collection('accounts').updateOne(
                         {name: tx.sender},
                         {$inc: {balance: -tx.data.amount}},

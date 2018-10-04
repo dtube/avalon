@@ -6,8 +6,8 @@ var mongo = {
     init: (cb) => {
         MongoClient.connect(db_url, { useNewUrlParser: true }, function(err, client) {
             if (err) throw err;
-            this.db = client.db(db_name);
-            console.log("Connected to "+db_url+"/"+this.db.databaseName);
+            this.db = client.db(db_name)
+            console.log("Connected to "+db_url+"/"+this.db.databaseName)
 
             // init genesis account if no account
             db.collection('accounts').findOne({}, function(err, acc) {
