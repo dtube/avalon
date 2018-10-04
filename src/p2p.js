@@ -47,6 +47,7 @@ var p2p = {
             switch (message.t) {
                 case MessageType.QUERY_NODE_STATUS:
                     var d = {
+                        origin_block: originHash,
                         head_block: chain.getLatestBlock()._id,
                         owner: process.env.NODE_OWNER
                     }
@@ -88,9 +89,8 @@ var p2p = {
                             p2p.processing = false
                             if (err)
                                 console.log('Error', newBlock)
-                            else {
+                            else
                                 p2p.recovering = false
-                            }
                         })
                     }
                     break;
@@ -126,14 +126,17 @@ var p2p = {
             tmpSockets.splice(i, 1)
         }
         
+        var recovering = false
         for (let i = 0; i < shuffledSockets.length; i++) {
             if (!shuffledSockets[i].node_status) continue;
+            if (shuffledSockets[i].node_status.origin_block != originHash) continue;
             if (shuffledSockets[i].node_status.head_block>chain.getLatestBlock()._id) {
-                p2p.recovering = true
+                recovering = true
                 p2p.sendJSON(shuffledSockets[i], {t: MessageType.QUERY_BLOCK, d:chain.getLatestBlock()._id+1})
                 break;
             }
         }
+        p2p.recovering = recovering
     },
     errorHandler: (ws) => {
         var closeConnection = (ws) => {

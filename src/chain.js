@@ -44,7 +44,7 @@ chain = {
             "master",
             null,
             "0000000000000000000000000000000000000000000000000000000000000000",
-            "0000000000000000000000000000000000000000000000000000000000000001"
+            originHash
         );
     },
     prepareBlock: () => {
@@ -155,7 +155,6 @@ chain = {
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err;
             chain.recentBlocks.push(block)
-
             // if block id is mult of 20, reschedule next 20 blocks
             if (block._id%20 == 0) {
                 chain.minerSchedule(block, function(minerSchedule) {
