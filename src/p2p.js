@@ -13,12 +13,14 @@ var MessageType = {
 
 var p2p = {
     sockets: [],
+    recoveringBlocks: [],
+    recoveredBlocks: [],
     recovering: false,
     init: () => {
         var server = new WebSocket.Server({port: p2p_port});
         server.on('connection', ws => p2p.handshake(ws));
         console.log('Listening websocket p2p port on: ' + p2p_port);
-        setTimeout(function(){p2p.recoverAfterCrash()}, 1500)
+        setTimeout(function(){p2p.recover()}, 1500)
     },
     connect: (newPeers) => {
         newPeers.forEach((peer) => {
@@ -68,13 +70,33 @@ var p2p = {
                     break;
 
                 case MessageType.BLOCK:
-                    if (p2p.recovering) {
-                        chain.validateAndAddBlock(message.d, function(err, newBlock) {
-                            if (err)
-                                console.log('Error', newBlock)
-                            else
-                                p2p.recoverAfterCrash()
-                        })
+                    for (let i = 0; i < p2p.recoveringBlocks.length; i++)
+                        if (p2p.recoveringBlocks[i] == message.d._id) {
+                            p2p.recoveringBlocks.splice(i, 1)
+                            break
+                        }
+                            
+                    if (chain.getLatestBlock()._id+1 == message.d._id) {
+                        function addRecursive(block) {
+                            chain.validateAndAddBlock(block, function(err, newBlock) {
+                                if (err)
+                                    console.log('Error', newBlock)
+                                else {
+                                    delete p2p.recoveredBlocks[newBlock._id]
+                                    p2p.recover()
+                                    if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) {
+                                        setTimeout(function() {
+                                            addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
+                                        }, 1)
+                                    }
+                                }
+                                    
+                            })
+                        }
+                        addRecursive(message.d)
+                    } else {
+                        p2p.recoveredBlocks[message.d._id] = message.d
+                        p2p.recover()
                     }
                     break;
 
@@ -110,33 +132,28 @@ var p2p = {
             }
         });
     },
-    recoverAfterCrash: () => {
+    recover: () => {
         if (!p2p.sockets || p2p.sockets.length == 0) return;
-        // shuffle so it uses a random one
-        var shuffledSockets = []
-        var tmpSockets = []
-        var rand = Math.floor(Math.random() * 1000000000)
+        if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > 100) return;
+        if (!p2p.recovering) p2p.recovering = chain.getLatestBlock()._id
 
+        p2p.recovering++
+        var peersAhead = []
         for (let i = 0; i < p2p.sockets.length; i++)
-            tmpSockets.push(p2p.sockets[i])
-
-        while (tmpSockets.length > 0) {
-            var i = rand%tmpSockets.length
-            shuffledSockets.push(tmpSockets[i])
-            tmpSockets.splice(i, 1)
-        }
+            if (p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id)
+                peersAhead.push(p2p.sockets[i])
         
-        var recovering = false
-        for (let i = 0; i < shuffledSockets.length; i++) {
-            if (!shuffledSockets[i].node_status) continue;
-            if (shuffledSockets[i].node_status.origin_block != originHash) continue;
-            if (shuffledSockets[i].node_status.head_block>chain.getLatestBlock()._id) {
-                recovering = true
-                p2p.sendJSON(shuffledSockets[i], {t: MessageType.QUERY_BLOCK, d:chain.getLatestBlock()._id+1})
-                break;
-            }
+        if (peersAhead.length == 0) {
+            p2p.recovering = false
+            return
         }
-        p2p.recovering = recovering
+            
+        var champion = peersAhead[Math.floor(Math.random()*peersAhead.length)]
+        p2p.sendJSON(champion, {t: MessageType.QUERY_BLOCK, d:p2p.recovering})
+        p2p.recoveringBlocks.push(p2p.recovering)
+
+        if (p2p.recovering%2) p2p.recover()
+        
     },
     errorHandler: (ws) => {
         var closeConnection = (ws) => {

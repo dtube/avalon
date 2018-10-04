@@ -160,17 +160,21 @@ chain = {
                 chain.minerSchedule(block, function(minerSchedule) {
                     chain.schedule = minerSchedule
                     chain.minerWorker(block)
+                    output(block)
+                    cb(true)
                 })
             } else {
                 chain.minerWorker(block)
+                output(block)
+                cb(true)
             }
 
-            var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
-            if (block.missedBy)
-                output += ' missed by '+block.missedBy
-            console.log(output);
-
-            cb(true)
+            function output(block) {
+                var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
+                if (block.missedBy)
+                    output += ' missed by '+block.missedBy
+                console.log(output);
+            }
         });
     },
     isValidSignature: (user, hash, sign, cb) => {
@@ -256,14 +260,14 @@ chain = {
         } else if (newBlock.miner == previousBlock.miner) {
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - previousBlock.timestamp < 6000) {
-                console.log('block too early for backup miner')
+                console.log('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
                 cb(false); return
             } else {
                 isMinerAuthorized = true;
             }
         }
         if (!isMinerAuthorized) {
-            console.log('unauthorized miner')
+            console.log('unauthorized miner', chain.schedule)
             cb(false); return
         }
 
