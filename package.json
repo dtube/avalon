@@ -10,7 +10,7 @@
     "body-parser": "^1.15.2",
     "bs58": "^4.0.1",
     "crypto-js": "^3.1.6",
-    "express": "~4.11.1",
+    "express": "^4.16.3",
     "mongodb": "^3.1.6",
     "run-series": "^1.1.8",
     "secp256k1": "^3.5.2",
