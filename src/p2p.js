@@ -127,6 +127,7 @@ var p2p = {
         }
         
         for (let i = 0; i < shuffledSockets.length; i++) {
+            if (!shuffledSockets[i].node_status) continue;
             if (shuffledSockets[i].node_status.head_block>chain.getLatestBlock()._id) {
                 p2p.recovering = true
                 p2p.sendJSON(shuffledSockets[i], {t: MessageType.QUERY_BLOCK, d:chain.getLatestBlock()._id+1})
