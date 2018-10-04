@@ -80,6 +80,8 @@ var p2p = {
                 case MessageType.NEW_BLOCK:
                     if (!p2p.sockets[p2p.sockets.indexOf(ws)].node_status) return
                     p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = message.d._id
+                    if (message.d._id != chain.getLatestBlock()._id+1)
+                        return
                     if (!p2p.processing) {
                         p2p.processing = true
                         chain.validateAndAddBlock(message.d, function(err, newBlock) {

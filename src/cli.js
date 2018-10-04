@@ -1,12 +1,22 @@
 var command = process.argv[2]
-var CryptoJS = require("crypto-js");
+var CryptoJS = require("crypto-js")
+const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('bs58')
-const chain = require('./chain.js')
 
 switch (command) {
     case 'keypair':
-        var tx = chain.getNewKeyPair()
+        const msg = randomBytes(32)
+        let priv, pub
+        do {
+            priv = randomBytes(32)
+            pub = secp256k1.publicKeyCreate(priv)
+        } while (!secp256k1.privateKeyVerify(priv))
+    
+        var tx = {
+            pub: bs58.encode(pub),        
+            priv: bs58.encode(priv)
+        }
         break;
     case 'sign':
         // usage: npm run cli sign <privKey> <username> <raw_transaction>
