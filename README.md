@@ -55,15 +55,39 @@ Or all-in-one example:
 curl -H "Content-type:application/json" --data $(node src/cli.js sign <key> <user> '{"type":3,"data":{"receiver": "miner1", "amount":55}}') http://localhost:3001/transact
 ```
 
+#### Approve a node owner
+```
+node src/cli.js sign <key> <user> '{"type":1,"data":{"target":"miner1"}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+#### Disapprove a node owner
+```
+node src/cli.js sign <key> <user> '{"type":2,"data":{"target":"miner1"}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+#### Transfer tokens
+```
+node src/cli.js sign <key> <user> <user> '{"type":3,"data":{"receiver":"bob", "amount":420}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
 #### Add a post
 ```
-node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":4,"data":{"link":"hello-world", "pa":"", "pp":"","json":"{\"tags\":[\"steemit\",\"example\",\"tags\"]}"}}' > tmptx.json
+node src/cli.js sign <key> <user> '{"type":4,"data":{"link":"hello-world", "pa":"", "pp":"","json":{"whatever": "you want", "ok": [1,2,3]}}}' > tmptx.json
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
 
 #### Vote a post
 ```
-node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":5,"data":{"link":"hello-world", "author":"master", "vt": 100}}' > tmptx.json
+node src/cli.js sign <key> <user> '{"type":5,"data":{"link":"hello-world", "author":"master", "vt": 100}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+#### Edit your user json object
+```
+node src/cli.js sign <key> <user> '{"type":6,"data":{"json":{"profile":{"profile_image":"https://openclipart.org/image/300px/svg_to_png/215819/Linux-Avatar.png"}}}}' > tmptx.json
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
 
