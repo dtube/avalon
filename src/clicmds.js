@@ -21,19 +21,16 @@ let sign = (privKey, sender, tx) => {
 
 let cmds = {
 	approveNode: (nodeName) => {
-		// npm cli.js approveNode <privKey> <username> <node username>
 		var tx = '{"type":1,"data":{"target":"'+ nodeName +'"}}'
 		sign(privKey, sender, tx)
 	}, 
 	
 	disapproveNode: (nodeName) => {
-		// npm cli.js disapproveNode <privKey> <username> <node username>
 		var tx = '{"type":2,"data":{"target":"'+ nodeName +'"}}'
 		sign(privKey, sender, tx)
 	},
 
 	transfer: (reciever, amount) => {
-		// npm cli.js disapproveNode <privKey> <username> <reciver> <amount>
 		var tx = '{"type":3,"data":{"receiver":"'+
 			reciever+'", "amount":'+
 			parseFloat(amount)+'}}'
@@ -41,15 +38,12 @@ let cmds = {
 	},
 
 	post: (uri, content) => {
-		// npm cli.js disapproveNode <privKey> <username> <uri> <json content>
 		var tx = '{"type":4,"data":{"link":"'+
 			uri+'","json":'+content+'}}'
 		sign(privKey, sender, tx)
 	},
 
 	comment: (uri, pa, pp, content) => {
-		// npm cli.js disapproveNode <privKey> <username> \
-		// <uri> <parent author> <parent permalink> <json content>
 		var tx = '{"type":4,"data":{"link":"'+
 			uri+'", "pa":"'+
 			pa+'", "pp":"'+
