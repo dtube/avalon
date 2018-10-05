@@ -1,12 +1,14 @@
 var http_port = process.env.HTTP_PORT || 3001;
 var express = require("express");
+var cors = require('cors')
 var bodyParser = require('body-parser');
 const series = require('run-series')
 const transaction = require('./transaction.js')
 
 var http = {
     init: () => {
-        var app = express();
+        var app = express()
+        app.use(cors())
         app.use(bodyParser.json());
 
         // fetch a single block
