@@ -16,14 +16,19 @@
 curl http://localhost:3001/block/<block_num>
 ```
 
-#### Get block count
-```
-curl http://localhost:3001/count
-```
-
 #### Get a new random key pair
 ```
 curl http://localhost:3001/newKeyPair
+```
+
+#### Get new contents
+```
+curl http://localhost:3001/new
+```
+
+#### Get an account
+```
+curl http://localhost:3001/account/<name>
 ```
 
 #### Get connected peers
@@ -34,6 +39,11 @@ curl http://localhost:3001/peers
 #### Get miner schedule
 ```
 curl http://localhost:3001/schedule
+```
+
+#### Get block count
+```
+curl http://localhost:3001/count
 ```
 
 ## Transaction
