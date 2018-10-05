@@ -84,6 +84,18 @@ var http = {
             })
         })
 
+        // get account info
+        app.get('/account/:name', (req, res) => {
+            if (!req.params.name) {
+                res.sendStatus(500);
+                return
+            }
+            db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
+                if (!account) res.sendStatus(404)
+                else res.send(account)
+            })
+        })
+
         app.listen(http_port, () => logr.info('Listening http on port: ' + http_port));
     }
 }
