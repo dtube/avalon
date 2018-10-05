@@ -32,11 +32,10 @@ switch (command) {
             pub: bs58.encode(pub),        
             priv: bs58.encode(priv)
         }
-        break;
-
+		break;
+		
     case 'sign':
-		// private key, sender, transaction to send
-		sendTx(cmds.sign(process.argv[3], process.argv[4], process.argv[5]))
+		console.log(cmds.sign(process.argv[3], process.argv[4], process.argv[5]))
 		break;
 
     case 'approveNode':
@@ -61,17 +60,17 @@ switch (command) {
 
 	case 'comment':
 		// uri, parent author, parent permalink, content json
-		sendTx(cmds.post(process.argv[5], process.argv[6], process.argv[7], process.argv[8]))
+		sendTx(cmds.comment(process.argv[5], process.argv[6], process.argv[7], process.argv[8]))
 		break;
 
 	case 'vote':
 		// uri, author, weight
-		sendTx(cmds.post(process.argv[5], process.argv[6], process.argv[7]))
+		sendTx(cmds.vote(process.argv[5], process.argv[6], process.argv[7]))
 		break;
 
 	case 'profile':
 		// content
-		sendTx(cmds.post(process.argv[5]))
+		sendTx(cmds.profile(process.argv[5]))
 		break;
 
     default:

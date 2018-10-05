@@ -60,7 +60,7 @@ let cmds = {
 	},
 
 	profile: (content) => {
-		var tx = '{"type":6,"data":{"json":{"profile":{"'+content+'"}}}}'
+		var tx = '{"type":6,"data":{"json":'+content+'}}'
 		return sign(privKey, sender, tx)
 	}
 }
