@@ -98,6 +98,19 @@ var http = {
             })
         })
 
+        // get accounts info
+        app.get('/accounts/:names', (req, res) => {
+            if (!req.params.names || typeof req.params.names !== 'string') {
+                res.sendStatus(500);
+                return
+            }
+            names = req.params.names.split(',', 100)
+            db.collection('accounts').find({name: {$in: names}}).toArray(function(err, accounts) {
+                if (!accounts) res.sendStatus(404)
+                else res.send(accounts)
+            })
+        })
+
         app.listen(http_port, () => logr.info('Listening http on port: ' + http_port));
     }
 }
