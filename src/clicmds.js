@@ -16,31 +16,31 @@ let sign = (privKey, sender, tx) => {
 	// sign the transaction
 	var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), bs58.decode(privKey))
 	tx.signature = bs58.encode(signature.signature)
-	return console.log(JSON.stringify(tx))
+	return tx
 }
 
 let cmds = {
 	approveNode: (nodeName) => {
 		var tx = '{"type":1,"data":{"target":"'+ nodeName +'"}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	}, 
 	
 	disapproveNode: (nodeName) => {
 		var tx = '{"type":2,"data":{"target":"'+ nodeName +'"}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	},
 
 	transfer: (reciever, amount) => {
 		var tx = '{"type":3,"data":{"receiver":"'+
 			reciever+'", "amount":'+
 			parseFloat(amount)+'}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	},
 
 	post: (uri, content) => {
 		var tx = '{"type":4,"data":{"link":"'+
 			uri+'","json":'+content+'}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	},
 
 	comment: (uri, pa, pp, content) => {
@@ -48,7 +48,7 @@ let cmds = {
 			uri+'", "pa":"'+
 			pa+'", "pp":"'+
 			pp+'","json":'+content+'}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	},
 
 	vote: (uri, author, weight) => {
@@ -56,12 +56,12 @@ let cmds = {
 			uri+'", "author":"'+
 			author+'", "vt": '+
 			parseFloat(weight)+'}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	},
 
 	profile: (content) => {
 		var tx = '{"type":6,"data":{"json":{"profile":{"'+content+'"}}}}'
-		sign(privKey, sender, tx)
+		return sign(privKey, sender, tx)
 	}
 }
 

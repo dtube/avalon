@@ -4,6 +4,20 @@ var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('bs58')
+var fetch = require("node-fetch")
+
+function sendTx(tx) {
+	fetch('http://localhost:3001/transact', {
+		method: 'post',
+		headers: {
+		  'Accept': 'application/json, text/plain, */*',
+		  'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(tx)
+	}).then(function(res) {
+		console.log(res.statusText)
+	});
+}
 
 switch (command) {
     case 'keypair':
@@ -22,42 +36,42 @@ switch (command) {
 
     case 'sign':
 		// private key, sender, transaction to send
-		cmds.sign(process.argv[3], process.argv[4], process.argv[5])
+		sendTx(cmds.sign(process.argv[3], process.argv[4], process.argv[5]))
 		break;
 
     case 'approveNode':
 		// node user
-		cmds.approveNode(process.argv[5])
+		sendTx(cmds.approveNode(process.argv[5]))
 		break;
 
 	case 'disapproveNode':
 		// node user
-		cmds.disapproveNode(process.argv[5])
+		sendTx(cmds.disapproveNode(process.argv[5]))
 		break;
 	
 	case 'transfer':
 		// reciever, amount
-		cmds.transfer(process.argv[5], process.argv[6])
+		sendTx(cmds.transfer(process.argv[5], process.argv[6]))
 		break;
 
 	case 'post':
 		// uri, conent json
-		cmds.post(process.argv[5], process.argv[6])
+		sendTx(cmds.post(process.argv[5], process.argv[6]))
 		break;
 
 	case 'comment':
 		// uri, parent author, parent permalink, content json
-		cmds.post(process.argv[5], process.argv[6], process.argv[7], process.argv[8])
+		sendTx(cmds.post(process.argv[5], process.argv[6], process.argv[7], process.argv[8]))
 		break;
 
 	case 'vote':
 		// uri, author, weight
-		cmds.post(process.argv[5], process.argv[6], process.argv[7])
+		sendTx(cmds.post(process.argv[5], process.argv[6], process.argv[7]))
 		break;
 
 	case 'profile':
 		// uri, author, weight
-		cmds.post(process.argv[5], process.argv[6], process.argv[7])
+		sendTx(cmds.post(process.argv[5], process.argv[6], process.argv[7]))
 		break;
 
     default:
