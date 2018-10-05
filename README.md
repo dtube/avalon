@@ -1,6 +1,7 @@
 # AVALON Blockchain
 
 ## Quick start
+* Install MongoDB and run it on your machine
 * `npm install`
 * Get your own keys with `node src/cli.js keypair`
 * Save your keys
