@@ -3,3 +3,5 @@ package-lock.json
 npm-debug.log
 .idea
 keys
+logs/*
+tmptx.json
