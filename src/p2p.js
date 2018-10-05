@@ -139,7 +139,7 @@ var p2p = {
         p2p.recovering++
         var peersAhead = []
         for (let i = 0; i < p2p.sockets.length; i++)
-            if (p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id)
+            if (p2p.sockets[i].node_status && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id)
                 peersAhead.push(p2p.sockets[i])
         
         if (peersAhead.length == 0) {
@@ -155,7 +155,7 @@ var p2p = {
     },
     errorHandler: (ws) => {
         var closeConnection = (ws) => {
-            logr.warn('a peer disconnected')
+            logr.warn('a \peer disconnected')
             p2p.sockets.splice(p2p.sockets.indexOf(ws), 1);
         };
         ws.on('close', () => closeConnection(ws));
