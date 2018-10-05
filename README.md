@@ -36,23 +36,23 @@ curl http://localhost:3001/peers
 curl http://localhost:3001/schedule
 ```
 
-## POST API
+## Transaction
 
-#### Add a transaction to the pool
-First create a valid transaction from cli and put it into a json file
+To create a transaction with a valid hash and signature, you need to use the cli tool like so:
 ```
 node src/cli.js sign <priv_key> <user> <tx> > tmptx.json
 ```
 
-Then send the json to the node
+Then, you can send the forged transaction to any node (for example your own in this example)
 
 ```
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
+Then the transaction should be included in the next block :)
 
-Or all-in-one example:
+If you want to do it with a one liner:
 ```
-curl -H "Content-type:application/json" --data $(node src/cli.js sign <key> <user> '{"type":3,"data":{"receiver": "miner1", "amount":55}}') http://localhost:3001/transact
+curl -H "Content-type:application/json" --data $(node src/cli.js sign <key> <user> <tx>) http://localhost:3001/transact
 ```
 
 #### Approve a node owner
