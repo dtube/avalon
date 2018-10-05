@@ -46,7 +46,7 @@ curl http://localhost:3001/schedule
 curl http://localhost:3001/count
 ```
 
-## Transaction
+## Transacting
 
 To create a transaction with a valid hash and signature, you need to use the cli tool like so:
 ```
@@ -101,6 +101,8 @@ node src/cli.js sign <key> <user> '{"type":6,"data":{"json":{"profile":{"profile
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
 
+## Other POSTs
+
 #### Try to mine a block (will fail if you cant)
 ```
 curl  http://localhost:3001/mineBlock
@@ -118,5 +120,5 @@ db.accounts.findOne({name:'master'})
 db.blocks.findOne({_id: 0})
 ```
 
-## Reset the chain
+## Resetting and replaying the chain
 Shut everything down, then `db.dropDatabase()` in mongo, and restart
