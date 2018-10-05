@@ -6,7 +6,7 @@ var TransactionType = {
     TRANSFER: 3,
     COMMENT: 4,
     VOTE: 5,
-    EDIT_USER_JSON: 6,
+    USER_JSON: 6,
     RESHARE: 7, // not sure
 };
 
@@ -283,6 +283,24 @@ transaction = {
                     cb(true)
                     break;
 
+                case TransactionType.USER_JSON:
+                    // handle arbitrary json input
+                    if (!tx.data.json || typeof tx.data.json !== "string" || tx.data.json.length > 250000) {
+                        logr.debug('invalid tx data.json')
+                        cb(false); return
+                    }
+                    try {
+                        var parsedJson = JSON.parse(tx.data.json);
+                    } catch(e) {
+                        logr.debug('unparsable tx data.json')
+                        cb(false); return
+                    }
+                    if (!parsedJson || typeof parsedJson !== "object") {
+                        logr.debug('invalid tx data.json parsed')
+                        cb(false); return
+                    }
+                    break;
+
                 default:
                     cb(false)
                     break;
@@ -461,6 +479,16 @@ transaction = {
                     })
                     break;
     
+                case TransactionType.USER_JSON:
+                    db.collection('accounts').updateOne({
+                        name: tx.sender
+                    },{ $set: {
+                        json: JSON.parse(tx.data.json)
+                    }}).then(function(){
+                        cb(true)
+                    })
+                    break;
+
                 default:
                     cb(false)
                     break;
