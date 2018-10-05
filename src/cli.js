@@ -1,3 +1,4 @@
+var cmds = require('./clicmds.js');
 var command = process.argv[2]
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
@@ -18,25 +19,48 @@ switch (command) {
             priv: bs58.encode(priv)
         }
         break;
+
     case 'sign':
-        // usage: npm run cli sign <privKey> <username> <raw_transaction>
-        // will return a new transaction with a hash and a signature
-        var privKey = process.argv[3]
-        var sender = process.argv[4]
-        var tx = process.argv[5]
-        tx = JSON.parse(tx)
-        tx.sender = sender
-        // add timestamp to seed the hash (avoid transactions reuse)
-        tx.ts = new Date().getTime()
-        // hash the transaction
-        tx.hash = CryptoJS.SHA256(JSON.stringify(tx)).toString()
-        // sign the transaction
-        var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), bs58.decode(privKey))
-        tx.signature = bs58.encode(signature.signature)
-        
-        break;
+		// private key, sender, transaction to send
+		cmds.sign(process.argv[3], process.argv[4], process.argv[5])
+		break;
+
+    case 'approveNode':
+		// node user
+		cmds.approveNode(process.argv[5])
+		break;
+
+	case 'disapproveNode':
+		// node user
+		cmds.disapproveNode(process.argv[5])
+		break;
+	
+	case 'transfer':
+		// reciever, amount
+		cmds.transfer(process.argv[5], process.argv[6])
+		break;
+
+	case 'post':
+		// uri, conent json
+		cmds.post(process.argv[5], process.argv[6])
+		break;
+
+	case 'comment':
+		// uri, parent author, parent permalink, content json
+		cmds.post(process.argv[5], process.argv[6], process.argv[7], process.argv[8])
+		break;
+
+	case 'vote':
+		// uri, author, weight
+		cmds.post(process.argv[5], process.argv[6], process.argv[7])
+		break;
+
+	case 'profile':
+		// uri, author, weight
+		cmds.post(process.argv[5], process.argv[6], process.argv[7])
+		break;
 
     default:
         break;
 }
-console.log(JSON.stringify(tx))
+
