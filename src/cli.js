@@ -70,8 +70,8 @@ switch (command) {
 		break;
 
 	case 'profile':
-		// uri, author, weight
-		sendTx(cmds.post(process.argv[5], process.argv[6], process.argv[7]))
+		// content
+		sendTx(cmds.post(process.argv[5]))
 		break;
 
     default:
