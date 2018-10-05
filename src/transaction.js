@@ -528,7 +528,7 @@ transaction = {
                     function() {
                         db.collection('accounts').updateOne(
                             {name: tx.data.target},
-                            {$push: {followers: tx.data.target}},
+                            {$push: {followers: tx.sender}},
                         function() {
                             cb(true)
                         })
@@ -542,7 +542,7 @@ transaction = {
                     function() {
                         db.collection('accounts').updateOne(
                             {name: tx.data.target},
-                            {$pull: {followers: tx.data.target}},
+                            {$pull: {followers: tx.sender}},
                         function() {
                             cb(true)
                         })
