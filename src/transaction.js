@@ -7,7 +7,9 @@ var TransactionType = {
     COMMENT: 4,
     VOTE: 5,
     USER_JSON: 6,
-    RESHARE: 7, // not sure
+    FOLLOW: 7,
+    UNFOLLOW: 8,
+    RESHARE: 9, // not sure
 };
 
 transaction = {
@@ -283,6 +285,54 @@ transaction = {
                     cb(true)
                     break;
 
+                case TransactionType.FOLLOW:
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                        logr.debug('invalid tx data.target')
+                        cb(false); return
+                    }
+
+                    db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                        if (err) throw err;
+                        if (!acc.follows) acc.follows = []
+                        if (acc.follows.indexOf(tx.data.target) > -1) {
+                            cb(false); return
+                        }
+                        if (acc.follows.length >= 2000)
+                            cb(false)
+                        else {
+                            db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
+                                if (!account) {
+                                    cb(false)
+                                } else {
+                                    cb(true)
+                                }
+                            })
+                        }
+                    })
+                    break;
+
+                case TransactionType.UNFOLLOW:
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                        logr.debug('invalid tx data.target')
+                        cb(false); return
+                    }
+
+                    db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                        if (err) throw err;
+                        if (!acc.follows) acc.follows = []
+                        if (acc.follows.indexOf(tx.data.target) == -1) {
+                            cb(false); return
+                        }
+                        db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
+                            if (!account) {
+                                cb(false)
+                            } else {
+                                cb(true)
+                            }
+                        })
+                    })
+                    break;
+
                 default:
                     cb(false)
                     break;
@@ -468,6 +518,34 @@ transaction = {
                         json: tx.data.json
                     }}).then(function(){
                         cb(true)
+                    })
+                    break;
+
+                case TransactionType.FOLLOW:
+                    db.collection('accounts').updateOne(
+                        {name: tx.sender},
+                        {$push: {follows: tx.data.target}},
+                    function() {
+                        db.collection('accounts').updateOne(
+                            {name: tx.data.target},
+                            {$push: {followers: tx.data.target}},
+                        function() {
+                            cb(true)
+                        })
+                    })
+                    break;
+
+                case TransactionType.UNFOLLOW:
+                    db.collection('accounts').updateOne(
+                        {name: tx.sender},
+                        {$pull: {follows: tx.data.target}},
+                    function() {
+                        db.collection('accounts').updateOne(
+                            {name: tx.data.target},
+                            {$pull: {followers: tx.data.target}},
+                        function() {
+                            cb(true)
+                        })
                     })
                     break;
 
