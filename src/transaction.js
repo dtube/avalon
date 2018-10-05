@@ -144,6 +144,7 @@ transaction = {
                     })
                     break;
                 
+
                 case TransactionType.APPROVE_NODE_OWNER:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
                         logr.debug('invalid tx data.target')
@@ -237,18 +238,8 @@ transaction = {
                         cb(false); return
                     }
                     // handle arbitrary json input
-                    if (!tx.data.json || typeof tx.data.json !== "string" || tx.data.json.length > 250000) {
+                    if (!tx.data.json || typeof tx.data.json !== "object" || JSON.stringify(tx.data.json).length > 250000) {
                         logr.debug('invalid tx data.json')
-                        cb(false); return
-                    }
-                    try {
-                        var parsedJson = JSON.parse(tx.data.json);
-                    } catch(e) {
-                        logr.debug('unparsable tx data.json')
-                        cb(false); return
-                    }
-                    if (!parsedJson || typeof parsedJson !== "object") {
-                        logr.debug('invalid tx data.json parsed')
                         cb(false); return
                     }
 
@@ -285,20 +276,11 @@ transaction = {
 
                 case TransactionType.USER_JSON:
                     // handle arbitrary json input
-                    if (!tx.data.json || typeof tx.data.json !== "string" || tx.data.json.length > 250000) {
+                    if (!tx.data.json || typeof tx.data.json !== "object" || JSON.stringify(tx.data.json).length > 250000) {
                         logr.debug('invalid tx data.json')
                         cb(false); return
                     }
-                    try {
-                        var parsedJson = JSON.parse(tx.data.json);
-                    } catch(e) {
-                        logr.debug('unparsable tx data.json')
-                        cb(false); return
-                    }
-                    if (!parsedJson || typeof parsedJson !== "object") {
-                        logr.debug('invalid tx data.json parsed')
-                        cb(false); return
-                    }
+                    cb(true)
                     break;
 
                 default:
@@ -453,7 +435,7 @@ transaction = {
                         link: tx.data.link,
                         pa: tx.data.pa,
                         pp: tx.data.pp,
-                        json: JSON.parse(tx.data.json),
+                        json: tx.data.json,
                     }, {
                         upsert: true
                     }).then(function(){
@@ -483,7 +465,7 @@ transaction = {
                     db.collection('accounts').updateOne({
                         name: tx.sender
                     },{ $set: {
-                        json: JSON.parse(tx.data.json)
+                        json: tx.data.json
                     }}).then(function(){
                         cb(true)
                     })

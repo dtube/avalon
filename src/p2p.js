@@ -139,7 +139,9 @@ var p2p = {
         p2p.recovering++
         var peersAhead = []
         for (let i = 0; i < p2p.sockets.length; i++)
-            if (p2p.sockets[i].node_status && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id)
+            if (p2p.sockets[i].node_status 
+            && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id
+            && p2p.sockets[i].node_status.origin_block == originHash)
                 peersAhead.push(p2p.sockets[i])
         
         if (peersAhead.length == 0) {
