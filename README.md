@@ -16,14 +16,19 @@
 curl http://localhost:3001/block/<block_num>
 ```
 
-#### Get block count
-```
-curl http://localhost:3001/count
-```
-
 #### Get a new random key pair
 ```
 curl http://localhost:3001/newKeyPair
+```
+
+#### Get new contents
+```
+curl http://localhost:3001/new
+```
+
+#### Get an account
+```
+curl http://localhost:3001/account/<name>
 ```
 
 #### Get connected peers
@@ -36,36 +41,67 @@ curl http://localhost:3001/peers
 curl http://localhost:3001/schedule
 ```
 
-## POST API
+#### Get block count
+```
+curl http://localhost:3001/count
+```
 
-#### Add a transaction to the pool
-First create a valid transaction from cli and put it into a json file
+## Transacting
+
+To create a transaction with a valid hash and signature, you need to use the cli tool like so:
 ```
 node src/cli.js sign <priv_key> <user> <tx> > tmptx.json
 ```
 
-Then send the json to the node
+Then, you can send the forged transaction to any node (for example your own in this example)
 
 ```
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
+Then the transaction should be included in the next block :)
 
-Or all-in-one example:
+If you want to do it with a one liner:
 ```
-curl -H "Content-type:application/json" --data $(node src/cli.js sign <key> <user> '{"type":3,"data":{"receiver": "miner1", "amount":55}}') http://localhost:3001/transact
+curl -H "Content-type:application/json" --data $(node src/cli.js sign <key> <user> <tx>) http://localhost:3001/transact
+```
+
+#### Approve a node owner
+```
+node src/cli.js sign <key> <user> '{"type":1,"data":{"target":"miner1"}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+#### Disapprove a node owner
+```
+node src/cli.js sign <key> <user> '{"type":2,"data":{"target":"miner1"}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+#### Transfer tokens
+```
+node src/cli.js sign <key> <user> <user> '{"type":3,"data":{"receiver":"bob", "amount":420}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
 
 #### Add a post
 ```
-node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":4,"data":{"link":"hello-world", "pa":"", "pp":"","json":"{\"tags\":[\"steemit\",\"example\",\"tags\"]}"}}' > tmptx.json
+node src/cli.js sign <key> <user> '{"type":4,"data":{"link":"hello-world", "pa":"", "pp":"","json":{"whatever": "you want", "ok": [1,2,3]}}}' > tmptx.json
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
 
 #### Vote a post
 ```
-node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":5,"data":{"link":"hello-world", "author":"master", "vt": 100}}' > tmptx.json
+node src/cli.js sign <key> <user> '{"type":5,"data":{"link":"hello-world", "author":"master", "vt": 100}}' > tmptx.json
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
+
+#### Edit your user json object
+```
+node src/cli.js sign <key> <user> '{"type":6,"data":{"json":{"profile":{"profile_image":"https://openclipart.org/image/300px/svg_to_png/215819/Linux-Avatar.png"}}}}' > tmptx.json
+curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
+```
+
+## Other POSTs
 
 #### Try to mine a block (will fail if you cant)
 ```
@@ -84,5 +120,5 @@ db.accounts.findOne({name:'master'})
 db.blocks.findOne({_id: 0})
 ```
 
-## Reset the chain
+## Resetting and replaying the chain
 Shut everything down, then `db.dropDatabase()` in mongo, and restart
