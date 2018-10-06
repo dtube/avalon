@@ -20,6 +20,9 @@ let sign = (privKey, sender, tx) => {
 }
 
 let cmds = {
+	sign: (priv, sender, tx) => {
+		return sign(priv, sender, tx)
+	},
 	approveNode: (nodeName) => {
 		var tx = '{"type":1,"data":{"target":"'+ nodeName +'"}}'
 		return sign(privKey, sender, tx)
