@@ -50,54 +50,54 @@ curl http://localhost:3001/count
 Once you have an account and balance, your account will start generating bandwidth and vote tokens which you can consume by transacting.
 
 Necessary for all transactions:
-*key*: your private key
-*user*: your username
+* *key*: your private key
+* *user*: your username
 
 #### Approve a node owner
-*target*: the node owner to approve
+* *target*: the node owner to approve
 ```
 node src/cli.js approveNode <key> <user> <target>
 ```
 
 #### Disapprove a node owner
-*target*: the node owner to approve
+* *target*: the node owner to approve
 ```
 node src/cli.js disapproveNode <key> <user> <target>
 ```
 
 #### Transfer tokens
-*receiver*: username of the receiver of the transfer
-*amount*: number of tokens to transfer to the receiver
+* *receiver*: username of the receiver of the transfer
+* *amount*: number of tokens to transfer to the receiver
 ```
 node src/cli.js transfer <key> <user> <receiver> <amount>
 ```
 
 #### Add a post
-*link*: a short string to be used as the index of the content
-*json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
+* *link*: a short string to be used as the index of the content
+* *json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
 ```
 node src/cli.js post <key> <user> <link> <json>
 ```
 
 #### Comment on a post
-*link*: a short string to be used as the index of the content
-*parent_author*: the username of the author of the parent post
-*parent_link*: the link of the parent post
-*json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
+* *link*: a short string to be used as the index of the content
+* *parent_author*: the username of the author of the parent post
+* *parent_link*: the link of the parent post
+* *json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
 ```
 node src/cli.js comment <key> <user> <link> <parent_author> <parent_link> <json>
 ```
 
 #### Vote a post
-*link*: the link of the post to vote on
-*author*: the username of the author to vote on
-*weight*: the number of vote tokens to spend on this vote
+* *link*: the link of the post to vote on
+* *author*: the username of the author to vote on
+* *weight*: the number of vote tokens to spend on this vote
 ```
 node src/cli.js vote <key> <user> <link> <author> <weight>
 ```
 
 #### Edit your user json object
-*json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
+* *json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
 ```
 node src/cli.js profile <key> <user> <json>
 ```
