@@ -74,7 +74,7 @@ node src/cli.js transfer <key> <user> <receiver> <amount>
 
 #### Add a post
 * *link*: a short string to be used as the index of the content
-* *json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
+* *json*: arbitrary json input. example: `{"string":"aye", array:[1,2,3]}`
 ```
 node src/cli.js post <key> <user> <link> <json>
 ```
@@ -83,7 +83,7 @@ node src/cli.js post <key> <user> <link> <json>
 * *link*: a short string to be used as the index of the content
 * *parent_author*: the username of the author of the parent post
 * *parent_link*: the link of the parent post
-* *json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
+* *json*: arbitrary json input. example: `{"string":"aye", array:[1,2,3]}`
 ```
 node src/cli.js comment <key> <user> <link> <parent_author> <parent_link> <json>
 ```
@@ -97,7 +97,7 @@ node src/cli.js vote <key> <user> <link> <author> <weight>
 ```
 
 #### Edit your user json object
-* *json*: arbitrary json input. example: '{"string":"aye", array:[1,2,3]}'
+* *json*: arbitrary json input. example: `{"string":"aye", array:[1,2,3]}`
 ```
 node src/cli.js profile <key> <user> <json>
 ```
