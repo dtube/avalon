@@ -7,7 +7,8 @@ const bs58 = require('bs58')
 var fetch = require("node-fetch")
 
 function sendTx(tx) {
-	fetch('http://localhost:3001/transact', {
+	var port = process.env.HTTP_PORT || 3001
+	fetch('http://localhost:'+port+'/transact', {
 		method: 'post',
 		headers: {
 		  'Accept': 'application/json, text/plain, */*',
