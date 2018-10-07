@@ -29,10 +29,10 @@ switch (command) {
             pub = secp256k1.publicKeyCreate(priv)
         } while (!secp256k1.privateKeyVerify(priv))
     
-        var tx = {
+        console.log({
             pub: bs58.encode(pub),        
             priv: bs58.encode(priv)
-        }
+        })
 		break;
 		
     case 'sign':
