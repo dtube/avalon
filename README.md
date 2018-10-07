@@ -108,7 +108,7 @@ node src/cli.js profile <key> <user> <json>
 node src/cli.js follow <key> <user> <target>
 ```
 
-#### Edit your user json object
+#### Unfollow a user
 * *target*: the user to unfollow
 ```
 node src/cli.js unfollow <key> <user> <target>
