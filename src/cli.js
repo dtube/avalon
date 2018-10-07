@@ -74,6 +74,16 @@ switch (command) {
 		sendTx(cmds.profile(process.argv[5]))
 		break;
 
+	case 'follow':
+		// username
+		sendTx(cmds.follow(process.argv[5]))
+		break;
+
+	case 'unfollow':
+		// username
+		sendTx(cmds.unfollow(process.argv[5]))
+		break;
+
     default:
         break;
 }

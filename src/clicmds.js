@@ -61,9 +61,19 @@ let cmds = {
 			parseFloat(weight)+'}}'
 		return sign(privKey, sender, tx)
 	},
-
+	
 	profile: (content) => {
 		var tx = '{"type":6,"data":{"json":'+content+'}}'
+		return sign(privKey, sender, tx)
+	},
+	
+	follow: (username) => {
+		var tx = '{"type":7,"data":{"target":"'+username+'"}}'
+		return sign(privKey, sender, tx)
+	},
+	
+	unfollow: (username) => {
+		var tx = '{"type":8,"data":{"target":"'+username+'"}}'
 		return sign(privKey, sender, tx)
 	}
 }
