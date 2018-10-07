@@ -154,16 +154,17 @@ chain = {
         // add the block in our own db
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err;
-            chain.recentBlocks.push(block)
             // if block id is mult of 20, reschedule next 20 blocks
             if (block._id%20 == 0) {
                 chain.minerSchedule(block, function(minerSchedule) {
                     chain.schedule = minerSchedule
+                    chain.recentBlocks.push(block)
                     chain.minerWorker(block)
                     output(block)
                     cb(true)
                 })
             } else {
+                chain.recentBlocks.push(block)
                 chain.minerWorker(block)
                 output(block)
                 cb(true)
