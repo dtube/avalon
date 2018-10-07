@@ -32,6 +32,7 @@ var p2p = {
         });
     },
     handshake: (ws) => {
+        logr.debug('Handshaking new peer', ws.url || ws._socket.remoteAddress)
         p2p.sockets.push(ws);
         p2p.messageHandler(ws);
         p2p.errorHandler(ws);
@@ -157,8 +158,8 @@ var p2p = {
     },
     errorHandler: (ws) => {
         var closeConnection = (ws) => {
-            logr.warn('a \peer disconnected')
             p2p.sockets.splice(p2p.sockets.indexOf(ws), 1);
+            logr.debug('a peer disconnected, '+p2p.sockets.length+' peers left')
         };
         ws.on('close', () => closeConnection(ws));
         ws.on('error', () => closeConnection(ws));
