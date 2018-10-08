@@ -61,7 +61,7 @@ transaction = {
             cb(false); return
         }
         // checking required variables one by one
-        if (typeof tx.type !== "number") {
+        if (typeof tx.type !== "number" || tx.type < 0 || tx.type > Number.MAX_SAFE_INTEGER) {
             logr.debug('invalid tx type')
             cb(false); return
         }
@@ -73,7 +73,7 @@ transaction = {
             logr.debug('invalid tx sender')
             cb(false); return
         }
-        if (!tx.ts || typeof tx.ts !== "number") {
+        if (!tx.ts || typeof tx.ts !== "number" || tx.ts < 0 || tx.ts > Number.MAX_SAFE_INTEGER) {
             logr.debug('invalid tx ts')
             cb(false); return
         }
@@ -200,7 +200,7 @@ transaction = {
                         logr.debug('invalid tx data.receiver')
                         cb(false); return
                     }
-                    if (!tx.data.amount || typeof tx.data.amount !== "number" || tx.data.amount < 1) {
+                    if (!tx.data.amount || typeof tx.data.amount !== "number" || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
                         logr.debug('invalid tx data.amount')
                         cb(false); return
                     }
@@ -286,7 +286,7 @@ transaction = {
                         logr.debug('invalid tx data.link')
                         cb(false); return
                     }
-                    if (!tx.data.vt || typeof tx.data.vt !== "number") {
+                    if (!tx.data.vt || typeof tx.data.vt !== "number" || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
                         logr.debug('invalid tx data.vt')
                         cb(false); return
                     }

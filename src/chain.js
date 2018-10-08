@@ -268,7 +268,7 @@ chain = {
             }
         }
         if (!isMinerAuthorized) {
-            logr.debug('unauthorized miner', chain.schedule)
+            logr.debug('unauthorized miner')
             cb(false); return
         }
 

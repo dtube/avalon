@@ -37,6 +37,7 @@ var http = {
 
         // this suggests the node to produce a block and submit it
         app.get('/mineBlock', (req, res) => {
+            delete p2p.recovering
             res.sendStatus(200)
             chain.mineBlock(function(error, finalBlock) {
                 if (error)
@@ -114,7 +115,6 @@ var http = {
                                     pa: posts[i].author,
                                     pp: posts[i].link
                                 }).toArray(function(err, comments) {
-                                    console.log(comments)
                                     for (let y = 0; y < comments.length; y++)
                                         post.comments[comments[y].author+'/'+comments[y].link] = comments[y]
                                     fillComments(comments, function(err, comments) {
