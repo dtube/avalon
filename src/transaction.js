@@ -244,7 +244,6 @@ transaction = {
                         logr.debug('invalid tx data.json')
                         cb(false); return
                     }
-
                     // commenting costs 1 vote token as a forced self-upvote
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < 1) {
@@ -252,7 +251,30 @@ transaction = {
                         cb(false); return
                     }
 
-                    cb(true)
+                    if (tx.data.pa && tx.data.pp) {
+                        // its a comment of another comment
+                        db.collection('contents').findOne({author: tx.data.pa, link: tx.data.pp}, function(err, content) {
+                            if (!content) {
+                                logr.debug('new comment tried to reference a non existing comment')
+                                cb(false); return
+                            }
+                            db.collection('contents').findOne({author: tx.sender, link: tx.data.link}, function(err, content) {
+                                if (content) {
+                                    // user is editing an existing comment
+                                    if (content.pa != tx.data.pa || content.pp != tx.data.pp) {
+                                        logr.debug('users tried to change the pa and/or pp of a comment')
+                                        cb(false); return
+                                    }
+                                } else {
+                                    // it is a new comment
+                                    cb(true)
+                                }
+                            })
+                        })
+                    } else {
+                        cb(true)
+                    }
+
                     break;
 
                 case TransactionType.VOTE:
@@ -489,6 +511,12 @@ transaction = {
                     }, {
                         upsert: true
                     }).then(function(){
+                        db.collection('contents').updateOne({
+                            author: tx.data.pa,
+                            link: tx.data.pp
+                        }, { $addToSet: {
+                            child: [tx.sender, tx.data.link]
+                        }})
                         cb(true)
                     })
                     break;

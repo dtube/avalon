@@ -81,8 +81,59 @@ var http = {
 
         // get new contents
         app.get('/new', (req, res) => {
-            db.collection('contents').find({}, {sort: {_id: -1}}).toArray(function(err, contents) {
+            db.collection('contents').find({pa: null}, {sort: {_id: -1}}).toArray(function(err, contents) {
                 res.send(contents)
+            })
+        })
+
+        // get new contents
+        app.get('/content/:author/:link', (req, res) => {
+            if (!req.params.author || typeof req.params.link !== 'string') {
+                res.sendStatus(500);
+                return
+            }
+            db.collection('contents').findOne({
+                author: req.params.author,
+                link: req.params.link
+            }, function(err, post) {
+                if (!post.child || post.child.length == 0) {
+                    res.send(post)
+                } else {
+                    var tmpPost = post
+                    post.comments = {}
+                    //post.comments[post.author+'/'+post.link] = tmpPost
+                    function fillComments(posts, cb) {
+                        if (!posts || posts.length == 0) {
+                            cb(null, posts)
+                            return
+                        }
+                        var executions = []
+                        for (let i = 0; i < posts.length; i++) {
+                            executions.push(function(callback) {
+                                db.collection('contents').find({
+                                    pa: posts[i].author,
+                                    pp: posts[i].link
+                                }).toArray(function(err, comments) {
+                                    console.log(comments)
+                                    for (let y = 0; y < comments.length; y++)
+                                        post.comments[comments[y].author+'/'+comments[y].link] = comments[y]
+                                    fillComments(comments, function(err, comments) {
+                                        callback(null, true)
+                                    })
+                                })
+                                i++
+                            })
+                        }
+                        var i = 0
+                        series(executions, function(err, results) {
+                            if (err) throw err;
+                            cb(null, results)
+                        })
+                    }
+                    fillComments([post], function(err, results) {
+                        res.send(post)
+                    })
+                }
             })
         })
 
