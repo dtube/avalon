@@ -386,7 +386,7 @@ transaction = {
                             if (err) throw err;
                             if (!acc.approves) acc.approves = []
                             var node_appr = Math.floor(acc.balance/acc.approves.length)
-                            var node_appr_before = Math.floor(acc.balance/(acc.approves.length-1))
+                            var node_appr_before = (acc.approves.length == 1 ? 0 : Math.floor(acc.balance/(acc.approves.length-1)))
                             var node_owners = []
                             for (let i = 0; i < acc.approves.length; i++)
                                 if (acc.approves[i] != tx.data.target)
@@ -414,7 +414,7 @@ transaction = {
                         db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                             if (err) throw err;
                             if (!acc.approves) acc.approves = []
-                            var node_appr = Math.floor(acc.balance/acc.approves.length)
+                            var node_appr = (acc.approves.length == 0 ? 0 : Math.floor(acc.balance/acc.approves.length))
                             var node_appr_before = Math.floor(acc.balance/(acc.approves.length+1))
                             var node_owners = []
                             for (let i = 0; i < acc.approves.length; i++)
@@ -426,7 +426,7 @@ transaction = {
                                 {$inc: {node_appr: node_appr-node_appr_before}}, function() {
                                 db.collection('accounts').updateOne(
                                     {name: tx.data.target},
-                                    {$inc: {node_appr: -node_appr}}, function() {
+                                    {$inc: {node_appr: -node_appr_before}}, function() {
                                         cb(true)
                                     }
                                 )
