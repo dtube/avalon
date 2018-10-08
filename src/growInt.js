@@ -44,6 +44,5 @@ module.exports = class GrowInt {
             t: newTime
         }
     }
-    
 }
 

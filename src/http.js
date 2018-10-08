@@ -97,43 +97,47 @@ var http = {
                 author: req.params.author,
                 link: req.params.link
             }, function(err, post) {
+                if (!post) {
+                    res.sendStatus(404)
+                    return
+                }
                 if (!post.child || post.child.length == 0) {
                     res.send(post)
-                } else {
-                    var tmpPost = post
-                    post.comments = {}
-                    //post.comments[post.author+'/'+post.link] = tmpPost
-                    function fillComments(posts, cb) {
-                        if (!posts || posts.length == 0) {
-                            cb(null, posts)
-                            return
-                        }
-                        var executions = []
-                        for (let i = 0; i < posts.length; i++) {
-                            executions.push(function(callback) {
-                                db.collection('contents').find({
-                                    pa: posts[i].author,
-                                    pp: posts[i].link
-                                }).toArray(function(err, comments) {
-                                    for (let y = 0; y < comments.length; y++)
-                                        post.comments[comments[y].author+'/'+comments[y].link] = comments[y]
-                                    fillComments(comments, function(err, comments) {
-                                        callback(null, true)
-                                    })
+                    return
+                }
+                var tmpPost = post
+                post.comments = {}
+                //post.comments[post.author+'/'+post.link] = tmpPost
+                function fillComments(posts, cb) {
+                    if (!posts || posts.length == 0) {
+                        cb(null, posts)
+                        return
+                    }
+                    var executions = []
+                    for (let i = 0; i < posts.length; i++) {
+                        executions.push(function(callback) {
+                            db.collection('contents').find({
+                                pa: posts[i].author,
+                                pp: posts[i].link
+                            }).toArray(function(err, comments) {
+                                for (let y = 0; y < comments.length; y++)
+                                    post.comments[comments[y].author+'/'+comments[y].link] = comments[y]
+                                fillComments(comments, function(err, comments) {
+                                    callback(null, true)
                                 })
-                                i++
                             })
-                        }
-                        var i = 0
-                        series(executions, function(err, results) {
-                            if (err) throw err;
-                            cb(null, results)
+                            i++
                         })
                     }
-                    fillComments([post], function(err, results) {
-                        res.send(post)
+                    var i = 0
+                    series(executions, function(err, results) {
+                        if (err) throw err;
+                        cb(null, results)
                     })
                 }
+                fillComments([post], function(err, results) {
+                    res.send(post)
+                })
             })
         })
 
