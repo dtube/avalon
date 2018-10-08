@@ -23,6 +23,12 @@ let cmds = {
 	sign: (priv, sender, tx) => {
 		return sign(priv, sender, tx)
 	},
+
+	createAccount: (pub, name) => {
+		var tx = '{"type":0,"data":{"pub":"'+pub+'","name":"'+name+'"}}'
+		return sign(privKey, sender, tx)
+	}, 
+
 	approveNode: (nodeName) => {
 		var tx = '{"type":1,"data":{"target":"'+ nodeName +'"}}'
 		return sign(privKey, sender, tx)

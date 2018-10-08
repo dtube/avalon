@@ -39,6 +39,10 @@ switch (command) {
 		console.log(cmds.sign(process.argv[3], process.argv[4], process.argv[5]))
 		break;
 
+	case 'createAccount':
+		sendTx(cmds.createAccount(process.argv[5], process.argv[6]))
+		break;
+
     case 'approveNode':
 		// node user
 		sendTx(cmds.approveNode(process.argv[5]))
