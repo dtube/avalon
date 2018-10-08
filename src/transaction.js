@@ -291,7 +291,7 @@ transaction = {
                         cb(false); return
                     }
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
-                    if (vt.v < tx.data.vt) {
+                    if (vt.v < Math.abs(tx.data.vt)) {
                         logr.debug('invalid tx not enough vt')
                         cb(false); return
                     }
