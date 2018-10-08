@@ -102,6 +102,18 @@ node src/cli.js vote <key> <user> <link> <author> <weight>
 node src/cli.js profile <key> <user> <json>
 ```
 
+#### Follow a user
+* *target*: the user to follow
+```
+node src/cli.js follow <key> <user> <target>
+```
+
+#### Unfollow a user
+* *target*: the user to unfollow
+```
+node src/cli.js unfollow <key> <user> <target>
+```
+
 #### Signing a raw transaction
 
 To create a transaction and export it to a file, you can use the `sign` CLI tool
