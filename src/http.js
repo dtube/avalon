@@ -1,7 +1,9 @@
 var http_port = process.env.HTTP_PORT || 3001;
-var express = require("express");
+var express = require("express")
 var cors = require('cors')
-var bodyParser = require('body-parser');
+var bodyParser = require('body-parser')
+var decay = require('decay')
+var hotScore = decay.redditHot();
 const series = require('run-series')
 const transaction = require('./transaction.js')
 
@@ -79,6 +81,31 @@ var http = {
         app.get('/schedule', (req, res) => {
             res.send(chain.schedule);
         });
+
+        // get hot
+        app.get('/hot', (req, res) => {
+            db.collection('contents').find({pa: null}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                for (let i = 0; i < contents.length; i++) {
+                    contents[i].score = 0
+                    contents[i].ups = 0
+                    contents[i].downs = 0
+                    if (!contents[i].votes) {
+                        continue
+                    }
+                    for (let y = 0; y < contents[i].votes.length; y++) {
+                        if (contents[i].votes[y].vt > 0)
+                            contents[i].ups += contents[i].votes[y].vt
+                        if (contents[i].votes[y].vt < 0)
+                            contents[i].downs -= contents[i].votes[y].vt
+                    }
+                    contents[i].score = hotScore(contents[i].ups, contents[i].downs, contents[i]._id.getTimestamp())
+                }
+                contents = contents.sort(function(a,b) {
+                    return b.score - a.score
+                })
+                res.send(contents)
+            })
+        })
 
         // get new contents
         app.get('/new', (req, res) => {
