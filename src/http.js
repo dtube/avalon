@@ -114,6 +114,14 @@ var http = {
             })
         })
 
+        // get blog of user
+        app.get('/blog/:author', (req, res) => {
+            var author = req.params.author
+            db.collection('contents').find({pa: null, author: author}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                res.send(contents)
+            })
+        })
+
         // get new contents
         app.get('/content/:author/:link', (req, res) => {
             if (!req.params.author || typeof req.params.link !== 'string') {
