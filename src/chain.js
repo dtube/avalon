@@ -331,6 +331,11 @@ chain = {
         var rand = parseInt("0x"+hash.substr(hash.length-6))
         logr.info('Generating schedule... NRNG: ' + rand)
         chain.generateTop20Miner(function(miners) {
+            miners = miners.sort(function(a,b) {
+                if(a.name < b.name) return -1;
+                if(a.name > b.name) return 1;
+                return 0;
+            })
             var shuffledMiners = []
             while (miners.length > 0) {
                 var i = rand%miners.length
