@@ -19,6 +19,7 @@ var p2p = {
     discoveryWorker: () => {
         chain.generateTop20Miner(function(miners) {
             for (let i = 0; i < miners.length; i++) {
+                if (miners[i].name == process.env.NODE_OWNER) continue
                 if (!miners[i].json) continue
                 var json = miners[i].json
                 if (json.node && json.node.ws) {
@@ -40,7 +41,7 @@ var p2p = {
             var ws = new WebSocket(peer);
             ws.on('open', () => p2p.handshake(ws));
             ws.on('error', () => {
-                logr.warn('peer connection failed')
+                logr.warn('peer connection failed', peer)
             });
         });
     },
