@@ -16,11 +16,24 @@ var p2p = {
     recoveringBlocks: [],
     recoveredBlocks: [],
     recovering: false,
+    discoveryWorker: () => {
+        chain.generateTop20Miner(function(miners) {
+            for (let i = 0; i < miners.length; i++) {
+                if (!miners[i].json) continue
+                var json = miners[i].json
+                if (json.node && json.node.ws) {
+                    p2p.connect([json.node.ws])
+                }
+            }
+        })
+    },
     init: () => {
         var server = new WebSocket.Server({port: p2p_port});
         server.on('connection', ws => p2p.handshake(ws));
         logr.info('Listening websocket p2p port on: ' + p2p_port);
         setTimeout(function(){p2p.recover()}, 1500)
+        setInterval(function(){p2p.discoveryWorker()}, 60000)
+        p2p.discoveryWorker()
     },
     connect: (newPeers) => {
         newPeers.forEach((peer) => {
