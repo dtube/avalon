@@ -21,9 +21,19 @@ var p2p = {
             for (let i = 0; i < miners.length; i++) {
                 if (miners[i].name == process.env.NODE_OWNER) continue
                 if (!miners[i].json) continue
-                var json = miners[i].json
-                if (json.node && json.node.ws) {
-                    p2p.connect([json.node.ws])
+
+                // are we already connected?
+                var connected = false
+                for (let y = 0; y < p2p.sockets.length; y++) {
+                    if (miners[i].name == p2p.sockets[y].node_status.owner)
+                        connected = true
+                }
+
+                if (!connected) {
+                    var json = miners[i].json
+                    if (json.node && json.node.ws) {
+                        p2p.connect([json.node.ws])
+                    }
                 }
             }
         })
@@ -46,6 +56,12 @@ var p2p = {
         });
     },
     handshake: (ws) => {
+        // close connection if we already have this peer ip in our connected sockets
+        for (let i = 0; i < p2p.sockets.length; i++)
+            if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress) {
+                ws.close()
+                return
+            }
         logr.debug('Handshaking new peer', ws.url || ws._socket.remoteAddress)
         p2p.sockets.push(ws);
         p2p.messageHandler(ws);
@@ -115,7 +131,7 @@ var p2p = {
                     break;
 
                 case MessageType.NEW_BLOCK:
-                    if (!p2p.sockets[p2p.sockets.indexOf(ws)].node_status) return
+                    if (!p2p.sockets[p2p.sockets.indexOf(ws)] || !p2p.sockets[p2p.sockets.indexOf(ws)].node_status) return
                     p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = message.d._id
                     if (message.d._id != chain.getLatestBlock()._id+1)
                         return
@@ -171,12 +187,12 @@ var p2p = {
         if (p2p.recovering%2) p2p.recover()
     },
     errorHandler: (ws) => {
-        var closeConnection = (ws) => {
-            p2p.sockets.splice(p2p.sockets.indexOf(ws), 1);
-            logr.debug('a peer disconnected, '+p2p.sockets.length+' peers left')
-        };
-        ws.on('close', () => closeConnection(ws));
-        ws.on('error', () => closeConnection(ws));
+        ws.on('close', () => p2p.closeConnection(ws));
+        ws.on('error', () => p2p.closeConnection(ws));
+    },
+    closeConnection: (ws) => {
+        p2p.sockets.splice(p2p.sockets.indexOf(ws), 1)
+        logr.debug('a peer disconnected, '+p2p.sockets.length+' peers left')
     },
     sendJSON: (ws, d) => ws.send(JSON.stringify(d)),
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
