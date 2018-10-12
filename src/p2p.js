@@ -25,6 +25,7 @@ var p2p = {
                 // are we already connected?
                 var connected = false
                 for (let y = 0; y < p2p.sockets.length; y++) {
+                    if (!p2p.sockets[y] || !p2p.sockets[y].node_status) continue
                     if (miners[i].name == p2p.sockets[y].node_status.owner)
                         connected = true
                 }
@@ -43,8 +44,10 @@ var p2p = {
         server.on('connection', ws => p2p.handshake(ws));
         logr.info('Listening websocket p2p port on: ' + p2p_port);
         setTimeout(function(){p2p.recover()}, 1500)
-        setInterval(function(){p2p.discoveryWorker()}, 60000)
-        p2p.discoveryWorker()
+        if (!process.env.NO_DISCOVERY) {
+            setInterval(function(){p2p.discoveryWorker()}, 60000)
+            p2p.discoveryWorker()
+        }
     },
     connect: (newPeers) => {
         newPeers.forEach((peer) => {
