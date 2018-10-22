@@ -154,5 +154,5 @@ Shut everything down, then `db.dropDatabase()` in mongo, and restart
 ## Being a good node owner
 If you are in the top 20 node owners, please set your profile as so:
 ```
-node src/cli.js profile <key> <user> '{"node":{"ws":"ws://yourip:yourport}}'
+node src/cli.js profile <key> <user> '{"node":{"ws":"ws://yourip:yourport"}}'
 ```
