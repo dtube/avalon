@@ -6,14 +6,15 @@ const series = require('run-series')
 const transaction = require('./transaction.js')
 
 class Block {
-    constructor(index, phash, timestamp, txs, miner, missedBy, signature, hash) {
+    constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
         this._id = index
         this.phash = phash.toString()
         this.timestamp = timestamp
         this.txs = txs
         this.miner = miner
-        if (missedBy)
-            this.missedBy = missedBy
+        if (missedBy) this.missedBy = missedBy
+        if (dist) this.dist = dist
+        if (burn) this.burn = burn
         this.hash = hash
         this.signature = signature
     }
@@ -43,6 +44,8 @@ chain = {
             [],
             "master",
             null,
+            null,
+            null,
             "0000000000000000000000000000000000000000000000000000000000000000",
             originHash
         );
@@ -54,13 +57,13 @@ chain = {
         // grab all transactions and sort by ts
         var txs = transaction.pool.sort(function(a,b){return a.ts-b.ts})
         var miner = process.env.NODE_OWNER
-        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner, null, null);
+        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner);
     },
     hashAndSignBlock: (block) => {
-        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy);
+        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned);
         var signature = secp256k1.sign(new Buffer(nextHash, "hex"), bs58.decode(process.env.NODE_OWNER_PRIV));
         signature = bs58.encode(signature.signature)
-        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, signature, nextHash);
+        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned, signature, nextHash);
         
     },
     canMineBlock: (cb) => {
@@ -84,9 +87,12 @@ chain = {
                 cb(true, newBlock); return
             }
 
-            chain.executeBlock(newBlock, function(validTxs) {
+            chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
                 // only add the valid transactions into the block
                 newBlock.txs = validTxs
+
+                if (distributed) newBlock.distributed = distributed
+                if (burned) newBlock.burned = burned
 
                 // remove all transactions from the pool (invalid ones too)
                 transaction.pool = []
@@ -115,9 +121,15 @@ chain = {
                 cb(true, newBlock); return
             }
                 
-            chain.executeBlock(newBlock, function(validTxs) {
+            chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
                 if (newBlock.txs.length != validTxs.length) {
+                    cb(true, newBlock); return
+                }
+
+                // error if distributed or burned computed amounts are different than the reported one
+                if (newBlock.distributed != distributed || newBlock.burned != burned) {
+                    logr.error('Wrong distributed or burned computer amount', newBlock)
                     cb(true, newBlock); return
                 }
 
@@ -174,6 +186,10 @@ chain = {
                 var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
                 if (block.missedBy)
                     output += ' missed by '+block.missedBy
+                if (block.dist)
+                    output += ' dist: '+block.dist
+                if (block.burn)
+                    output += ' burn: '+block.burn
                 logr.info(output);
             }
         });
@@ -302,10 +318,14 @@ chain = {
                 var tx = block.txs[i]
                 transaction.isValid(tx, block.timestamp, function(isValid) {
                     if (isValid) {
-                        transaction.execute(tx, block.timestamp, function(executed) {
+                        transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                             if (!executed)
                                 logr.fatal('Tx execution failure', tx)
-                            callback(null, executed)
+                            callback(null, {
+                                executed: executed,
+                                distributed: distributed,
+                                burned: burned
+                            })
                         })
                     } else {
                         logr.error('Invalid transaction', tx)
@@ -319,12 +339,18 @@ chain = {
         series(executions, function(err, results) {
             if (err) throw err;
             var executedSuccesfully = []
+            var distributedInBlock = 0
+            var burnedInBlock = 0
             for (let i = 0; i < results.length; i++) {
-                if (results[i])
+                if (results[i].executed)
                     executedSuccesfully.push(block.txs[i])
+                if (results[i].distributed)
+                    distributedInBlock += results[i].distributed
+                if (results[i].burned)
+                    burnedInBlock += results[i].burned
             }
                 
-            cb(executedSuccesfully)
+            cb(executedSuccesfully, distributedInBlock, burnedInBlock)
         })
     },
     minerSchedule: (block, cb) => {
@@ -368,11 +394,13 @@ chain = {
     calculateHashForBlock: (block) => {
         return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy);
     },
-    calculateHash: (index, phash, timestamp, txs, miner, missedBy) => {
-        if (missedBy)
-            return CryptoJS.SHA256(index + phash + timestamp + txs + miner + missedBy).toString();
-        else
-            return CryptoJS.SHA256(index + phash + timestamp + txs + miner).toString();
+    calculateHash: (index, phash, timestamp, txs, miner, missedBy, distributed, burned) => {
+        var string = index + phash + timestamp + txs + miner
+        if (missedBy) string += missedBy
+        if (distributed) string += distributed
+        if (burned) string += burned
+
+        return CryptoJS.SHA256(string).toString();
     },    
     getLatestBlock: () => {
         return chain.recentBlocks[chain.recentBlocks.length-1]

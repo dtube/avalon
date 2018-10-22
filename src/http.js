@@ -6,6 +6,7 @@ var decay = require('decay')
 var hotScore = decay.redditHot();
 const series = require('run-series')
 const transaction = require('./transaction.js')
+const eco = require('./economics.js')
 
 var http = {
     init: () => {
@@ -29,6 +30,13 @@ var http = {
                 res.send({
                     count: count
                 })
+            })
+        });
+
+        // check econ data
+        app.get('/rewardPool', (req, res) => {
+            eco.rewardPool(function(rp) {
+                res.send(rp)
             })
         });
 

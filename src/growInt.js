@@ -1,4 +1,4 @@
-// this class simplifies managing variables that are moving over time.
+// this class simplifies managing variables that are moving over time (eg bandwidth, vote tokens)
 // raw should be of the format {v:<int>,t:<timestamp>}
 // config must have: growth
 // config can also have: min, max.

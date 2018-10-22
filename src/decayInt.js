@@ -1,9 +1,9 @@
-// this class simplifies managing variables that are depleting over time
+// this class simplifies managing variables that are depleting over time (eg payment reservoir)
 // raw should be of the format {v:<int>,t:<timestamp>}
 // config must have: halflife
 // config can also have: max.
 
-module.exports = class DecayingInt {
+module.exports = class DecayInt {
     constructor(raw, config) {
         if (!config.max)
             config.max = Number.MAX_SAFE_INTEGER
@@ -15,6 +15,7 @@ module.exports = class DecayingInt {
 
     decay(time) {
         if (time < this.t) return
+        if (this.v == 0) return {v:0,t:time}
 
         var tmpValue = this.v
         var timeDiff = time-this.t

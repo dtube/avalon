@@ -1,4 +1,6 @@
 var GrowInt = require('./growInt.js')
+var eco = require('./economics.js')
+
 var TransactionType = {
     NEW_ACCOUNT: 0,
     APPROVE_NODE_OWNER: 1,
@@ -114,7 +116,7 @@ transaction = {
             // check transaction specifics
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
-                    if (!tx.data.name || typeof tx.data.name !== "string" || tx.data.name.length > 25) {
+                    if (!tx.data.name || typeof tx.data.name !== "string" || tx.data.name.length > 50) {
                         logr.debug('invalid tx data.name')
                         cb(false); return
                     }
@@ -123,8 +125,10 @@ transaction = {
                         cb(false); return
                     }
 
-                    for (let i = 0; i < tx.data.name.length; i++) {
-                        const c = tx.data.name[i];
+                    var lowerUser = tx.data.name.toLowerCase()
+
+                    for (let i = 0; i < lowerUser.length; i++) {
+                        const c = lowerUser[i];
                         // allowed username chars
                         if ('abcdefghijklmnopqrstuvwxyz0123456789'.indexOf(c) == -1) {
                             logr.debug('invalid tx data.name char')
@@ -132,17 +136,20 @@ transaction = {
                         }
                     }
 
-                    // only master is allowed to create accounts !!
-                    if (tx.sender !== "master") {
-                        cb(false); return
-                    }
-
-                    db.collection('accounts').findOne({name: tx.data.name}, function(err, account) {
+                    db.collection('accounts').findOne({name: lowerUser}, function(err, account) {
                         if (err) throw err;
                         if (account)
                             cb(false)
-                        else
-                            cb(true)
+                        else if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) {
+                            // if it's not a free account, check tx sender balance
+                            db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                                if (err) throw err;
+                                if (account.balance < 60)
+                                    cb(false)
+                                else
+                                    cb(true)
+                            })
+                        } else cb(true)
                     })
                     break;
                 
@@ -367,13 +374,42 @@ transaction = {
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
                     db.collection('accounts').insertOne({
-                        name: tx.data.name,
+                        name: tx.data.name.toLowerCase(),
                         pub: tx.data.pub,
                         balance: 0,
                         bw: {v:0,t:0},
-                        vt: {v:0,t:0}
+                        vt: {v:0,t:0},
+                        pr: {v:0,t:0},
+                        uv: 0
                     }).then(function(){
-                        cb(true)
+                        if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) {
+                            db.collection('accounts').updateOne(
+                            {name: tx.sender},
+                            {$inc: {balance: -60}}, function() {
+                                db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                                    if (err) throw err;
+                                    // update his bandwidth
+                                    acc.balance += 60
+                                    transaction.updateGrowInts(acc, ts, function(success) {
+                                        if (!acc.approves) acc.approves = []
+                                        // and update his node_owners approvals values too
+                                        var node_appr_before = Math.floor(acc.balance/acc.approves.length)
+                                        acc.balance -= 60
+                                        var node_appr = Math.floor(acc.balance/acc.approves.length)
+                                        var node_owners = []
+                                        for (let i = 0; i < acc.approves.length; i++)
+                                            node_owners.push(acc.approves[i])
+                                        db.collection('accounts').updateMany(
+                                            {name: {$in: node_owners}},
+                                            {$inc: {node_appr: node_appr-node_appr_before}},
+                                        function(err) {
+                                            if (err) throw err;
+                                            cb(true, null, 60)
+                                        })
+                                    })
+                                })
+                            })
+                        } else cb(true)
                     })
                     break;
     
@@ -485,8 +521,6 @@ transaction = {
                                                     {$inc: {node_appr: node_appr-node_appr_before}},
                                                 function(err) {
                                                     if (err) throw err;
-                                                    // and update his tokens variable on balance
-        
                                                     cb(true)
                                                 })
                                             })
@@ -535,7 +569,9 @@ transaction = {
                     }}, {
                         upsert: true
                     }).then(function(){
-                        cb(true)
+                        eco.distribute(tx.data.author, tx.data.vt, tx.ts, function(distributed) {
+                            cb(true, distributed)
+                        })
                     })
                     break;
     
