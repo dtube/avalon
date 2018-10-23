@@ -118,18 +118,26 @@ chain = {
         if (chain.shuttingDown) return;
         chain.isValidNewBlock(newBlock, true, function(isValid) {
             if (!isValid) {
+                logr.error('Invalid block')
                 cb(true, newBlock); return
             }
                 
             chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
                 if (newBlock.txs.length != validTxs.length) {
+                    logr.error('Unvalid txs in block')
                     cb(true, newBlock); return
                 }
 
                 // error if distributed or burned computed amounts are different than the reported one
-                if (newBlock.distributed != distributed || newBlock.burned != burned) {
-                    logr.error('Wrong distributed or burned computer amount', newBlock)
+                var blockDist = newBlock.dist || 0
+                if (blockDist != distributed) {
+                    logr.error('Wrong distributed amount', blockDist, distributed)
+                    cb(true, newBlock); return
+                }
+                var blockBurn = newBlock.burn || 0
+                if (blockBurn != burned) {
+                    logr.error('Wrong burned amount', blockBurn, burned)
                     cb(true, newBlock); return
                 }
 
@@ -392,7 +400,7 @@ chain = {
         })
     },
     calculateHashForBlock: (block) => {
-        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy);
+        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn);
     },
     calculateHash: (index, phash, timestamp, txs, miner, missedBy, distributed, burned) => {
         var string = index + phash + timestamp + txs + miner
