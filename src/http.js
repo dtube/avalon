@@ -130,6 +130,29 @@ var http = {
             })
         })
 
+        // account history api
+        app.get('/blog/:author/history/:lastBlock', (req, res) => {
+            var lastBlock = parseInt(req.params.lastBlock)
+            var author = req.params.author
+            var query = {
+                $and: [
+                    { $or: [
+                        {'txs.sender': author},
+                        {'txs.data.target': author},
+                        {'txs.data.receiver': author},
+                        {'txs.data.pa': author},
+                        {'txs.data.author': author}
+                    ]}
+                ]
+            }
+            if (lastBlock > 0) {
+                query['$and'].push({_id: {$lt: lastBlock}})
+            }
+            db.collection('blocks').find(query, {sort: {_id: -1}, limit: 50}).toArray(function(err, blocks) {
+                res.send(blocks)
+            })
+        })
+
         // get new contents
         app.get('/content/:author/:link', (req, res) => {
             if (!req.params.author || typeof req.params.link !== 'string') {
