@@ -120,7 +120,7 @@ transaction = {
                         logr.debug('invalid tx data.name')
                         cb(false); return
                     }
-                    if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50) {
+                    if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50 || !chain.isValidPubKey(tx.data.pub)) {
                         logr.debug('invalid tx data.pub')
                         cb(false); return
                     }

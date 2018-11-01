@@ -202,6 +202,13 @@ chain = {
             }
         });
     },
+    isValidPubKey: (key) => {
+        try {
+            return secp256k1.publicKeyVerify(bs58.decode(key))
+        } catch (error) {
+            return false
+        }
+    },
     isValidSignature: (user, hash, sign, cb) => {
         // verify signature and bandwidth
         db.collection('accounts').findOne({name: user}, function(err, account) {
