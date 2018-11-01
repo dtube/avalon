@@ -57,7 +57,7 @@ var eco = {
                     burn: burned,
                     dist: distributed,
                     votes: votes,
-                    avail: theoricalPool+burned-distributed
+                    avail: theoricalPool-distributed
                 })
             })
         })
