@@ -219,6 +219,10 @@ transaction = {
                         logr.debug('invalid tx data.amount not an integer')
                         cb(false); return
                     }
+                    if (tx.data.receiver === tx.sender) {
+                        logr.debug('invalid tx cannot send to self')
+                        cb(false); return
+                    }
                     
                     db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
                         if (err) throw err;
