@@ -39,10 +39,11 @@ let cmds = {
 		return sign(privKey, sender, tx)
 	},
 
-	transfer: (reciever, amount) => {
+	transfer: (receiver, amount, memo) => {
+		if (!memo) memo=""
 		var tx = '{"type":3,"data":{"receiver":"'+
-			reciever+'", "amount":'+
-			parseFloat(amount)+'}}'
+			receiver+'", "amount":'+
+			parseFloat(amount)+', "memo":"'+memo+'"}}'
 		return sign(privKey, sender, tx)
 	},
 

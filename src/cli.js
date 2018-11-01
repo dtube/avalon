@@ -55,7 +55,7 @@ switch (command) {
 	
 	case 'transfer':
 		// reciever, amount
-		sendTx(cmds.transfer(process.argv[5], process.argv[6]))
+		sendTx(cmds.transfer(process.argv[5], process.argv[6], process.argv[7]))
 		break;
 
 	case 'post':

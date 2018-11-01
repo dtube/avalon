@@ -211,6 +211,10 @@ transaction = {
                         logr.debug('invalid tx data.amount')
                         cb(false); return
                     }
+                    if (typeof tx.data.memo !== "string" || tx.data.memo.length > 250) {
+                        logr.debug('invalid tx data.memo')
+                        cb(false); return
+                    }
                     if (tx.data.amount != Math.floor(tx.data.amount)) {
                         logr.debug('invalid tx data.amount not an integer')
                         cb(false); return
