@@ -386,7 +386,7 @@ transaction = {
                         pr: {v:0,t:0},
                         uv: 0
                     }).then(function(){
-                        if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) {
+                        if (tx.data.name !== tx.data.pub.toLowerCase() || tx.data.name.length < 25) {
                             db.collection('accounts').updateOne(
                             {name: tx.sender},
                             {$inc: {balance: -60}}, function() {
