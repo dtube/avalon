@@ -4,6 +4,7 @@ var cors = require('cors')
 var bodyParser = require('body-parser')
 var decay = require('decay')
 var hotScore = decay.redditHot();
+var fetchVideoInfo = require('youtube-info');
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
@@ -230,6 +231,17 @@ var http = {
                 if (!accounts) res.sendStatus(404)
                 else res.send(accounts)
             })
+        })
+
+        // get youtube info
+        app.get('/youtube/:videoId', (req, res) => {
+            if (!req.params.videoId) {
+                res.sendStatus(500);
+                return
+            }
+            fetchVideoInfo(req.params.videoId, function(err, videoInfo) {
+                res.send(videoInfo)
+            });
         })
 
         app.listen(http_port, () => logr.info('Listening http on port: ' + http_port));
