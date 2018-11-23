@@ -69,7 +69,7 @@ var eco = {
             var sumVt = 0
             // first loop to calculate the vp per day of each upvote
             for (let i = 0; i < content.votes.length; i++) {
-                if (i == 0) {
+                if (content.votes[i].ts == firstVote.ts) {
                     content.votes[i].vpPerDayBefore = 0
                 } else {
                     var dayDiff = (content.votes[i].ts - firstVote.ts) / (1000*60*60*24)
@@ -172,8 +172,6 @@ var eco = {
                         })
                     } else cb(newCoins)
                 })
-
-                
             })
         })
     }
