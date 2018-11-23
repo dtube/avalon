@@ -164,8 +164,11 @@ var eco = {
                     $set: changes
                 }).then(function(){
                     if (newCoins > 0) {
-                        transaction.adjustNodeAppr(account, newCoins, function(success) {
-                            cb(newCoins)
+                        account.balance -= newCoins
+                        transaction.updateGrowInts(account, ts, function(success) {
+                            transaction.adjustNodeAppr(account, newCoins, function(success) {
+                                cb(newCoins)
+                            })
                         })
                     } else cb(newCoins)
                 })
