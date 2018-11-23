@@ -1,23 +1,32 @@
 #!/bin/bash
 
 # create accounts
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":0,"data":{"name":"miner1", "pub":"sXHqzsMDENCVUCXuY8KL52afpFWzeeVRaPaD44rV5ZQX"}}') http://localhost:3001/transact
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":0,"data":{"name":"miner2", "pub":"tWWLqc5wPTbXPaWrFAfqUwGtEBLmUbyavp3utwPUop2g"}}') http://localhost:3001/transact
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":0,"data":{"name":"miner3", "pub":"d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce"}}') http://localhost:3001/transact
+node src/cli.js createAccount xxxxxxxxxx master tFtCWCcGDBnV2ZHNxgdezbe9QsPmFEenCuRdFrSb8c3L nannal
+node src/cli.js createAccount xxxxxxxxxx master dKWzaAoymobch77xREA21xRxEZBc3NV6Pbxk5nF74c3e wehmoen
+node src/cli.js createAccount xxxxxxxxxx master yLuiXbuU1Pw8SbzJ3BYhcXdCQ81jFPsYwryKEibGWRNo heimindanger
+node src/cli.js createAccount xxxxxxxxxx master emEegiGr4zjs5paENWtAMg1j5r54EWG8haDsdioejzyq jrswab
+node src/cli.js createAccount xxxxxxxxxx master 27QSVeCpuxxjZvAAqktJkKiUM74EmWAYoUSycYztTGAAv less
+node src/cli.js createAccount xxxxxxxxxx master yAWAdxkWGVQRunbuTBoPkoiuGWTo8ABZ9Tn14woYodeC ekitcho
+node src/cli.js createAccount xxxxxxxxxx master m51DEiyAp3vEzYpj3yRRMmBpsVdphuZMiNepdLSE8cz5 avalonator
+node src/cli.js createAccount xxxxxxxxxx master g8dq2DSVt4zDh5sNMoGJUoAN5uGPYDtZaKytcgSvYDE3 trisss
+node src/cli.js createAccount xxxxxxxxxx master jY4nsGUnX7HD9fsDDHngQmZE73dYoSNe7yjCT9CNDfhZ dailydogger
+node src/cli.js createAccount xxxxxxxxxx master mCJBJgoqSgQAzfMvzLPR7n3JE1Pvm3j1mXY3FZDCjzVt marknadal
+node src/cli.js createAccount xxxxxxxxxx master 29Jujps6ywQgZyrahAYSRFhocRofAN2YbWeP8yUZw1cGS freedom
+node src/cli.js createAccount xxxxxxxxxx master qRXjdoNxv14SJ6Ai4tZN6ZAU4XxGqs6Qar5v1wdfXTzw macron
+node src/cli.js createAccount xxxxxxxxxx master et41gEuqzpKF9nJJEam4KK1edv4jb2qtUcY8niQddbDb kyle
+
 sleep 3
 
-# give them a bit of money
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":3,"data":{"receiver":"miner1", "amount":1000}}') http://localhost:3001/transact
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":3,"data":{"receiver":"miner2", "amount":1000}}') http://localhost:3001/transact
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":3,"data":{"receiver":"miner3", "amount":1000}}') http://localhost:3001/transact
-sleep 3
-
-# approve them as node owners
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":1,"data":{"target":"miner1"}}') http://localhost:3001/transact
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":1,"data":{"target":"miner2"}}') http://localhost:3001/transact
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5 master '{"type":1,"data":{"target":"miner3"}}') http://localhost:3001/transact
-sleep 3
-
-# miner1 approves himself
-curl -H "Content-type:application/json" --data $(node src/cli.js sign 8cxx3Ly7xkDAghFnZRqM8Wi1xhwM8CBCkaAPL6NMgCRS miner1 '{"type":1,"data":{"target":"miner1"}}') http://localhost:3001/transact
-sleep 3
+node src/cli.js transfer xxxxxxxxxx master nannal 1000
+node src/cli.js transfer xxxxxxxxxx master wehmoen 1000
+node src/cli.js transfer xxxxxxxxxx master heimindanger 1000
+node src/cli.js transfer xxxxxxxxxx master jrswab 1000
+node src/cli.js transfer xxxxxxxxxx master less 1000
+node src/cli.js transfer xxxxxxxxxx master ekitcho 1000
+node src/cli.js transfer xxxxxxxxxx master avalonator 1000
+node src/cli.js transfer xxxxxxxxxx master trisss 1000
+node src/cli.js transfer xxxxxxxxxx master dailydogger 1000
+node src/cli.js transfer xxxxxxxxxx master marknadal 1000
+node src/cli.js transfer xxxxxxxxxx master freedom 1000
+node src/cli.js transfer xxxxxxxxxx master macron 1000
+node src/cli.js transfer xxxxxxxxxx master kyle 1000
