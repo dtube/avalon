@@ -233,6 +233,7 @@ var http = {
             })
         })
 
+        // test api (should be separated)
         // get youtube info
         app.get('/youtube/:videoId', (req, res) => {
             if (!req.params.videoId) {

@@ -491,21 +491,7 @@ transaction = {
                             // update his bandwidth
                             acc.balance += tx.data.amount
                             transaction.updateGrowInts(acc, ts, function(success) {
-                                if (!acc.approves) acc.approves = []
-                                // and update node_appr for miners he votes for
-                                var node_appr_before = Math.floor(acc.balance/acc.approves.length)
-                                acc.balance -= tx.data.amount
-                                var node_appr = Math.floor(acc.balance/acc.approves.length)
-                                
-                                var node_owners = []
-                                for (let i = 0; i < acc.approves.length; i++)
-                                    node_owners.push(acc.approves[i])
-                                
-                                db.collection('accounts').updateMany(
-                                    {name: {$in: node_owners}},
-                                    {$inc: {node_appr: node_appr-node_appr_before}}
-                                , function(err) {
-                                    if (err) throw err;
+                                transaction.adjustNodeAppr(acc, -tx.data.amount, function(success) {
                                     // add funds to receiver
                                     db.collection('accounts').updateOne(
                                         {name: tx.data.receiver},
@@ -516,19 +502,7 @@ transaction = {
                                             // update his bandwidth
                                             acc.balance -= tx.data.amount
                                             transaction.updateGrowInts(acc, ts, function(success) {
-                                                if (!acc.approves) acc.approves = []
-                                                // and update his node_owners approvals values too
-                                                var node_appr_before = Math.floor(acc.balance/acc.approves.length)
-                                                acc.balance += tx.data.amount
-                                                var node_appr = Math.floor(acc.balance/acc.approves.length)
-                                                var node_owners = []
-                                                for (let i = 0; i < acc.approves.length; i++)
-                                                    node_owners.push(acc.approves[i])
-                                                db.collection('accounts').updateMany(
-                                                    {name: {$in: node_owners}},
-                                                    {$inc: {node_appr: node_appr-node_appr_before}},
-                                                function(err) {
-                                                    if (err) throw err;
+                                                transaction.adjustNodeAppr(acc, tx.data.amount, function(success) {
                                                     cb(true)
                                                 })
                                             })
@@ -577,7 +551,7 @@ transaction = {
                     }}, {
                         upsert: true
                     }).then(function(){
-                        eco.distribute(tx.data.author, tx.data.vt, tx.ts, function(distributed) {
+                        eco.curation(tx.data.author, tx.data.link, function(distributed) {
                             cb(true, distributed)
                         })
                     })
@@ -665,7 +639,7 @@ transaction = {
         })
     },
     updateGrowInts: (account, ts, cb) => {
-        // updates the bandwidth and vote tokens when the growth changes (transfer)
+        // updates the bandwidth and vote tokens when the balance changes (transfer, monetary distribution)
         var bw = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576}).grow(ts)
         var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
         db.collection('accounts').updateOne(
@@ -675,6 +649,25 @@ transaction = {
                 vt: vt
             }},
         function(err) {
+            if (err) throw err;
+            cb(true)
+        })
+    },
+    adjustNodeAppr: (acc, newCoins, cb) => {
+        // updates the node_appr values for the node owners the account approves
+        if (!acc.approves) acc.approves = []
+        var node_appr_before = Math.floor(acc.balance/acc.approves.length)
+        acc.balance += newCoins
+        var node_appr = Math.floor(acc.balance/acc.approves.length)
+        
+        var node_owners = []
+        for (let i = 0; i < acc.approves.length; i++)
+            node_owners.push(acc.approves[i])
+        
+        db.collection('accounts').updateMany(
+            {name: {$in: node_owners}},
+            {$inc: {node_appr: node_appr-node_appr_before}}
+        , function(err) {
             if (err) throw err;
             cb(true)
         })

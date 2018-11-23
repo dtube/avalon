@@ -59,6 +59,7 @@ var p2p = {
         });
     },
     handshake: (ws) => {
+        //ws.close(); return
         // close connection if we already have this peer ip in our connected sockets
         for (let i = 0; i < p2p.sockets.length; i++)
             if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress) {

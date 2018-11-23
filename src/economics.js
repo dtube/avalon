@@ -1,5 +1,6 @@
 var GrowInt = require('./growInt.js')
 var DecayInt = require('./decayInt.js')
+const series = require('run-series')
 
 var eco = {
     activeUsersCount: (cb) => {
@@ -62,6 +63,61 @@ var eco = {
             })
         })
     },
+    curation: (author, link, cb) => {
+        db.collection('contents').findOne({author: author, link: link}, function(err, content) {
+            var firstVote = content.votes[0]
+            var sumVt = 0
+            // first loop to calculate the vp per day of each upvote
+            for (let i = 0; i < content.votes.length; i++) {
+                if (i == 0) {
+                    content.votes[i].vpPerDayBefore = 0
+                } else {
+                    var dayDiff = (content.votes[i].ts - firstVote.ts) / (1000*60*60*24)
+                    content.votes[i].vpPerDayBefore = sumVt/dayDiff
+                }
+                sumVt += content.votes[i].vt
+            }
+
+            var currentVote = content.votes[content.votes.length-1]
+            var winners = []
+            sumVt = 0
+            // second loop to filter winners (same vote direction and vpPerDay lower than current one)
+            for (let i = 0; i < content.votes.length-1; i++) {
+                if (content.votes[i].vt * currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore) {
+                    sumVt += content.votes[i].vt
+                    winners.push(content.votes[i])
+                }
+            }
+
+            // third loop to calculate each winner shares
+            for (let i = 0; i < winners.length; i++) {
+                winners[i].share = winners[i].vt / sumVt
+            }
+            winners.sort(function(a,b) {
+                return b.share - a.share
+            })
+
+            // forth loop to pay out
+            var executions = []
+            for (let i = 0; i < winners.length; i++) {
+                executions.push(function(callback) {
+                    var payout = Math.floor(winners[i].share * currentVote.vt)
+                    if (payout > 0)
+                        eco.distribute(winners[i].u, payout, currentVote.ts, function(dist) {
+                            callback(null, dist)
+                        })
+                })
+                
+            }
+            series(executions, function(err, results) {
+                if (err) throw err;
+                var newCoins = 0
+                for (let r = 0; r < results.length; r++)
+                    newCoins += results[r];
+                cb(newCoins)
+            })
+        })
+    },
     distribute: (name, vt, ts, cb) => {
         eco.rewardPool(function(stats) {
             db.collection('accounts').findOne({name: name}, function(err, account) {
@@ -85,22 +141,36 @@ var eco = {
                 else unpaidVotes = Math.floor(unpaidVotes)
 
                 //console.log(newCoins, unpaidVotes)
+                var changes = {
+                    uv: unpaidVotes
+                }
 
-                // make the reservoir flow into balance
-                var newPr = new DecayInt(account.pr, {halflife:1000*60*60*24}).decay(ts)
-                var newBalance = account.balance + account.pr.v - newPr.v
-                newPr.v += newCoins
-                if (newPr.v < 0) newPr.v = 0
+                if (newCoins > 0) {
+                    // option 1: instant payments
+                    var newBalance = account.balance + newCoins
+                    changes.balance = newBalance
+
+                    // option 2: payment reservoir where its possible to 'take away' rewards unlike option 1
+                    // useful for models where downvotes should punish past upvoters
+                    // var newPr = new DecayInt(account.pr, {halflife:1000*60*60*24}).decay(ts)
+                    // var newBalance = account.balance + account.pr.v - newPr.v
+                    // newPr.v += newCoins
+                    // if (newPr.v < 0) newPr.v = 0
+                    // changes.balance = newBalance
+                    // changes.pr = newPr
+                }
                 
                 db.collection('accounts').updateOne({name: name}, {
-                    $set: {
-                        pr: newPr,
-                        balance: newBalance,
-                        uv: unpaidVotes
-                    }
+                    $set: changes
                 }).then(function(){
-                    cb(newCoins)
+                    if (newCoins > 0) {
+                        transaction.adjustNodeAppr(account, newCoins, function(success) {
+                            cb(newCoins)
+                        })
+                    } else cb(newCoins)
                 })
+
+                
             })
         })
     }
