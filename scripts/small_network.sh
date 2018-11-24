@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## Example script to create multiple accounts and transfer 1000 tokens quickly
+
 # create accounts
 node src/cli.js createAccount xxxxxxxxxx master tFtCWCcGDBnV2ZHNxgdezbe9QsPmFEenCuRdFrSb8c3L nannal
 node src/cli.js createAccount xxxxxxxxxx master dKWzaAoymobch77xREA21xRxEZBc3NV6Pbxk5nF74c3e wehmoen
