@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## Example of a secondary node on the same machine, just a different database and two different ports
+
 export HTTP_PORT=3002
 export P2P_PORT=6002
 export DB_NAME=avalon2
