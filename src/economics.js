@@ -122,14 +122,19 @@ var eco = {
             var executions = []
             for (let i = 0; i < winners.length; i++) {
                 executions.push(function(callback) {
-                    var payout = Math.floor(winners[i].share * currentVote.vt)
-                    if (payout > 0) {
-                        eco.distribute(winners[i].u, payout, currentVote.ts, function(dist) {
-                            eco.currentBlock.dist += dist
-                            eco.currentBlock.votes += payout
-                            callback(null, dist)
-                        })
+                    var payout = Math.floor(winners[i].share * Math.abs(currentVote.vt))
+                    if (payout < 0) {
+                        throw 'Weird error, investigate'
                     }
+                    if (payout == 0) {
+                        callback(null, 0)
+                        return
+                    }
+                    eco.distribute(winners[i].u, payout, currentVote.ts, function(dist) {
+                        eco.currentBlock.dist += dist
+                        eco.currentBlock.votes += payout
+                        callback(null, dist)
+                    })
                 })
             }
             series(executions, function(err, results) {
