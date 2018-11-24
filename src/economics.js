@@ -91,21 +91,32 @@ var eco = {
             var currentVote = content.votes[content.votes.length-1]
             var winners = []
             sumVt = 0
+
+            logr.trace('Votes:', content.votes)
+
             // second loop to filter winners (same vote direction and vpPerDay lower than current one)
             for (let i = 0; i < content.votes.length-1; i++) {
-                if (content.votes[i].vt * currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore) {
-                    sumVt += content.votes[i].vt
-                    winners.push(content.votes[i])
+                if (content.votes[i].vt * currentVote.vt > 0) {
+                    if (currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore) {
+                        sumVt += content.votes[i].vt
+                        winners.push(content.votes[i])
+                    }
+                    if (currentVote.vt < 0 && content.votes[i].vpPerDayBefore > currentVote.vpPerDayBefore) {
+                        sumVt += content.votes[i].vt
+                        winners.push(content.votes[i])
+                    }
                 }
             }
 
             // third loop to calculate each winner shares
-            for (let i = 0; i < winners.length; i++) {
+            for (let i = 0; i < winners.length; i++)
                 winners[i].share = winners[i].vt / sumVt
-            }
+
             winners.sort(function(a,b) {
                 return b.share - a.share
             })
+
+            logr.trace('WINNERS:', winners)
 
             // forth loop to pay out
             var executions = []
