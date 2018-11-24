@@ -59,7 +59,10 @@ var p2p = {
         });
     },
     handshake: (ws) => {
-        //ws.close(); return
+        if (process.env.OFFLINE) {
+            logr.warn('Incoming handshake refused because OFFLINE')
+            ws.close(); return
+        }
         // close connection if we already have this peer ip in our connected sockets
         for (let i = 0; i < p2p.sockets.length; i++)
             if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress) {

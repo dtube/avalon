@@ -3,6 +3,16 @@ var DecayInt = require('./decayInt.js')
 const series = require('run-series')
 
 var eco = {
+    currentBlock: {
+        dist: 0,
+        burn: 0,
+        votes: 0
+    },
+    nextBlock: () => {
+        eco.currentBlock.dist = 0
+        eco.currentBlock.burn = 0
+        eco.currentBlock.votes = 0
+    },
     activeUsersCount: (cb) => {
         // we consider anyone with a non zero balance to be active, otherwise he loses out
         db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
@@ -55,10 +65,10 @@ var eco = {
                 }
                 cb({
                     theo: theoricalPool,
-                    burn: burned,
-                    dist: distributed,
-                    votes: votes,
-                    avail: theoricalPool-distributed
+                    burn: burned + eco.currentBlock.burn,
+                    dist: distributed + eco.currentBlock.dist,
+                    votes: votes + eco.currentBlock.votes,
+                    avail: theoricalPool - distributed - eco.currentBlock.dist
                 })
             })
         })
@@ -102,12 +112,14 @@ var eco = {
             for (let i = 0; i < winners.length; i++) {
                 executions.push(function(callback) {
                     var payout = Math.floor(winners[i].share * currentVote.vt)
-                    if (payout > 0)
+                    if (payout > 0) {
                         eco.distribute(winners[i].u, payout, currentVote.ts, function(dist) {
+                            eco.currentBlock.dist += dist
+                            eco.currentBlock.votes += payout
                             callback(null, dist)
                         })
+                    }
                 })
-                
             }
             series(executions, function(err, results) {
                 if (err) throw err;

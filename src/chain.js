@@ -4,6 +4,7 @@ const secp256k1 = require('secp256k1')
 const bs58 = require('bs58')
 const series = require('run-series')
 const transaction = require('./transaction.js')
+const eco = require('./economics.js')
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
@@ -171,6 +172,7 @@ chain = {
         }
     },
     addBlock: (block, cb) => {
+        eco.nextBlock()
         // add the block in our own db
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err;
