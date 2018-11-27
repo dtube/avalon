@@ -123,6 +123,20 @@ var http = {
             })
         })
 
+        // get feed contents
+        app.get('/feed/:username', (req, res) => {
+            db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
+                db.collection('contents').find({
+                $and: [
+                    {author: {$in: account.follows}},
+                    {pa: null}
+                ]}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                    res.send(contents)
+                })
+            })
+            
+        })
+
         // get blog of user
         app.get('/blog/:author', (req, res) => {
             var author = req.params.author
