@@ -154,18 +154,22 @@ var http = {
         app.get('/hot', (req, res) => {
             if (!http.rankings.hot) {
                 http.generateHot(function() {
-                    res.send(http.rankings.hot)
+                    res.send(http.rankings.hot.slice(0,50))
                 })
             } else {
-                res.send(http.rankings.hot)
+                res.send(http.rankings.hot.slice(0,50))
             }
         })
         app.get('/hot/:author/:link', (req, res) => {
             var filteredContents = []
             var isPastRelativeContent = false
+            var added = 0
             for (let i = 0; i < http.rankings.hot.length; i++) {
-                if (isPastRelativeContent)
+                if (isPastRelativeContent) {
                     filteredContents.push(http.rankings.hot[i])
+                    added++
+                }
+                if (added >= 50) break
                 if (http.rankings.hot[i].author == req.params.author
                 && http.rankings.hot[i].link == req.params.link)
                     isPastRelativeContent = true
@@ -175,7 +179,7 @@ var http = {
 
         // get new contents
         app.get('/new', (req, res) => {
-            db.collection('contents').find({pa: null}, {sort: {_id: -1}}).toArray(function(err, contents) {
+            db.collection('contents').find({pa: null}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
                 res.send(contents)
             })
         })
@@ -189,7 +193,7 @@ var http = {
                 $and: [
                     {pa: null},
                     {_id: {$lt: content._id}}
-                ]}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
@@ -202,7 +206,7 @@ var http = {
                 $and: [
                     {author: {$in: account.follows}},
                     {pa: null}
-                ]}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
@@ -219,7 +223,7 @@ var http = {
                         {author: {$in: account.follows}},
                         {pa: null},
                         {_id: {$lt: content._id}}
-                    ]}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                    ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
                         res.send(contents)
                     })
                 })
@@ -229,7 +233,7 @@ var http = {
         // get blog of user
         app.get('/blog/:username', (req, res) => {
             var username = req.params.username
-            db.collection('contents').find({pa: null, author: username}, {sort: {_id: -1}}).toArray(function(err, contents) {
+            db.collection('contents').find({pa: null, author: username}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
                 res.send(contents)
             })
         })
@@ -245,7 +249,7 @@ var http = {
                     {pa: null},
                     {author: username},
                     {_id: {$lt: content._id}}
-                ]}, {sort: {_id: -1}}).toArray(function(err, contents) {
+                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
