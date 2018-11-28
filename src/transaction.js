@@ -515,16 +515,17 @@ transaction = {
                     break;
 
                 case TransactionType.COMMENT:
-                    db.collection('contents').replaceOne({
-                        author: tx.sender,
-                        link: tx.data.link
-                    },{
+                    var content = {
                         author: tx.sender,
                         link: tx.data.link,
                         pa: tx.data.pa,
                         pp: tx.data.pp,
                         json: tx.data.json,
-                    }, {
+                    }
+                    db.collection('contents').replaceOne({
+                        author: tx.sender,
+                        link: tx.data.link
+                    }, content, {
                         upsert: true
                     }).then(function(){
                         db.collection('contents').updateOne({
@@ -533,6 +534,7 @@ transaction = {
                         }, { $addToSet: {
                             child: [tx.sender, tx.data.link]
                         }})
+                        http.updateRankings(content)
                         cb(true)
                     })
                     break;
@@ -552,6 +554,7 @@ transaction = {
                         upsert: true
                     }).then(function(){
                         eco.curation(tx.data.author, tx.data.link, function(distributed) {
+                            http.updateRankings(tx.data.author, tx.data.link, vote)
                             cb(true, distributed)
                         })
                     })
