@@ -534,7 +534,7 @@ transaction = {
                         }, { $addToSet: {
                             child: [tx.sender, tx.data.link]
                         }})
-                        http.updateRankings(content)
+                        http.newRankingContent(content)
                         cb(true)
                     })
                     break;

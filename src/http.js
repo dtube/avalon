@@ -11,7 +11,7 @@ const eco = require('./economics.js')
 
 var http = {
     rankings: {
-        hot: null
+        hot: []
     },
     generateHot: function(cb) {
         db.collection('contents').find({pa: null}, {sort: {_id: -1}}).toArray(function(err, contents) {
@@ -37,7 +37,7 @@ var http = {
             cb()
         })
     },
-    updateRankings: function(content) {
+    newRankingContent: function(content) {
         var alreadyAdded = false
         for (let i = 0; i < http.rankings.hot.length; i++) {
             if (content.author == http.rankings.hot[i].author && content.link == http.rankings.hot[i].link) {
@@ -48,21 +48,22 @@ var http = {
         }
 
         if (!alreadyAdded) {
+            content._id = Math.floor(new Date().getTime() / 1000).toString(16) + "0000000000000000"
             http.rankings.hot.push(content)
         }
     },
     updateRankings: function(author, link, vote) {
         newRankings = []
         for (let i = 0; i < http.rankings.hot.length; i++) {
+            var ts = parseInt(http.rankings.hot[i]._id.substring(0, 8), 16) * 1000
             if (http.rankings.hot[i].author == author && http.rankings.hot[i].link == link) {
                 if (vote.vt > 0)
                     http.rankings.hot[i].ups += Math.abs(vote.vt)
                 if (vote.vt < 0)
                     http.rankings.hot[i].downs += Math.abs(vote.vt)
-
-                http.rankings.hot[i].score = hotScore(http.rankings.hot[i].ups, http.rankings.hot[i].downs, http.rankings.hot[i]._id.getTimestamp())
+                http.rankings.hot[i].score = hotScore(http.rankings.hot[i].ups, http.rankings.hot[i].downs, new Date(ts))
             }
-            if (http.rankings.hot[i]._id.getTimestamp() > new Date().getTime() - 7*24*60*60*1000)
+            if (ts > new Date().getTime() - 7*24*60*60*1000)
                 newRankings.push(http.rankings.hot[i])
         }
         http.rankings.hot = newRankings.sort(function(a,b) {
@@ -108,7 +109,7 @@ var http = {
         // this suggests the node to produce a block and submit it
         app.get('/mineBlock', (req, res) => {
             delete p2p.recovering
-            res.sendStatus(200)
+            res.send(chain.getLatestBlock()._id.toString())
             chain.mineBlock(function(error, finalBlock) {
                 if (error)
                     logr.error('ERROR refused block', finalBlock)
@@ -129,7 +130,7 @@ var http = {
                 } else {
                     p2p.broadcast({t:5, d:tx})
                     transaction.addToPool([tx])
-                    res.sendStatus(200);
+                    res.send(chain.getLatestBlock()._id.toString());
                 }
             })
         });
