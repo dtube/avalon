@@ -1,4 +1,6 @@
-# AVALON Blockchain
+# AVALON
+
+Avalon is a work-in-progress javascript (!!) social blockchain attempt for `true-proof-of-brain` as a distribution mechanism.
 
 ## Quick start
 * Install MongoDB and run it on your machine
