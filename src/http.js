@@ -366,6 +366,30 @@ var http = {
             })
         })
 
+        // get follows
+        app.get('/follows/:name', (req, res) => {
+            if (!req.params.name) {
+                res.sendStatus(500);
+                return
+            }
+            db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
+                if (!account) res.sendStatus(404)
+                else res.send(account.follows)
+            })
+        })
+
+        // get followers
+        app.get('/followers/:name', (req, res) => {
+            if (!req.params.name) {
+                res.sendStatus(500);
+                return
+            }
+            db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
+                if (!account) res.sendStatus(404)
+                else res.send(account.followers)
+            })
+        })
+
         // test api (should be separated)
         // get youtube info
         app.get('/youtube/:videoId', (req, res) => {
