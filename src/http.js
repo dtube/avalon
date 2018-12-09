@@ -354,7 +354,15 @@ var http = {
             names = req.params.names.split(',', 100)
             db.collection('accounts').find({name: {$in: names}}).toArray(function(err, accounts) {
                 if (!accounts) res.sendStatus(404)
-                else res.send(accounts)
+                else {
+                    for (let i = 0; i < accounts.length; i++) {
+                        accounts[i].followsCount = accounts[i].follows.length
+                        accounts[i].followersCount = accounts[i].followers.length
+                        delete accounts[i].follows
+                        delete accounts[i].followers
+                    }
+                    res.send(accounts)
+                }
             })
         })
 
