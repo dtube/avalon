@@ -63,6 +63,10 @@ var p2p = {
             logr.warn('Incoming handshake refused because OFFLINE')
             ws.close(); return
         }
+        if (!process.env.NO_DISCOVERY && p2p.sockets.length >= process.env.PEERS.split(',').length) {
+            logr.warn('Incoming handshake refused because in NO_DISCOVERY mode and already peered enough')
+            ws.close(); return
+        }
         // close connection if we already have this peer ip in our connected sockets
         for (let i = 0; i < p2p.sockets.length; i++)
             if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress) {
