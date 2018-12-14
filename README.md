@@ -1,6 +1,12 @@
 # AVALON
 
-Avalon is a work-in-progress javascript (!!) social blockchain attempt for `true-proof-of-brain` as a distribution mechanism.
+Avalon is a work-in-progress javascript (!!) social blockchain attempt for `true-proof-of-brain` as a distribution mechanism. Here are the major improvements over 'STEEM':
+
+- Single liquid currency
+- Infinite monetization of contents through time
+- More voting flexibility: no 'cap' to voting power, and you can spend 100% of your voting power in 1 vote if you wish
+- Dynamic Inflation (reward pool = number of active users)
+- Free and instant account creation (without username)
 
 ## Quick start
 * Install MongoDB and run it on your machine
