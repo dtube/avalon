@@ -6,6 +6,7 @@ Avalon is a work-in-progress javascript (!!) social blockchain attempt for `true
 - Infinite monetization of contents through time
 - More voting flexibility: no 'cap' to voting power, and you can spend 100% of your voting power in 1 vote if you wish
 - Dynamic Inflation (reward pool = number of active users)
+- Free and instant account creation (without username)
 
 ## Quick start
 * Install MongoDB and run it on your machine
