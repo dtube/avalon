@@ -211,21 +211,33 @@ chain = {
             return false
         }
     },
-    isValidSignature: (user, hash, sign, cb) => {
+    isValidSignature: (user, txType, hash, sign, cb) => {
         // verify signature and bandwidth
         db.collection('accounts').findOne({name: user}, function(err, account) {
             if (err) throw err;
             if (!account) {
                 cb(false); return
             }
-            var minerPub = account.pub;
-            if (secp256k1.verify(
+            // main key can authorize all transactions
+            var allowedPubKeys = [account.pub]
+            // add all secondary keys having this transaction type as allowed keys
+            if (account.keys && txType) {
+                for (let i = 0; i < account.keys.length; i++) {
+                    if (account.keys[i].types.indexOf(txType) > -1)
+                        allowedPubKeys.push(account.keys[i].pub)
+                }
+            }
+
+            for (let i = 0; i < allowedPubKeys.length; i++) {
+                if (secp256k1.verify(
                 new Buffer(hash, "hex"),
                 bs58.decode(sign),
-                bs58.decode(minerPub)))
-                cb(account)
-            else
-                cb(false)
+                bs58.decode(allowedPubKeys[i]))) {
+                    cb(account)
+                    return
+                }
+            }
+            cb(false)
         })
     },
     isValidNewBlock: (newBlock, verifyHashAndSignature, cb) => {
@@ -319,7 +331,7 @@ chain = {
         }
 
         // finally, verify the signature of the miner
-        chain.isValidSignature(newBlock.miner, newBlock.hash, newBlock.signature, function(legitUser) {
+        chain.isValidSignature(newBlock.miner, null, newBlock.hash, newBlock.signature, function(legitUser) {
             if (!legitUser) {
                 logr.debug('invalid miner signature')
                 cb(false); return
