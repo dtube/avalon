@@ -87,6 +87,16 @@ switch (command) {
 		// username
 		sendTx(cmds.unfollow(process.argv[5]))
 		break;
+	
+	case 'newKey':
+		// username
+		sendTx(cmds.newKey(process.argv[5], process.argv[6], process.argv[7]))
+		break;
+
+	case 'removeKey':
+		// username
+		sendTx(cmds.removeKey(process.argv[5]))
+		break;
 
     default:
         break;

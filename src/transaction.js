@@ -12,6 +12,8 @@ var TransactionType = {
     FOLLOW: 7,
     UNFOLLOW: 8,
     RESHARE: 9, // not sure
+    NEW_KEY: 10,
+    REMOVE_KEY: 11
 };
 
 transaction = {
@@ -370,6 +372,64 @@ transaction = {
                     })
                     break;
 
+                case TransactionType.NEW_KEY:
+                    if (!tx.data.id || typeof tx.data.id !== "string" || tx.data.id.length > 25) {
+                        logr.debug('invalid tx data.id')
+                        cb(false); return
+                    }
+                    if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50 || !chain.isValidPubKey(tx.data.pub)) {
+                        logr.debug('invalid tx data.pub')
+                        cb(false); return
+                    }
+                    if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
+                        logr.debug('invalid tx data.types')
+                        cb(false); return
+                    }
+                    for (let i = 0; i < tx.data.types.length; i++) {
+                        if (!Number.isInteger(tx.data.types[i])) {
+                            cb(false); return
+                        }
+                    }
+                    db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                        if (!account) {
+                            cb(false); return
+                        }
+                        if (!account.keys) {
+                            cb(true); return
+                        } else {
+                            for (let i = 0; i < account.keys.length; i++) {
+                                if (account.keys[i].id === tx.data.id) {
+                                    logr.debug('invalid tx data.id already exists')
+                                    cb(false); return
+                                }
+                            }
+                            cb(true);
+                        }
+                    })
+                    break;
+
+                case TransactionType.REMOVE_KEY:
+                    if (!tx.data.id || typeof tx.data.id !== "string" || tx.data.id.length > 25) {
+                        logr.debug('invalid tx data.id')
+                        cb(false); return
+                    }
+                    db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                        if (!account) {
+                            cb(false); return
+                        }
+                        if (!account.keys) {
+                            cb(false); return
+                        } else {
+                            for (let i = 0; i < account.keys.length; i++) {
+                                if (account.keys[i].id === tx.data.id) {
+                                    cb(true); return
+                                }
+                            }
+                            cb(false);
+                        }
+                    })
+                    break;
+                
                 default:
                     cb(false)
                     break;
@@ -528,13 +588,16 @@ transaction = {
                     }, content, {
                         upsert: true
                     }).then(function(){
-                        db.collection('contents').updateOne({
-                            author: tx.data.pa,
-                            link: tx.data.pp
-                        }, { $addToSet: {
-                            child: [tx.sender, tx.data.link]
-                        }})
-                        http.newRankingContent(content)
+                        if (tx.data.pa && tx.data.pp) {
+                            db.collection('contents').updateOne({
+                                author: tx.data.pa,
+                                link: tx.data.pp
+                            }, { $addToSet: {
+                                child: [tx.sender, tx.data.link]
+                            }})
+                        } else {
+                            http.newRankingContent(content)
+                        }
                         cb(true)
                     })
                     break;
@@ -554,7 +617,8 @@ transaction = {
                         upsert: true
                     }).then(function(){
                         eco.curation(tx.data.author, tx.data.link, function(distributed) {
-                            http.updateRankings(tx.data.author, tx.data.link, vote)
+                            if (!tx.data.pa && !tx.data.pp)
+                                http.updateRankings(tx.data.author, tx.data.link, vote)
                             cb(true, distributed)
                         })
                     })
@@ -595,6 +659,26 @@ transaction = {
                         function() {
                             cb(true)
                         })
+                    })
+                    break;
+
+                case TransactionType.NEW_KEY:
+                    db.collection('accounts').updateOne({
+                        name: tx.sender
+                    },{ $push: {
+                        keys: tx.data
+                    }}).then(function(){
+                        cb(true)
+                    })
+                    break;
+
+                case TransactionType.REMOVE_KEY:
+                    db.collection('accounts').updateOne({
+                        name: tx.sender
+                    },{ $pull: {
+                        keys: tx.data
+                    }}).then(function(){
+                        cb(true)
                     })
                     break;
 

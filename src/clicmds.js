@@ -82,6 +82,18 @@ let cmds = {
 	unfollow: (username) => {
 		var tx = '{"type":8,"data":{"target":"'+username+'"}}'
 		return sign(privKey, sender, tx)
+	},
+	
+	newKey: (id, pub, types) => {
+		var tx = '{"type":10,"data":{"id":"'+
+			id+'","pub":"'+
+			pub+'","types":'+types+'}}'
+		return sign(privKey, sender, tx)
+	},
+	
+	removeKey: (id) => {
+		var tx = '{"type":11,"data":{"id":"'+id+'"}}'
+		return sign(privKey, sender, tx)
 	}
 }
 
