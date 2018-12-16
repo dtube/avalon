@@ -159,6 +159,14 @@ db.blocks.findOne({_id: 0})
 ## Resetting and replaying the chain
 Shut everything down, then `db.dropDatabase()` in mongo, and restart
 
+## Starting a private testnet
+1. Generate a random key pair for the new master account with `node src/cli.js keypair`. Save the keys somewhere safe!
+2. Change the public key [here](https://github.com/skzap/avalon/blob/75c91ea185d564720945d84b52b9debf5ee755bd/src/mongo.js#L26) to the one that you have just generated.
+3. Reset the database in mongo. `db.dropDatabase()`
+4. Add the generated keys to `start.sh`, and set `NODE_OWNER` to `master`.
+5. `npm install` if you haven't already, then `./start.sh`.
+6. Start mining. `curl  http://localhost:3001/mineBlock`
+
 ## Being a good node owner
 If you are in the top 20 node owners, please set your profile as so:
 ```
