@@ -150,6 +150,16 @@ var http = {
         app.get('/schedule', (req, res) => {
             res.send(chain.schedule);
         });
+        
+        // get full list of ranked miners
+        app.get('/allminers', (req,res) => {
+            db.collection('accounts').find({node_appr: {$gt: 0}}, {
+                sort: {node_appr: -1}
+            }).toArray(function(err, accounts) {
+                if (err) throw err;
+                res.send(accounts)
+            })
+        });
 
         // get hot
         app.get('/hot', (req, res) => {
