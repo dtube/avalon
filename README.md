@@ -49,6 +49,11 @@ curl http://localhost:3001/peers
 curl http://localhost:3001/schedule
 ```
 
+#### Get full list of miners sorted by rank
+```
+curl http://localhost:3001/allminers
+```
+
 #### Get block count
 ```
 curl http://localhost:3001/count
