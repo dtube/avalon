@@ -581,6 +581,7 @@ transaction = {
                         pa: tx.data.pa,
                         pp: tx.data.pp,
                         json: tx.data.json,
+                        ts: ts
                     }
                     db.collection('contents').replaceOne({
                         author: tx.sender,
