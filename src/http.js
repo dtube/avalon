@@ -366,8 +366,8 @@ var http = {
                 if (!accounts) res.sendStatus(404)
                 else {
                     for (let i = 0; i < accounts.length; i++) {
-                        accounts[i].followsCount = accounts[i].follows.length
-                        accounts[i].followersCount = accounts[i].followers.length
+                        accounts[i].followsCount = (accounts[i].follows ? accounts[i].follows.length : 0)
+                        accounts[i].followersCount = (accounts[i].followers ? accounts[i].followers.length : 0)
                         delete accounts[i].follows
                         delete accounts[i].followers
                     }
@@ -384,7 +384,12 @@ var http = {
             }
             db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
                 if (!account) res.sendStatus(404)
-                else res.send(account.follows)
+                else {
+                    if (account.follows)
+                        res.send(account.follows)
+                    else
+                        res.send([])
+                }
             })
         })
 
@@ -396,7 +401,12 @@ var http = {
             }
             db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
                 if (!account) res.sendStatus(404)
-                else res.send(account.followers)
+                else {
+                    if (account.followers)
+                        res.send(account.followers)
+                    else
+                        res.send([])
+                }
             })
         })
 
