@@ -69,8 +69,8 @@ switch (command) {
 		break;
 
 	case 'vote':
-		// uri, author, weight
-		sendTx(cmds.vote(process.argv[5], process.argv[6], process.argv[7]))
+		// uri, author, weight, tag
+		sendTx(cmds.vote(process.argv[5], process.argv[6], process.argv[7], process.argv[8]))
 		break;
 
 	case 'profile':

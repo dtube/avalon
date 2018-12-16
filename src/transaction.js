@@ -307,6 +307,10 @@ transaction = {
                         logr.debug('invalid tx data.vt')
                         cb(false); return
                     }
+                    if (typeof tx.data.tag !== "string" || tx.data.tag.length > 25) {
+                        logr.debug('invalid tx data.tag')
+                        cb(false); return
+                    }
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < Math.abs(tx.data.vt)) {
                         logr.debug('invalid tx not enough vt')
@@ -607,7 +611,8 @@ transaction = {
                     var vote = {
                         u: tx.sender,
                         ts: ts,
-                        vt: tx.data.vt
+                        vt: tx.data.vt,
+                        tag: tx.data.tag
                     }
                     db.collection('contents').updateOne({
                         author: tx.data.author,

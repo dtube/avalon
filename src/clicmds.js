@@ -43,7 +43,7 @@ let cmds = {
 		if (!memo) memo=""
 		var tx = '{"type":3,"data":{"receiver":"'+
 			receiver+'", "amount":'+
-			parseFloat(amount)+', "memo":"'+memo+'"}}'
+			parseInt(amount)+', "memo":"'+memo+'"}}'
 		return sign(privKey, sender, tx)
 	},
 
@@ -61,11 +61,12 @@ let cmds = {
 		return sign(privKey, sender, tx)
 	},
 
-	vote: (uri, author, weight) => {
+	vote: (uri, author, weight, tag) => {
+		if (!tag) tag = ""
 		var tx = '{"type":5,"data":{"link":"'+
 			uri+'", "author":"'+
 			author+'", "vt": '+
-			parseFloat(weight)+'}}'
+			parseInt(weight)+', "tag": "'+tag+'"}}'
 		return sign(privKey, sender, tx)
 	},
 	
