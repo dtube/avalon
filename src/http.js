@@ -123,10 +123,10 @@ var http = {
                 res.sendStatus(500)
                 return
             }
-            transaction.isValid(tx, new Date().getTime(), function(isValid) {
+            transaction.isValid(tx, new Date().getTime(), function(isValid, errorMessage) {
                 if (!isValid) {
-                    logr.warn('Invalid tx', tx)
-                    res.sendStatus(500)
+                    logr.warn(errorMessage, tx)
+                    res.status(500).send({error: errorMessage})
                 } else {
                     p2p.broadcast({t:5, d:tx})
                     transaction.addToPool([tx])

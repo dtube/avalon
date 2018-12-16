@@ -142,7 +142,11 @@ var eco = {
                 var newCoins = 0
                 for (let r = 0; r < results.length; r++)
                     newCoins += results[r];
-                cb(newCoins)
+                db.collection('contents').updateOne({author: author, link: link}, {
+                    $inc: {dist: newCoins}
+                }).then(function() {
+                    cb(newCoins)
+                })
             })
         })
     },
@@ -193,11 +197,19 @@ var eco = {
                 }).then(function(){
                     if (newCoins > 0) {
                         account.balance -= newCoins
-                        transaction.updateGrowInts(account, ts, function(success) {
-                            transaction.adjustNodeAppr(account, newCoins, function(success) {
-                                cb(newCoins)
+                        db.collection('distributed').insertOne({
+                            name: name,
+                            dist: newCoins,
+                            ts: ts
+                        }, function(err) {
+                            if (err) throw err;
+                            transaction.updateGrowInts(account, ts, function(success) {
+                                transaction.adjustNodeAppr(account, newCoins, function(success) {
+                                    cb(newCoins)
+                                })
                             })
                         })
+                        
                     } else cb(newCoins)
                 })
             })

@@ -61,70 +61,57 @@ transaction = {
     },
     isValid: (tx, ts, cb) => {
         if (!tx) {
-            logr.debug('no transaction')
-            cb(false); return
+            cb(false, 'no transaction'); return
         }
         // checking required variables one by one
         if (typeof tx.type !== "number" || tx.type < 0 || tx.type > Number.MAX_SAFE_INTEGER) {
-            logr.debug('invalid tx type')
-            cb(false); return
+            cb(false, 'invalid tx type'); return
         }
         if (!tx.data || typeof tx.data !== "object") {
-            logr.debug('invalid tx data')
-            cb(false); return
+            cb(false, 'invalid tx data'); return
         }
         if (!tx.sender || typeof tx.sender !== "string") {
-            logr.debug('invalid tx sender')
-            cb(false); return
+            cb(false, 'invalid tx sender'); return
         }
         if (!tx.ts || typeof tx.ts !== "number" || tx.ts < 0 || tx.ts > Number.MAX_SAFE_INTEGER) {
-            logr.debug('invalid tx ts')
-            cb(false); return
+            cb(false, 'invalid tx ts'); return
         }
         if (!tx.hash || typeof tx.hash !== "string") {
-            logr.debug('invalid tx hash')
-            cb(false); return
+            cb(false, 'invalid tx hash'); return
         }
         if (!tx.signature || typeof tx.signature !== "string") {
-            logr.debug('invalid tx signature')
-            cb(false); return
+            cb(false, 'invalid tx signature'); return
         }
 
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
         if (chain.getLatestBlock().timestamp - tx.ts > 60000) {
-            logr.debug('invalid timestamp')
-            cb(false); return
+            cb(false, 'invalid timestamp'); return
         }
         // check if this tx hash was already added to chain recently
         if (transaction.isPublished(tx)) {
-            logr.debug('transaction already in chain')
-            cb(false); return
+            cb(false, 'transaction already in chain'); return
         }
 
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser) {
             if (!legitUser) {
-                logr.debug('invalid signature')
-                cb(false); return
+                cb(false, 'invalid signature'); return
             }
 
             // checking if the user has enough bandwidth
             if (JSON.stringify(tx).length > new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000), max:1048576}).grow(ts).v) {
-                logr.debug('not enough bandwidth')
-                cb(false); return
+                cb(false, 'not enough bandwidth'); return
             }
 
             // check transaction specifics
             switch (tx.type) {
                 case TransactionType.NEW_ACCOUNT:
                     if (!tx.data.name || typeof tx.data.name !== "string" || tx.data.name.length > 50) {
-                        logr.debug('invalid tx data.name')
-                        cb(false); return
+                        cb(false, 'invalid tx data.name'); return
                     }
                     if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50 || !chain.isValidPubKey(tx.data.pub)) {
-                        logr.debug('invalid tx data.pub')
-                        cb(false); return
+                        cb(false, 'invalid tx data.pub'); return
                     }
 
                     var lowerUser = tx.data.name.toLowerCase()
@@ -133,21 +120,20 @@ transaction = {
                         const c = lowerUser[i];
                         // allowed username chars
                         if ('abcdefghijklmnopqrstuvwxyz0123456789'.indexOf(c) == -1) {
-                            logr.debug('invalid tx data.name char')
-                            cb(false); return
+                            cb(false, 'invalid tx data.name char'); return
                         }
                     }
 
                     db.collection('accounts').findOne({name: lowerUser}, function(err, account) {
                         if (err) throw err;
                         if (account)
-                            cb(false)
+                            cb(false, 'invalid tx data.name already exists')
                         else if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) {
                             // if it's not a free account, check tx sender balance
                             db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
                                 if (err) throw err;
                                 if (account.balance < 60)
-                                    cb(false)
+                                    cb(false, 'invalid tx not enough balance')
                                 else
                                     cb(true)
                             })
@@ -158,22 +144,21 @@ transaction = {
 
                 case TransactionType.APPROVE_NODE_OWNER:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
-                        logr.debug('invalid tx data.target')
-                        cb(false); return
+                        cb(false, 'invalid tx data.target'); return
                     }
 
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.approves) acc.approves = []
                         if (acc.approves.indexOf(tx.data.target) > -1) {
-                            cb(false); return
+                            cb(false, 'invalid tx already voting'); return
                         }
                         if (acc.approves.length >= 5)
-                            cb(false)
+                            cb(false, 'invalid tx max votes reached')
                         else {
                             db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
                                 if (!account) {
-                                    cb(false)
+                                    cb(false, 'invalid tx target does not exist')
                                 } else {
                                     cb(true)
                                 }
@@ -184,19 +169,18 @@ transaction = {
 
                 case TransactionType.DISAPROVE_NODE_OWNER:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
-                        logr.debug('invalid tx data.target')
-                        cb(false); return
+                        cb(false, 'invalid tx data.target'); return
                     }
 
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.approves) acc.approves = []
                         if (acc.approves.indexOf(tx.data.target) == -1) {
-                            cb(false); return
+                            cb(false, 'invalid tx already unvoted'); return
                         }
                         db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
                             if (!account) {
-                                cb(false)
+                                cb(false, 'invalid tx target does not exist')
                             } else {
                                 cb(true)
                             }
@@ -206,34 +190,29 @@ transaction = {
 
                 case TransactionType.TRANSFER:
                     if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.receiver.length > 25) {
-                        logr.debug('invalid tx data.receiver')
-                        cb(false); return
+                        cb(false, 'invalid tx data.receiver'); return
                     }
                     if (!tx.data.amount || typeof tx.data.amount !== "number" || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
-                        logr.debug('invalid tx data.amount')
-                        cb(false); return
+                        cb(false, 'invalid tx data.amount'); return
                     }
                     if (typeof tx.data.memo !== "string" || tx.data.memo.length > 250) {
-                        logr.debug('invalid tx data.memo')
-                        cb(false); return
+                        cb(false, 'invalid tx data.memo'); return
                     }
                     if (tx.data.amount != Math.floor(tx.data.amount)) {
-                        logr.debug('invalid tx data.amount not an integer')
-                        cb(false); return
+                        cb(false, 'invalid tx data.amount not an integer'); return
                     }
                     if (tx.data.receiver === tx.sender) {
-                        logr.debug('invalid tx cannot send to self')
-                        cb(false); return
+                        cb(false, 'invalid tx cannot send to self'); return
                     }
                     
                     db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
                         if (err) throw err;
                         if (account.balance < tx.data.amount)
-                            cb(false)
+                            cb(false, 'invalid tx not enough balance')
                         else {
                             db.collection('accounts').findOne({name: tx.data.receiver}, function(err, account) {
                                 if (err) throw err;
-                                if (!account) cb(false)
+                                if (!account) cb(false, 'invalid tx receiver does not exist')
                                 else cb(true)
                             })
                         }
@@ -243,44 +222,37 @@ transaction = {
                 case TransactionType.COMMENT:
                     // permlink
                     if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
-                        logr.debug('invalid tx data.link')
-                        cb(false); return
+                        cb(false, 'invalid tx data.link'); return
                     }
                     // parent author
                     if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== "string" || tx.data.pa.length > 25)) {
-                        logr.debug('invalid tx data.pa')
-                        cb(false); return
+                        cb(false, 'invalid tx data.pa'); return
                     }
                     // parent permlink
                     if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== "string" || tx.data.pp.length > 25)) {
-                        logr.debug('invalid tx data.pp')
-                        cb(false); return
+                        cb(false, 'invalid tx data.pp'); return
                     }
                     // handle arbitrary json input
                     if (!tx.data.json || typeof tx.data.json !== "object" || JSON.stringify(tx.data.json).length > 250000) {
-                        logr.debug('invalid tx data.json')
-                        cb(false); return
+                        cb(false, 'invalid tx data.json'); return
                     }
                     // commenting costs 1 vote token as a forced self-upvote
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < 1) {
-                        logr.debug('not enough vt for comment')
-                        cb(false); return
+                        cb(false, 'invalid tx not enough vt'); return
                     }
 
                     if (tx.data.pa && tx.data.pp) {
                         // its a comment of another comment
                         db.collection('contents').findOne({author: tx.data.pa, link: tx.data.pp}, function(err, content) {
                             if (!content) {
-                                logr.debug('new comment tried to reference a non existing comment')
-                                cb(false); return
+                                cb(false, 'invalid tx parent comment does not exist'); return
                             }
                             db.collection('contents').findOne({author: tx.sender, link: tx.data.link}, function(err, content) {
                                 if (content) {
                                     // user is editing an existing comment
                                     if (content.pa != tx.data.pa || content.pp != tx.data.pp) {
-                                        logr.debug('users tried to change the pa and/or pp of a comment')
-                                        cb(false); return
+                                        cb(false, 'invalid tx parent comment cannot be edited'); return
                                     }
                                 } else {
                                     // it is a new comment
@@ -300,21 +272,17 @@ transaction = {
                         cb(false); return
                     }
                     if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
-                        logr.debug('invalid tx data.link')
-                        cb(false); return
+                        cb(false, 'invalid tx data.link'); return
                     }
                     if (!tx.data.vt || typeof tx.data.vt !== "number" || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
-                        logr.debug('invalid tx data.vt')
-                        cb(false); return
+                        cb(false, 'invalid tx data.vt'); return
                     }
                     if (typeof tx.data.tag !== "string" || tx.data.tag.length > 25) {
-                        logr.debug('invalid tx data.tag')
-                        cb(false); return
+                        cb(false, 'invalid tx data.tag'); return
                     }
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
                     if (vt.v < Math.abs(tx.data.vt)) {
-                        logr.debug('invalid tx not enough vt')
-                        cb(false); return
+                        cb(false, 'invalid tx not enough vt'); return
                     }
                     cb(true)
                     break;
@@ -322,30 +290,28 @@ transaction = {
                 case TransactionType.USER_JSON:
                     // handle arbitrary json input
                     if (!tx.data.json || typeof tx.data.json !== "object" || JSON.stringify(tx.data.json).length > 250000) {
-                        logr.debug('invalid tx data.json')
-                        cb(false); return
+                        cb(false, 'invalid tx data.json'); return
                     }
                     cb(true)
                     break;
 
                 case TransactionType.FOLLOW:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
-                        logr.debug('invalid tx data.target')
-                        cb(false); return
+                        cb(false, 'invalid tx data.target'); return
                     }
 
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.follows) acc.follows = []
                         if (acc.follows.indexOf(tx.data.target) > -1) {
-                            cb(false); return
+                            cb(false, 'invalid tx already following'); return
                         }
                         if (acc.follows.length >= 2000)
-                            cb(false)
+                            cb(false, 'invalid tx reached max follows')
                         else {
                             db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
                                 if (!account) {
-                                    cb(false)
+                                    cb(false, 'invalid tx target does not exist')
                                 } else {
                                     cb(true)
                                 }
@@ -356,19 +322,18 @@ transaction = {
 
                 case TransactionType.UNFOLLOW:
                     if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
-                        logr.debug('invalid tx data.target')
-                        cb(false); return
+                        cb(false, 'invalid tx data.target'); return
                     }
 
                     db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.follows) acc.follows = []
                         if (acc.follows.indexOf(tx.data.target) == -1) {
-                            cb(false); return
+                            cb(false, 'invalid tx not following target'); return
                         }
                         db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
                             if (!account) {
-                                cb(false)
+                                cb(false, 'invalid tx target does not exist')
                             } else {
                                 cb(true)
                             }
@@ -378,33 +343,29 @@ transaction = {
 
                 case TransactionType.NEW_KEY:
                     if (!tx.data.id || typeof tx.data.id !== "string" || tx.data.id.length > 25) {
-                        logr.debug('invalid tx data.id')
-                        cb(false); return
+                        cb(false, 'invalid tx data.id'); return
                     }
                     if (!tx.data.pub || typeof tx.data.pub !== "string" || tx.data.pub.length > 50 || !chain.isValidPubKey(tx.data.pub)) {
-                        logr.debug('invalid tx data.pub')
-                        cb(false); return
+                        cb(false, 'invalid tx data.pub'); return
                     }
                     if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
-                        logr.debug('invalid tx data.types')
-                        cb(false); return
+                        cb(false, 'invalid tx data.types'); return
                     }
                     for (let i = 0; i < tx.data.types.length; i++) {
                         if (!Number.isInteger(tx.data.types[i])) {
-                            cb(false); return
+                            cb(false, 'invalid tx all types must be integers'); return
                         }
                     }
                     db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
                         if (!account) {
-                            cb(false); return
+                            cb(false, 'invalid tx sender does not exist'); return
                         }
                         if (!account.keys) {
                             cb(true); return
                         } else {
                             for (let i = 0; i < account.keys.length; i++) {
                                 if (account.keys[i].id === tx.data.id) {
-                                    logr.debug('invalid tx data.id already exists')
-                                    cb(false); return
+                                    cb(false, 'invalid tx data.id already exists'); return
                                 }
                             }
                             cb(true);
@@ -414,28 +375,27 @@ transaction = {
 
                 case TransactionType.REMOVE_KEY:
                     if (!tx.data.id || typeof tx.data.id !== "string" || tx.data.id.length > 25) {
-                        logr.debug('invalid tx data.id')
-                        cb(false); return
+                        cb(false, 'invalid tx data.id'); return
                     }
                     db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
                         if (!account) {
-                            cb(false); return
+                            cb(false, 'invalid tx sender does not exist'); return
                         }
                         if (!account.keys) {
-                            cb(false); return
+                            cb(false, 'invalid tx could not find key'); return
                         } else {
                             for (let i = 0; i < account.keys.length; i++) {
                                 if (account.keys[i].id === tx.data.id) {
                                     cb(true); return
                                 }
                             }
-                            cb(false);
+                            cb(false, 'invalid tx could not find key');
                         }
                     })
                     break;
                 
                 default:
-                    cb(false)
+                    cb(false, 'invalid tx unknown transaction type')
                     break;
             }
         })
