@@ -81,8 +81,9 @@ node src/cli.js disapproveNode <key> <user> <target>
 #### Transfer tokens
 * *receiver*: username of the receiver of the transfer
 * *amount*: number of tokens to transfer to the receiver
+* *memo*: arbitrary short text content
 ```
-node src/cli.js transfer <key> <user> <receiver> <amount>
+node src/cli.js transfer <key> <user> <receiver> <amount> <memo>
 ```
 
 #### Add a post
@@ -105,8 +106,9 @@ node src/cli.js comment <key> <user> <link> <parent_author> <parent_link> <json>
 * *link*: the link of the post to vote on
 * *author*: the username of the author to vote on
 * *weight*: the number of vote tokens to spend on this vote
+* *tag*: arbitrary short text content
 ```
-node src/cli.js vote <key> <user> <link> <author> <weight>
+node src/cli.js vote <key> <user> <link> <author> <weight> <tag>
 ```
 
 #### Edit your user json object
