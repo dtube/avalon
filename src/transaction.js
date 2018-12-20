@@ -119,7 +119,7 @@ transaction = {
                     for (let i = 0; i < lowerUser.length; i++) {
                         const c = lowerUser[i];
                         // allowed username chars
-                        if ('abcdefghijklmnopqrstuvwxyz0123456789'.indexOf(c) == -1) {
+                        if (chain.allowedUsernameChars.indexOf(c) == -1) {
                             cb(false, 'invalid tx data.name char'); return
                         }
                     }

@@ -5,6 +5,7 @@ const bs58 = require('bs58')
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
+const notifications = require('./notifications.js')
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
@@ -51,6 +52,7 @@ chain = {
             originHash
         );
     },
+    allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
     prepareBlock: () => {
         var previousBlock = chain.getLatestBlock()
         var nextIndex = previousBlock._id + 1
@@ -107,6 +109,9 @@ chain = {
                 
                 // add it to our chain !
                 chain.addBlock(newBlock, function(added) {
+                    // process notifications (non blocking)
+                    notifications.processBlock(newBlock)
+
                     // and broadcast to peers
                     p2p.broadcastBlock(newBlock)
                     cb(null, newBlock)
