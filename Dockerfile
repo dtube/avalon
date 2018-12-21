@@ -5,7 +5,7 @@ WORKDIR /avalon
 RUN npm install
 EXPOSE 6001
 EXPOSE 3001
-ENV DB_URL
+ENV DB_URL 'mongodb://localhost:27017'
 ENV DB_NAME 'avalon'
 ENV NODE_OWNER 'default user'
 ENV NODE_OWNER_PUB 'Invalid Key'
