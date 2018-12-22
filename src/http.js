@@ -271,7 +271,7 @@ var http = {
         })
 
         // account history api
-        app.get('/blog/:author/history/:lastBlock', (req, res) => {
+        app.get('/history/:author/:lastBlock', (req, res) => {
             var lastBlock = parseInt(req.params.lastBlock)
             var author = req.params.author
             var query = {
