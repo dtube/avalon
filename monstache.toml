@@ -1,0 +1,3 @@
+# connection settings
+
+change-stream-namespaces = ["avalon.contents", "avalon.accounts"]
