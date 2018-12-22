@@ -254,6 +254,10 @@ var http = {
                 {author: req.params.author}, 
                 {link: req.params.link}
             ]}, function(err, content) {
+                if (err || !content)  {
+                    res.send([])
+                    return
+                }
                 var username = req.params.username
                 db.collection('contents').find({
                 $and: [
