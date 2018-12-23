@@ -55,7 +55,7 @@ var http = {
     updateRankings: function(author, link, vote) {
         newRankings = []
         for (let i = 0; i < http.rankings.hot.length; i++) {
-            var ts = parseInt(http.rankings.hot[i]._id.substring(0, 8), 16) * 1000
+            var ts = http.rankings.hot[i]._id.ts
             if (http.rankings.hot[i].author == author && http.rankings.hot[i].link == link) {
                 if (vote.vt > 0)
                     http.rankings.hot[i].ups += Math.abs(vote.vt)
