@@ -163,7 +163,7 @@ var http = {
 
         // get hot
         app.get('/hot', (req, res) => {
-            if (!http.rankings.hot) {
+            if (!http.rankings.hot || http.rankings.hot.length < 1) {
                 http.generateHot(function() {
                     res.send(http.rankings.hot.slice(0,50))
                 })
