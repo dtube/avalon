@@ -539,31 +539,50 @@ transaction = {
                     break;
 
                 case TransactionType.COMMENT:
-                    var content = {
-                        author: tx.sender,
-                        link: tx.data.link,
-                        pa: tx.data.pa,
-                        pp: tx.data.pp,
-                        json: tx.data.json,
-                        ts: ts
-                    }
-                    db.collection('contents').replaceOne({
-                        author: tx.sender,
-                        link: tx.data.link
-                    }, content, {
-                        upsert: true
-                    }).then(function(){
-                        if (tx.data.pa && tx.data.pp) {
+                    db.collection('contents').findOne({author: tx.sender, link: tx.data.link}, function(err, content) {
+                        if (err) throw err;
+                        if (content) {
+                            // existing content being edited
                             db.collection('contents').updateOne({
-                                author: tx.data.pa,
-                                link: tx.data.pp
-                            }, { $addToSet: {
-                                child: [tx.sender, tx.data.link]
-                            }})
+                                author: tx.sender,
+                                link: tx.data.link
+                            }, {
+                                $set: {json: tx.data.json}
+                            }).then(function(){
+                                content.json = tx.data.json
+                                if (!tx.data.pa && !tx.data.pp)
+                                    http.newRankingContent(content)
+                                cb(true)
+                            })
                         } else {
-                            http.newRankingContent(content)
+                            // new content
+                            var content = {
+                                author: tx.sender,
+                                link: tx.data.link,
+                                pa: tx.data.pa,
+                                pp: tx.data.pp,
+                                json: tx.data.json,
+                                ts: ts
+                            }
+                            db.collection('contents').replaceOne({
+                                author: tx.sender,
+                                link: tx.data.link
+                            }, content, {
+                                upsert: true
+                            }).then(function(){
+                                if (tx.data.pa && tx.data.pp) {
+                                    db.collection('contents').updateOne({
+                                        author: tx.data.pa,
+                                        link: tx.data.pp
+                                    }, { $addToSet: {
+                                        child: [tx.sender, tx.data.link]
+                                    }})
+                                } else {
+                                    http.newRankingContent(content)
+                                }
+                                cb(true)
+                            })
                         }
-                        cb(true)
                     })
                     break;
 

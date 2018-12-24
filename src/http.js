@@ -49,18 +49,27 @@ var http = {
 
         if (!alreadyAdded) {
             content._id = Math.floor(new Date().getTime() / 1000).toString(16) + "0000000000000000"
+            content.score = 0
+            content.ups = 0
+            content.downs = 0
             http.rankings.hot.push(content)
         }
     },
     updateRankings: function(author, link, vote) {
         newRankings = []
         for (let i = 0; i < http.rankings.hot.length; i++) {
-            var ts = http.rankings.hot[i]._id.ts
+            var ts = http.rankings.hot[i].ts
             if (http.rankings.hot[i].author == author && http.rankings.hot[i].link == link) {
                 if (vote.vt > 0)
                     http.rankings.hot[i].ups += Math.abs(vote.vt)
                 if (vote.vt < 0)
                     http.rankings.hot[i].downs += Math.abs(vote.vt)
+
+                if (!http.rankings.hot[i].votes)
+                    http.rankings.hot[i].votes = [vote]
+                else
+                    http.rankings.hot[i].votes.push(vote)
+                    
                 http.rankings.hot[i].score = hotScore(http.rankings.hot[i].ups, http.rankings.hot[i].downs, new Date(ts))
             }
             if (ts > new Date().getTime() - 7*24*60*60*1000)
