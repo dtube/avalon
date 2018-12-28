@@ -222,13 +222,17 @@ var http = {
         // get feed contents
         app.get('/feed/:username', (req, res) => {
             db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
-                db.collection('contents').find({
-                $and: [
-                    {author: {$in: account.follows}},
-                    {pa: null}
-                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
-                    res.send(contents)
-                })
+                if (!account.follows) {
+                    res.send([])
+                } else {
+                    db.collection('contents').find({
+                    $and: [
+                        {author: {$in: account.follows}},
+                        {pa: null}
+                    ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                        res.send(contents)
+                    })
+                }
             })
         })
         app.get('/feed/:username/:author/:link', (req, res) => {
@@ -238,14 +242,18 @@ var http = {
                 {link: req.params.link}
             ]}, function(err, content) {
                 db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
-                    db.collection('contents').find({
-                    $and: [
-                        {author: {$in: account.follows}},
-                        {pa: null},
-                        {_id: {$lt: content._id}}
-                    ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
-                        res.send(contents)
-                    })
+                    if (!account.follows) {
+                        res.send([])
+                    } else {
+                        db.collection('contents').find({
+                        $and: [
+                            {author: {$in: account.follows}},
+                            {pa: null},
+                            {_id: {$lt: content._id}}
+                        ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                            res.send(contents)
+                        })
+                    }
                 })
             })
         })
