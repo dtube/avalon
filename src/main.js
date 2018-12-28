@@ -5,7 +5,7 @@ mongo = require('./mongo.js')
 chain = require('./chain.js')
 transaction = require('./transaction.js')
 
-originHash = "0000000000000000000000000000000000000000000000000000000000000015"
+originHash = "0000000000000000000000000000000000000000000000000000000000000016"
 
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {
