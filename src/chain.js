@@ -109,11 +109,11 @@ chain = {
                 
                 // add it to our chain !
                 chain.addBlock(newBlock, function(added) {
-                    // process notifications (non blocking)
-                    notifications.processBlock(newBlock)
-
                     // and broadcast to peers
                     p2p.broadcastBlock(newBlock)
+
+                    // process notifications (non blocking)
+                    notifications.processBlock(newBlock)
                     cb(null, newBlock)
                 })
             })
