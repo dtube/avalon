@@ -27,6 +27,7 @@ var http = {
                         contents[i].ups += Math.abs(contents[i].votes[y].vt)
                     if (contents[i].votes[y].vt < 0)
                         contents[i].downs += Math.abs(contents[i].votes[y].vt)
+                    if (!contents[i].dist) contents[i].dist = 0
                 }
                 contents[i].score = hotScore(contents[i].ups, contents[i].downs, contents[i]._id.getTimestamp())
             }
@@ -52,10 +53,11 @@ var http = {
             content.score = 0
             content.ups = 0
             content.downs = 0
+            content.dist = 0
             http.rankings.hot.push(content)
         }
     },
-    updateRankings: function(author, link, vote) {
+    updateRankings: function(author, link, vote, dist) {
         newRankings = []
         for (let i = 0; i < http.rankings.hot.length; i++) {
             var ts = http.rankings.hot[i].ts
@@ -64,7 +66,8 @@ var http = {
                     http.rankings.hot[i].ups += Math.abs(vote.vt)
                 if (vote.vt < 0)
                     http.rankings.hot[i].downs += Math.abs(vote.vt)
-
+                if (dist)
+                    http.rankings.hot[i].dist += dist
                 if (!http.rankings.hot[i].votes)
                     http.rankings.hot[i].votes = [vote]
                 else
