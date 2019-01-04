@@ -143,7 +143,7 @@ transaction = {
                 
 
                 case TransactionType.APPROVE_NODE_OWNER:
-                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 50) {
                         cb(false, 'invalid tx data.target'); return
                     }
 
@@ -168,7 +168,7 @@ transaction = {
                     break;
 
                 case TransactionType.DISAPROVE_NODE_OWNER:
-                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 50) {
                         cb(false, 'invalid tx data.target'); return
                     }
 
@@ -296,7 +296,7 @@ transaction = {
                     break;
 
                 case TransactionType.FOLLOW:
-                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 50) {
                         cb(false, 'invalid tx data.target'); return
                     }
 
@@ -320,8 +320,7 @@ transaction = {
                     })
                     break;
 
-                case TransactionType.UNFOLLOW:
-                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                case TransactionType.UNFOLLOW50                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
                         cb(false, 'invalid tx data.target'); return
                     }
 
