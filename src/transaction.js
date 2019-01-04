@@ -320,7 +320,8 @@ transaction = {
                     })
                     break;
 
-                case TransactionType.UNFOLLOW50                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 25) {
+                case TransactionType.UNFOLLOW:
+                    if (!tx.data.target || typeof tx.data.target !== "string" || tx.data.target.length > 50) {
                         cb(false, 'invalid tx data.target'); return
                     }
 
