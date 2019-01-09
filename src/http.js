@@ -27,6 +27,7 @@ var http = {
                         contents[i].ups += Math.abs(contents[i].votes[y].vt)
                     if (contents[i].votes[y].vt < 0)
                         contents[i].downs += Math.abs(contents[i].votes[y].vt)
+                    if (!contents[i].dist) contents[i].dist = 0
                 }
                 contents[i].score = hotScore(contents[i].ups, contents[i].downs, contents[i]._id.getTimestamp())
             }
@@ -49,18 +50,29 @@ var http = {
 
         if (!alreadyAdded) {
             content._id = Math.floor(new Date().getTime() / 1000).toString(16) + "0000000000000000"
+            content.score = 0
+            content.ups = 0
+            content.downs = 0
+            content.dist = 0
             http.rankings.hot.push(content)
         }
     },
-    updateRankings: function(author, link, vote) {
+    updateRankings: function(author, link, vote, dist) {
         newRankings = []
         for (let i = 0; i < http.rankings.hot.length; i++) {
-            var ts = parseInt(http.rankings.hot[i]._id.substring(0, 8), 16) * 1000
+            var ts = http.rankings.hot[i].ts
             if (http.rankings.hot[i].author == author && http.rankings.hot[i].link == link) {
                 if (vote.vt > 0)
                     http.rankings.hot[i].ups += Math.abs(vote.vt)
                 if (vote.vt < 0)
                     http.rankings.hot[i].downs += Math.abs(vote.vt)
+                if (dist)
+                    http.rankings.hot[i].dist += dist
+                if (!http.rankings.hot[i].votes)
+                    http.rankings.hot[i].votes = [vote]
+                else
+                    http.rankings.hot[i].votes.push(vote)
+                    
                 http.rankings.hot[i].score = hotScore(http.rankings.hot[i].ups, http.rankings.hot[i].downs, new Date(ts))
             }
             if (ts > new Date().getTime() - 7*24*60*60*1000)
@@ -163,7 +175,7 @@ var http = {
 
         // get hot
         app.get('/hot', (req, res) => {
-            if (!http.rankings.hot) {
+            if (!http.rankings.hot || http.rankings.hot.length < 1) {
                 http.generateHot(function() {
                     res.send(http.rankings.hot.slice(0,50))
                 })
@@ -213,13 +225,17 @@ var http = {
         // get feed contents
         app.get('/feed/:username', (req, res) => {
             db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
-                db.collection('contents').find({
-                $and: [
-                    {author: {$in: account.follows}},
-                    {pa: null}
-                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
-                    res.send(contents)
-                })
+                if (!account.follows) {
+                    res.send([])
+                } else {
+                    db.collection('contents').find({
+                    $and: [
+                        {author: {$in: account.follows}},
+                        {pa: null}
+                    ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                        res.send(contents)
+                    })
+                }
             })
         })
         app.get('/feed/:username/:author/:link', (req, res) => {
@@ -229,14 +245,18 @@ var http = {
                 {link: req.params.link}
             ]}, function(err, content) {
                 db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
-                    db.collection('contents').find({
-                    $and: [
-                        {author: {$in: account.follows}},
-                        {pa: null},
-                        {_id: {$lt: content._id}}
-                    ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
-                        res.send(contents)
-                    })
+                    if (!account.follows) {
+                        res.send([])
+                    } else {
+                        db.collection('contents').find({
+                        $and: [
+                            {author: {$in: account.follows}},
+                            {pa: null},
+                            {_id: {$lt: content._id}}
+                        ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                            res.send(contents)
+                        })
+                    }
                 })
             })
         })
@@ -254,6 +274,10 @@ var http = {
                 {author: req.params.author}, 
                 {link: req.params.link}
             ]}, function(err, content) {
+                if (err || !content)  {
+                    res.send([])
+                    return
+                }
                 var username = req.params.username
                 db.collection('contents').find({
                 $and: [
@@ -267,7 +291,7 @@ var http = {
         })
 
         // account history api
-        app.get('/blog/:author/history/:lastBlock', (req, res) => {
+        app.get('/history/:author/:lastBlock', (req, res) => {
             var lastBlock = parseInt(req.params.lastBlock)
             var author = req.params.author
             var query = {
