@@ -1,11 +1,12 @@
-logr = require('./logger.js');
+// starting sub modules
+logr = require('./logger.js')
 http = require('./http.js')
 p2p = require('./p2p.js')
 mongo = require('./mongo.js')
 chain = require('./chain.js')
 transaction = require('./transaction.js')
 
-originHash = "0000000000000000000000000000000000000000000000000000000000000017"
+originHash = "0000000000000000000000000000000000000000000000000000000000000018"
 
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {

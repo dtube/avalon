@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export LOG_LEVEL=trace
 ## Example of a secondary node on the same machine, just a different database and two different ports
 
 export HTTP_PORT=3002

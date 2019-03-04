@@ -1,6 +1,9 @@
 var p2p_port = process.env.P2P_PORT || 6001;
 var WebSocket = require("ws");
 var chain = require('./chain.js')
+var secp256k1 = require('secp256k1')
+var bs58 = require('bs58')
+var CryptoJS = require("crypto-js")
 
 var MessageType = {
     QUERY_NODE_STATUS: 0,
@@ -8,11 +11,14 @@ var MessageType = {
     QUERY_BLOCK: 2,
     BLOCK: 3,
     NEW_BLOCK: 4,
-    NEW_TX: 5
+    NEW_TX: 5,
+    BLOCK_PRECOMMIT: 6,
+    BLOCK_COMMIT: 7
 };
 
 var p2p = {
     sockets: [],
+    possibleNextBlocks: [],
     recoveringBlocks: [],
     recoveredBlocks: [],
     recovering: false,
@@ -51,11 +57,11 @@ var p2p = {
     },
     connect: (newPeers) => {
         newPeers.forEach((peer) => {
-            var ws = new WebSocket(peer);
-            ws.on('open', () => p2p.handshake(ws));
+            var ws = new WebSocket(peer)
+            ws.on('open', () => p2p.handshake(ws))
             ws.on('error', () => {
                 logr.warn('peer connection failed', peer)
-            });
+            })
         });
     },
     handshake: (ws) => {
@@ -69,11 +75,12 @@ var p2p = {
         }
         // close connection if we already have this peer ip in our connected sockets
         for (let i = 0; i < p2p.sockets.length; i++)
-            if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress) {
+            if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress
+                && p2p.sockets[i]._socket.remotePort == ws._socket.remotePort) {
                 ws.close()
                 return
             }
-        logr.debug('Handshaking new peer', ws.url || ws._socket.remoteAddress)
+        logr.debug('Handshaking new peer', ws.url || ws._socket.remoteAddress+':'+ws._socket.remotePort)
         p2p.sockets.push(ws);
         p2p.messageHandler(ws);
         p2p.errorHandler(ws);
@@ -81,6 +88,7 @@ var p2p = {
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
+            logr.trace('P2P:', data)
             try {
                 var message = JSON.parse(data);
             } catch(e) {
@@ -94,11 +102,16 @@ var p2p = {
                         head_block: chain.getLatestBlock()._id,
                         owner: process.env.NODE_OWNER
                     }
-                    p2p.sendJSON(ws, {t: MessageType.NODE_STATUS, d:d})
+                    p2p.sendJSON(ws, p2p.hashAndSignMessage({t: MessageType.NODE_STATUS, d:d}))
                     break;
 
                 case MessageType.NODE_STATUS:
-                    p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
+                    p2p.verifySignedMessage(message, function(isValid) {
+                        if (isValid)
+                            p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
+                        else
+                            logr.debug('Wrong p2p sign')
+                    })
                     break;
 
                 case MessageType.QUERY_BLOCK:
@@ -142,18 +155,25 @@ var p2p = {
                     break;
 
                 case MessageType.NEW_BLOCK:
-                    if (!p2p.sockets[p2p.sockets.indexOf(ws)] || !p2p.sockets[p2p.sockets.indexOf(ws)].node_status) return
-                    p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = message.d._id
-                    if (message.d._id != chain.getLatestBlock()._id+1)
+                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
+                    var block = message.d
+                    if (!socket || !socket.node_status) return
+                    p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
+                    if (block._id < chain.getLatestBlock()._id+1)
                         return
                     if (!p2p.processing) {
                         p2p.processing = true
-                        chain.validateAndAddBlock(message.d, function(err, newBlock) {
+
+                        // Adding block to consensus if block is valid
+                        chain.isValidNewBlock(block, true, function(isValid) {
                             p2p.processing = false
-                            if (err)
-                                logr.error('Error New Block', newBlock)
-                            else
-                                p2p.recovering = false
+                            if (!isValid)
+                                logr.error('Received invalid new block', block)
+                            else {
+                                if (p2p.recovering)
+                                    p2p.recovering = false
+                                p2p.precommit(block)
+                            }
                         })
                     }
                     break;
@@ -170,7 +190,11 @@ var p2p = {
                         }
                     })
                     break;
-            }
+                case MessageType.BLOCK_PRECOMMIT:
+                    break;
+                case MessageType.BLOCK_COMMIT:
+                    break;
+               }
         });
     },
     recover: () => {
@@ -209,8 +233,96 @@ var p2p = {
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
     broadcastBlock: (block) => {
         for (let i = 0; i < p2p.sockets.length; i++)
-            if (p2p.sockets[i].node_status && p2p.sockets[i].node_status.head_block < block._id)
+            //if (p2p.sockets[i].node_status && p2p.sockets[i].node_status.head_block < block._id)
                 p2p.broadcast({t:4,d:block})
+    },
+    hashAndSignMessage: (message) => {
+        var hash = CryptoJS.SHA256(JSON.stringify(message)).toString();
+        var signature = secp256k1.sign(new Buffer(hash, "hex"), bs58.decode(process.env.NODE_OWNER_PRIV));
+        signature = bs58.encode(signature.signature)
+        message.s = {
+            n: process.env.NODE_OWNER,
+            s: signature
+        }
+        return message
+    },
+    verifySignedMessage: (message, cb) => {
+        var sign = message.s.s
+        var name = message.s.n
+        var tmpMess = message
+        delete tmpMess.s
+        var hash = CryptoJS.SHA256(JSON.stringify(tmpMess)).toString()
+        db.collection('accounts').findOne({name: name}, function(err, account) {
+            if (err) throw err;
+            if (account && secp256k1.verify(
+                new Buffer(hash, "hex"),
+                bs58.decode(sign),
+                bs58.decode(account.pub))) {
+                    cb(account)
+                    return
+                }
+        })
+    },
+    precommit: (block) => {
+        var possBlock = {
+            block:block,
+            pc: [block.miner],
+            c: [block.miner]
+        }
+        if (block.miner != process.env.NODE_OWNER)
+            possBlock.pc.push(process.env.NODE_OWNER)
+
+        p2p.possibleNextBlocks.push(possBlock)
+        p2p.broadcast({t:6, d:block})
+        p2p.consensusWorker()
+    },
+    commit: (block) => {
+        for (let b = 0; b < p2p.possibleNextBlocks.length; b++) {
+            if (p2p.possibleNextBlocks[b].block.hash == block.hash
+            && p2p.possibleNextBlocks[b].c.indexOf(process.env.NODE_OWNER) == -1) {
+                p2p.possibleNextBlocks[b].c.push(process.env.NODE_OWNER)
+                p2p.broadcast({t:7, d:block})
+                p2p.consensusWorker()
+            }
+        }
+    },
+    consensusWorker: () => {
+        var activeWitnesses = []
+        for (let y = 0; y < chain.schedule.shuffle.length; y++)
+            if (activeWitnesses.indexOf(chain.schedule.shuffle[y].name) == -1)
+                activeWitnesses.push(chain.schedule.shuffle[y].name)
+            
+        var connectedWitnesses = [process.env.NODE_OWNER]
+        for (let i = 0; i < p2p.sockets.length; i++) {
+            if (!p2p.sockets[i].node_status) continue;
+            for (let y = 0; y < activeWitnesses.length; y++)
+                if (activeWitnesses[y] == p2p.sockets[i].node_status.owner
+                    && connectedWitnesses.indexOf(activeWitnesses[y].name) == -1)
+                        connectedWitnesses.push(activeWitnesses[y])
+        }
+
+        const threshold = Math.ceil(connectedWitnesses.length*2/3)
+        logr.trace('CONSENSUS ',activeWitnesses,connectedWitnesses, threshold, p2p.possibleNextBlocks)
+        for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+            const possBlock = p2p.possibleNextBlocks[i]
+            if (possBlock.c.length >= threshold)
+                chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
+                    if (err)
+                        logr.debug('Block went through consensus but couldnt get re-validated', newBlock)
+                    else {
+                        p2p.broadcastBlock(newBlock)
+                        var newPossBlocks = []
+                        for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                            if (newBlock._id == p2p.possibleNextBlocks[i].block._id)
+                                p2p.possibleNextBlocks.splice(i, 1)
+                        }
+                        p2p.possibleNextBlocks = newPossBlocks
+                    }
+                })
+            else if (possBlock.pc.length >= threshold)
+                p2p.commit(possBlock.block)
+            
+        }
     }
 }
 
