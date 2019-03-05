@@ -88,7 +88,8 @@ var p2p = {
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
-            logr.trace('P2P:', data)
+            var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
+            logr.trace('P2P:', user, data)
             try {
                 var message = JSON.parse(data);
             } catch(e) {
@@ -155,27 +156,11 @@ var p2p = {
                     break;
 
                 case MessageType.NEW_BLOCK:
-                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
                     var block = message.d
+                    p2p.precommit(block, function() {})
+                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
                     if (!socket || !socket.node_status) return
                     p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
-                    if (block._id < chain.getLatestBlock()._id+1)
-                        return
-                    if (!p2p.processing) {
-                        p2p.processing = true
-
-                        // Adding block to consensus if block is valid
-                        chain.isValidNewBlock(block, true, function(isValid) {
-                            p2p.processing = false
-                            if (!isValid)
-                                logr.error('Received invalid new block', block)
-                            else {
-                                if (p2p.recovering)
-                                    p2p.recovering = false
-                                p2p.precommit(block)
-                            }
-                        })
-                    }
                     break;
                 case MessageType.NEW_TX:
                     var tx = message.d
@@ -191,8 +176,30 @@ var p2p = {
                     })
                     break;
                 case MessageType.BLOCK_PRECOMMIT:
+                    var block = message.d
+                    p2p.precommit(block, function() {})
+                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
+                    if (!socket || !socket.node_status) return
+                    for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                        if (block.hash == p2p.possibleNextBlocks[i].block.hash
+                        && p2p.possibleNextBlocks[i].pc.indexOf(socket.node_status.owner) == -1) {
+                            p2p.possibleNextBlocks[i].pc.push(socket.node_status.owner)
+                            p2p.consensusWorker()
+                        }
+                    }
                     break;
                 case MessageType.BLOCK_COMMIT:
+                    var block = message.d
+                    p2p.precommit(block, function() {})
+                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
+                    if (!socket || !socket.node_status) return
+                    for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                        if (block.hash == p2p.possibleNextBlocks[i].block.hash
+                        && p2p.possibleNextBlocks[i].c.indexOf(socket.node_status.owner) == -1) {
+                            p2p.possibleNextBlocks[i].c.push(socket.node_status.owner)
+                            p2p.consensusWorker()
+                        }
+                    }
                     break;
                }
         });
@@ -232,9 +239,7 @@ var p2p = {
     sendJSON: (ws, d) => ws.send(JSON.stringify(d)),
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
     broadcastBlock: (block) => {
-        for (let i = 0; i < p2p.sockets.length; i++)
-            //if (p2p.sockets[i].node_status && p2p.sockets[i].node_status.head_block < block._id)
-                p2p.broadcast({t:4,d:block})
+        p2p.broadcast({t:4,d:block})
     },
     hashAndSignMessage: (message) => {
         var hash = CryptoJS.SHA256(JSON.stringify(message)).toString();
@@ -263,18 +268,32 @@ var p2p = {
                 }
         })
     },
-    precommit: (block) => {
-        var possBlock = {
-            block:block,
-            pc: [block.miner],
-            c: [block.miner]
-        }
-        if (block.miner != process.env.NODE_OWNER)
-            possBlock.pc.push(process.env.NODE_OWNER)
+    precommit: (block, cb) => {
+        if (block._id != chain.getLatestBlock()._id+1)
+            return
 
-        p2p.possibleNextBlocks.push(possBlock)
-        p2p.broadcast({t:6, d:block})
-        p2p.consensusWorker()
+        for (let i = 0; i < p2p.possibleNextBlocks.length; i++)
+            if (p2p.possibleNextBlocks[i].block.hash == block.hash)
+                return
+
+        chain.isValidNewBlock(block, true, function(isValid) {
+            if (!isValid)
+                logr.error('Received invalid new block', block)
+            else {
+                var possBlock = {
+                    block:block,
+                    pc: [block.miner],
+                    c: [block.miner]
+                }
+                if (block.miner != process.env.NODE_OWNER)
+                    possBlock.pc.push(process.env.NODE_OWNER)
+        
+                p2p.possibleNextBlocks.push(possBlock)
+                p2p.broadcast({t:6, d:block})
+                p2p.consensusWorker()
+                cb()
+            }
+        })
     },
     commit: (block) => {
         for (let b = 0; b < p2p.possibleNextBlocks.length; b++) {
@@ -310,7 +329,7 @@ var p2p = {
                     if (err)
                         logr.debug('Block went through consensus but couldnt get re-validated', newBlock)
                     else {
-                        p2p.broadcastBlock(newBlock)
+                        // clean up possible blocks with same id as the one which got added
                         var newPossBlocks = []
                         for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
                             if (newBlock._id == p2p.possibleNextBlocks[i].block._id)
