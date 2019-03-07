@@ -316,7 +316,7 @@ var p2p = {
             if (!p2p.sockets[i].node_status) continue;
             for (let y = 0; y < activeWitnesses.length; y++)
                 if (activeWitnesses[y] == p2p.sockets[i].node_status.owner
-                    && connectedWitnesses.indexOf(activeWitnesses[y].name) == -1)
+                    && connectedWitnesses.indexOf(activeWitnesses[y]) == -1)
                         connectedWitnesses.push(activeWitnesses[y])
         }
 
@@ -324,20 +324,22 @@ var p2p = {
         logr.trace('CONSENSUS ',activeWitnesses,connectedWitnesses, threshold, p2p.possibleNextBlocks)
         for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
             const possBlock = p2p.possibleNextBlocks[i]
-            if (possBlock.c.length >= threshold)
+            if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id == chain.getLatestBlock()._id+1) {
+                p2p.processing = true
+                logr.trace('Consensus block approved')
                 chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
+                    p2p.processing = false
                     if (err)
                         logr.debug('Block went through consensus but couldnt get re-validated', newBlock)
-                    else {
-                        // clean up possible blocks with same id as the one which got added
-                        var newPossBlocks = []
-                        for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
-                            if (newBlock._id == p2p.possibleNextBlocks[i].block._id)
-                                p2p.possibleNextBlocks.splice(i, 1)
-                        }
-                        p2p.possibleNextBlocks = newPossBlocks
-                    }
                 })
+                // clean up possible blocks that are in the past
+                var newPossBlocks = []
+                for (let y = 0; y < p2p.possibleNextBlocks.length; y++) {
+                    if (possBlock.block._id < p2p.possibleNextBlocks[y].block._id)
+                        newPossBlocks.push(p2p.possibleNextBlocks[y])
+                }
+                p2p.possibleNextBlocks = newPossBlocks
+            }
             else if (possBlock.pc.length >= threshold)
                 p2p.commit(possBlock.block)
             
