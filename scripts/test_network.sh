@@ -17,17 +17,14 @@ while test $# -gt 0; do
                 -h|--help)
                         echo "options:"
                         echo "-h, --help                Show this message"
-                        echo "-a,      specify the number of accounts to make"
-                        echo "-n,      name of the accounts"
+                        echo "-a,      Specify the number of accounts to make"
+                        echo "-n,      Set the Default name of the accounts"
                         exit 0
                         ;;
                 -a)
                         shift
                         if test $# -gt 0; then
                                 export acc_Req=$1
-                        else
-                                echo "No accounts requested"
-                                exit 1
                         fi
                         shift
                         ;;
@@ -35,9 +32,6 @@ while test $# -gt 0; do
                         shift
                         if test $# -gt 0; then
                                 export acc_Def_Name=$1
-                        else
-                                echo "No accounts requested"
-                                exit 1
                         fi
                         shift
                         ;;
@@ -50,13 +44,12 @@ do
   #We need to do this to make JQ happy
   cmd=$(node ./src/cli.js keypair|sed s/\ pub:/\"pub\":/g|sed s/priv:/\"priv\":/g|sed s/' }'/'}'/g|tr -d '\n'|tr -d ' '|sed s/\'/\"/g)
 
-
+  #Load up the arrays with our values
   acc_Made=$(($acc_Made+1))
   acc_Pub+=($(echo $cmd|jq -r .pub))
   acc_Priv+=($(echo $cmd|jq -r .priv))
   acc_Name+=($(echo $acc_Def_Name$acc_Made))
 done
-echo ${acc_Name[@]}
 
 # create accounts
 name=0
@@ -83,6 +76,7 @@ do port=$name+6001
 node src/cli.js profile $key ${acc_Name[name]} '{"node":{"ws":"ws://127.0.0.1:'$port'"}}'
 name=$name+1
 done
+
 # everyone votes for itself
 name=0
 for key in "${acc_Priv[@]}"
