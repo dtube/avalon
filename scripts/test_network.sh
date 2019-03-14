@@ -49,8 +49,8 @@ do
   acc_Pub+=($(echo $cmd|jq -r .pub))
   acc_Priv+=($(echo $cmd|jq -r .priv))
   acc_Name+=($(echo $acc_Def_Name$acc_Made))
+  echo "${acc_Name[$acc_Made-1]}: Pub: ${acc_Pub[$acc_Made-1]} Priv: ${acc_Priv[$acc_Made-1]}"
 done
-
 # create accounts
 name=0
 for key in "${acc_Pub[@]}"
