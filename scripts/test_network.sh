@@ -66,13 +66,13 @@ for name in "${acc_Name[@]}"
 do node src/cli.js transfer $PRIVATE_KEY master $name 10000
 done
 
-sleep 10
+sleep 15
 
 # display nodes ip and port in profile
 node src/cli.js profile $PRIVATE_KEY master '{"node":{"ws":"ws://127.0.0.1:6001"}}'
 name=0
 for key in "${acc_Priv[@]}"
-do port=$name+6001
+do port=$(($name+6001))
 node src/cli.js profile $key ${acc_Name[name]} '{"node":{"ws":"ws://127.0.0.1:'$port'"}}'
 name=$(($name+1))
 done
@@ -81,4 +81,5 @@ done
 name=0
 for key in "${acc_Priv[@]}"
 do node src/cli.js approveNode ${acc_Priv[name]} ${acc_Name[name]} ${acc_Name[name]}
+name=$(($name+1))
 done
