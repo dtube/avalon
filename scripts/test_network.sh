@@ -72,7 +72,7 @@ sleep 15
 node src/cli.js profile $PRIVATE_KEY master '{"node":{"ws":"ws://127.0.0.1:6001"}}'
 name=0
 for key in "${acc_Priv[@]}"
-do port=$(($name+6001))
+do port=$(($name+6002))
 node src/cli.js profile $key ${acc_Name[name]} '{"node":{"ws":"ws://127.0.0.1:'$port'"}}'
 name=$(($name+1))
 done
