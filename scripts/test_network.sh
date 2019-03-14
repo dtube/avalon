@@ -74,11 +74,11 @@ name=0
 for key in "${acc_Priv[@]}"
 do port=$name+6001
 node src/cli.js profile $key ${acc_Name[name]} '{"node":{"ws":"ws://127.0.0.1:'$port'"}}'
-name=$name+1
+name=$(($name+1))
 done
 
 # everyone votes for itself
 name=0
 for key in "${acc_Priv[@]}"
-do node src/cli.js approveNode $key ${acc_Name[name]} ${acc_Name[name]}
+do node src/cli.js approveNode ${acc_Priv[name]} ${acc_Name[name]} ${acc_Name[name]}
 done
