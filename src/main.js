@@ -5,10 +5,12 @@ p2p = require('./p2p.js')
 mongo = require('./mongo.js')
 chain = require('./chain.js')
 transaction = require('./transaction.js')
+cache = require('./cache.js')
 
 originHash = "0000000000000000000000000000000000000000000000000000000000000018"
 
 // init the database and load most recent blocks in memory directly
+
 mongo.init(function() {
     mongo.fillInMemoryBlocks(function() {
         logr.info('#' + chain.getLatestBlock()._id + ' is the latest block in our db')

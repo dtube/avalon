@@ -124,7 +124,7 @@ var eco = {
                 executions.push(function(callback) {
                     var payout = Math.floor(winners[i].share * Math.abs(currentVote.vt))
                     if (payout < 0) {
-                        throw 'Weird error, investigate'
+                        throw 'Fatal distribution error (negative payout)'
                     }
                     if (payout == 0) {
                         callback(null, 0)
@@ -152,7 +152,7 @@ var eco = {
     },
     distribute: (name, vt, ts, cb) => {
         eco.rewardPool(function(stats) {
-            db.collection('accounts').findOne({name: name}, function(err, account) {
+            cache.findOne('accounts', {name: name}, function(err, account) {
                 if (err) throw err;
                 if (!account.uv) account.uv = 0
                 var thNewCoins = stats.avail * Math.abs((vt+account.uv) / (Math.abs(vt)+stats.votes))
@@ -192,9 +192,7 @@ var eco = {
                     // changes.pr = newPr
                 }
                 
-                db.collection('accounts').updateOne({name: name}, {
-                    $set: changes
-                }).then(function(){
+                cache.updateOne('accounts', {name: name}, {$set: changes}, function(){
                     if (newCoins > 0) {
                         account.balance -= newCoins
                         db.collection('distributed').insertOne({

@@ -98,9 +98,19 @@ transaction = {
             if (!legitUser) {
                 cb(false, 'invalid signature'); return
             }
+            if (!legitUser.bw) {
+                cb(false, 'user has no bandwidth object'); return
+            }
+
+            var newBw = new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000), max:1048576}).grow(ts)
+
+            if (!newBw) {
+                logr.debug(legitUser)
+                cb(false, 'error debug'); return
+            }
 
             // checking if the user has enough bandwidth
-            if (JSON.stringify(tx).length > new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000), max:1048576}).grow(ts).v) {
+            if (JSON.stringify(tx).length > newBw.v) {
                 cb(false, 'not enough bandwidth'); return
             }
 
@@ -124,13 +134,13 @@ transaction = {
                         }
                     }
 
-                    db.collection('accounts').findOne({name: lowerUser}, function(err, account) {
+                    cache.findOne('accounts', {name: lowerUser}, function(err, account) {
                         if (err) throw err;
                         if (account)
                             cb(false, 'invalid tx data.name already exists')
                         else if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) {
                             // if it's not a free account, check tx sender balance
-                            db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                                 if (err) throw err;
                                 if (account.balance < 60)
                                     cb(false, 'invalid tx not enough balance')
@@ -147,7 +157,7 @@ transaction = {
                         cb(false, 'invalid tx data.target'); return
                     }
 
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.approves) acc.approves = []
                         if (acc.approves.indexOf(tx.data.target) > -1) {
@@ -156,7 +166,7 @@ transaction = {
                         if (acc.approves.length >= 5)
                             cb(false, 'invalid tx max votes reached')
                         else {
-                            db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
+                            cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
                                 if (!account) {
                                     cb(false, 'invalid tx target does not exist')
                                 } else {
@@ -172,13 +182,13 @@ transaction = {
                         cb(false, 'invalid tx data.target'); return
                     }
 
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.approves) acc.approves = []
                         if (acc.approves.indexOf(tx.data.target) == -1) {
                             cb(false, 'invalid tx already unvoted'); return
                         }
-                        db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
+                        cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
                             if (!account) {
                                 cb(false, 'invalid tx target does not exist')
                             } else {
@@ -205,12 +215,12 @@ transaction = {
                         cb(false, 'invalid tx cannot send to self'); return
                     }
                     
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                         if (err) throw err;
                         if (account.balance < tx.data.amount)
                             cb(false, 'invalid tx not enough balance')
                         else {
-                            db.collection('accounts').findOne({name: tx.data.receiver}, function(err, account) {
+                            cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
                                 if (err) throw err;
                                 if (!account) cb(false, 'invalid tx receiver does not exist')
                                 else cb(true)
@@ -300,7 +310,7 @@ transaction = {
                         cb(false, 'invalid tx data.target'); return
                     }
 
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.follows) acc.follows = []
                         if (acc.follows.indexOf(tx.data.target) > -1) {
@@ -309,7 +319,7 @@ transaction = {
                         if (acc.follows.length >= 2000)
                             cb(false, 'invalid tx reached max follows')
                         else {
-                            db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
+                            cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
                                 if (!account) {
                                     cb(false, 'invalid tx target does not exist')
                                 } else {
@@ -325,13 +335,13 @@ transaction = {
                         cb(false, 'invalid tx data.target'); return
                     }
 
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                         if (err) throw err;
                         if (!acc.follows) acc.follows = []
                         if (acc.follows.indexOf(tx.data.target) == -1) {
                             cb(false, 'invalid tx not following target'); return
                         }
-                        db.collection('accounts').findOne({name: tx.data.target}, function(err, account) {
+                        cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
                             if (!account) {
                                 cb(false, 'invalid tx target does not exist')
                             } else {
@@ -356,7 +366,7 @@ transaction = {
                             cb(false, 'invalid tx all types must be integers'); return
                         }
                     }
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                         if (!account) {
                             cb(false, 'invalid tx sender does not exist'); return
                         }
@@ -377,7 +387,7 @@ transaction = {
                     if (!tx.data.id || typeof tx.data.id !== "string" || tx.data.id.length > 25) {
                         cb(false, 'invalid tx data.id'); return
                     }
-                    db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+                    cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                         if (!account) {
                             cb(false, 'invalid tx sender does not exist'); return
                         }
@@ -415,10 +425,10 @@ transaction = {
                         uv: 0
                     }).then(function(){
                         if (tx.data.name !== tx.data.pub.toLowerCase() || tx.data.name.length < 25) {
-                            db.collection('accounts').updateOne(
+                            cache.updateOne('accounts', 
                             {name: tx.sender},
                             {$inc: {balance: -60}}, function() {
-                                db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                                     if (err) throw err;
                                     // update his bandwidth
                                     acc.balance += 60
@@ -431,7 +441,7 @@ transaction = {
                                         var node_owners = []
                                         for (let i = 0; i < acc.approves.length; i++)
                                             node_owners.push(acc.approves[i])
-                                        db.collection('accounts').updateMany(
+                                        cache.updateMany('accounts', 
                                             {name: {$in: node_owners}},
                                             {$inc: {node_appr: node_appr-node_appr_before}},
                                         function(err) {
@@ -446,11 +456,11 @@ transaction = {
                     break;
     
                 case TransactionType.APPROVE_NODE_OWNER:
-                    db.collection('accounts').updateOne(
+                    cache.updateOne('accounts', 
                         {name: tx.sender},
                         {$push: {approves: tx.data.target}},
                     function() {
-                        db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                        cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                             if (err) throw err;
                             if (!acc.approves) acc.approves = []
                             var node_appr = Math.floor(acc.balance/acc.approves.length)
@@ -460,10 +470,10 @@ transaction = {
                                 if (acc.approves[i] != tx.data.target)
                                     node_owners.push(acc.approves[i])
     
-                            db.collection('accounts').updateMany(
+                            cache.updateMany('accounts', 
                                 {name: {$in: node_owners}},
                                 {$inc: {node_appr: node_appr-node_appr_before}}, function() {
-                                db.collection('accounts').updateOne(
+                                cache.updateOne('accounts', 
                                     {name: tx.data.target},
                                     {$inc: {node_appr: node_appr}}, function() {
                                         cb(true)
@@ -475,11 +485,11 @@ transaction = {
                     break;
     
                 case TransactionType.DISAPROVE_NODE_OWNER:
-                    db.collection('accounts').updateOne(
+                    cache.updateOne('accounts', 
                         {name: tx.sender},
                         {$pull: {approves: tx.data.target}},
                     function() {
-                        db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                        cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                             if (err) throw err;
                             if (!acc.approves) acc.approves = []
                             var node_appr = (acc.approves.length == 0 ? 0 : Math.floor(acc.balance/acc.approves.length))
@@ -489,10 +499,10 @@ transaction = {
                                 if (acc.approves[i] != tx.data.target)
                                     node_owners.push(acc.approves[i])
     
-                            db.collection('accounts').updateMany(
+                            cache.updateMany('accounts', 
                                 {name: {$in: node_owners}},
                                 {$inc: {node_appr: node_appr-node_appr_before}}, function() {
-                                db.collection('accounts').updateOne(
+                                cache.updateOne('accounts', 
                                     {name: tx.data.target},
                                     {$inc: {node_appr: -node_appr_before}}, function() {
                                         cb(true)
@@ -506,22 +516,22 @@ transaction = {
                 case TransactionType.TRANSFER:
                     // remove funds from sender
                     tx.data.amount = Math.floor(tx.data.amount)
-                    db.collection('accounts').updateOne(
+                    cache.updateOne('accounts', 
                         {name: tx.sender},
                         {$inc: {balance: -tx.data.amount}},
                     function() {
-                        db.collection('accounts').findOne({name: tx.sender}, function(err, acc) {
+                        cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                             if (err) throw err;
                             // update his bandwidth
                             acc.balance += tx.data.amount
                             transaction.updateGrowInts(acc, ts, function(success) {
                                 transaction.adjustNodeAppr(acc, -tx.data.amount, function(success) {
                                     // add funds to receiver
-                                    db.collection('accounts').updateOne(
+                                    cache.updateOne('accounts', 
                                         {name: tx.data.receiver},
                                         {$inc: {balance: tx.data.amount}},
                                     function() {
-                                        db.collection('accounts').findOne({name: tx.data.receiver}, function(err, acc) {
+                                        cache.findOne('accounts', {name: tx.data.receiver}, function(err, acc) {
                                             if (err) throw err;
                                             // update his bandwidth
                                             acc.balance -= tx.data.amount
@@ -610,21 +620,21 @@ transaction = {
                     break;
     
                 case TransactionType.USER_JSON:
-                    db.collection('accounts').updateOne({
+                    cache.updateOne('accounts', {
                         name: tx.sender
                     },{ $set: {
                         json: tx.data.json
-                    }}).then(function(){
+                    }}, function(){
                         cb(true)
                     })
                     break;
 
                 case TransactionType.FOLLOW:
-                    db.collection('accounts').updateOne(
+                    cache.updateOne('accounts', 
                         {name: tx.sender},
                         {$push: {follows: tx.data.target}},
                     function() {
-                        db.collection('accounts').updateOne(
+                        cache.updateOne('accounts', 
                             {name: tx.data.target},
                             {$push: {followers: tx.sender}},
                         function() {
@@ -634,11 +644,11 @@ transaction = {
                     break;
 
                 case TransactionType.UNFOLLOW:
-                    db.collection('accounts').updateOne(
+                    cache.updateOne('accounts', 
                         {name: tx.sender},
                         {$pull: {follows: tx.data.target}},
                     function() {
-                        db.collection('accounts').updateOne(
+                        cache.updateOne('accounts', 
                             {name: tx.data.target},
                             {$pull: {followers: tx.sender}},
                         function() {
@@ -648,21 +658,21 @@ transaction = {
                     break;
 
                 case TransactionType.NEW_KEY:
-                    db.collection('accounts').updateOne({
+                    cache.updateOne('accounts', {
                         name: tx.sender
                     },{ $push: {
                         keys: tx.data
-                    }}).then(function(){
+                    }},function(){
                         cb(true)
                     })
                     break;
 
                 case TransactionType.REMOVE_KEY:
-                    db.collection('accounts').updateOne({
+                    cache.updateOne('accounts', {
                         name: tx.sender
                     },{ $pull: {
                         keys: tx.data
-                    }}).then(function(){
+                    }},function(){
                         cb(true)
                     })
                     break;
@@ -675,11 +685,14 @@ transaction = {
 
     },
     collectGrowInts: (tx, ts, cb) => {
-        db.collection('accounts').findOne({name: tx.sender}, function(err, account) {
+        cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             // collect bandwidth
             var bandwidth = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576})
             var needed_bytes = JSON.stringify(tx).length;
             var bw = bandwidth.grow(ts)
+            if (!bw) {
+                throw 'No bandwidth error'
+            }
             bw.v -= needed_bytes
 
             // collect voting tokens when needed
@@ -701,7 +714,7 @@ transaction = {
             // update both at the same time !
             var changes = {bw: bw}
             if (vt) changes.vt = vt
-            db.collection('accounts').updateOne(
+            cache.updateOne('accounts', 
                 {name: account.name},
                 {$set: changes},
             function(err) {
@@ -712,9 +725,15 @@ transaction = {
     },
     updateGrowInts: (account, ts, cb) => {
         // updates the bandwidth and vote tokens when the balance changes (transfer, monetary distribution)
+        if (!account.bw || !account.vt) {
+            logr.debug('error loading grow int', account)
+        }
         var bw = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576}).grow(ts)
         var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
-        db.collection('accounts').updateOne(
+        if (!bw || !vt) {
+            logr.debug('error growing grow int', account, ts)
+        }
+        cache.updateOne('accounts', 
             {name: account.name},
             {$set: {
                 bw: bw,
@@ -736,7 +755,7 @@ transaction = {
         for (let i = 0; i < acc.approves.length; i++)
             node_owners.push(acc.approves[i])
         
-        db.collection('accounts').updateMany(
+        cache.updateMany('accounts', 
             {name: {$in: node_owners}},
             {$inc: {node_appr: node_appr-node_appr_before}}
         , function(err) {

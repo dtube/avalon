@@ -131,19 +131,19 @@ chain = {
             chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
                 if (newBlock.txs.length != validTxs.length) {
-                    logr.error('Unvalid txs in block')
+                    logr.error('Invalid tx(s) in block')
                     cb(true, newBlock); return
                 }
 
                 // error if distributed or burned computed amounts are different than the reported one
                 var blockDist = newBlock.dist || 0
                 if (blockDist != distributed) {
-                    logr.error('Wrong distributed amount', blockDist, distributed)
+                    logr.error('Wrong dist amount', blockDist, distributed)
                     cb(true, newBlock); return
                 }
                 var blockBurn = newBlock.burn || 0
                 if (blockBurn != burned) {
-                    logr.error('Wrong burned amount', blockBurn, burned)
+                    logr.error('Wrong burn amount', blockBurn, burned)
                     cb(true, newBlock); return
                 }
 
@@ -181,33 +181,35 @@ chain = {
         // add the block in our own db
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err;
-            // if block id is mult of 20, reschedule next 20 blocks
-            if (block._id%20 == 0) {
-                chain.minerSchedule(block, function(minerSchedule) {
-                    chain.schedule = minerSchedule
+            // push cached accounts and contents to mongodb
+            cache.writeToDisk(function() {
+                // if block id is mult of 20, reschedule next 20 blocks
+                if (block._id%20 == 0) {
+                    chain.minerSchedule(block, function(minerSchedule) {
+                        chain.schedule = minerSchedule
+                        chain.recentBlocks.push(block)
+                        chain.minerWorker(block)
+                        chain.output(block)
+                        cb(true)
+                    })
+                } else {
                     chain.recentBlocks.push(block)
                     chain.minerWorker(block)
-                    output(block)
+                    chain.output(block)
                     cb(true)
-                })
-            } else {
-                chain.recentBlocks.push(block)
-                chain.minerWorker(block)
-                output(block)
-                cb(true)
-            }
-
-            function output(block) {
-                var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
-                if (block.missedBy)
-                    output += ' missed by '+block.missedBy
-                if (block.dist)
-                    output += ' dist: '+block.dist
-                if (block.burn)
-                    output += ' burn: '+block.burn
-                logr.info(output);
-            }
+                }
+            })
         });
+    },
+    output: (block) => {
+        var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
+        if (block.missedBy)
+            output += ' missed by '+block.missedBy
+        if (block.dist)
+            output += ' dist: '+block.dist
+        if (block.burn)
+            output += ' burn: '+block.burn
+        logr.info(output)
     },
     isValidPubKey: (key) => {
         try {
@@ -218,7 +220,7 @@ chain = {
     },
     isValidSignature: (user, txType, hash, sign, cb) => {
         // verify signature and bandwidth
-        db.collection('accounts').findOne({name: user}, function(err, account) {
+        cache.findOne('accounts', {name: user}, function(err, account) {
             if (err) throw err;
             if (!account) {
                 cb(false); return
@@ -370,7 +372,9 @@ chain = {
             })
         }
         var i = 0
+        //var timeBefore = new Date().getTime()
         series(executions, function(err, results) {
+            //logr.debug('Block executed in '+(new Date().getTime()-timeBefore)+'ms')
             if (err) throw err;
             var executedSuccesfully = []
             var distributedInBlock = 0
