@@ -143,9 +143,9 @@ var cache = {
         //     })
         // }
 
-        var timeBefore = new Date().getTime()
+        //var timeBefore = new Date().getTime()
         series(executions, function(err, results) {
-            logr.debug(executions.length+' mongo update executed in '+(new Date().getTime()-timeBefore)+'ms')
+            //logr.debug(executions.length+' mongo update executed in '+(new Date().getTime()-timeBefore)+'ms')
             cb(err, results)
             cache.changes = []
         })
