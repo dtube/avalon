@@ -7,7 +7,7 @@ chain = require('./chain.js')
 transaction = require('./transaction.js')
 cache = require('./cache.js')
 
-originHash = "0000000000000000000000000000000000000000000000000000000000000018"
+originHash = "0000000000000000000000000000000000000000000000000000000000000019"
 
 // init the database and load most recent blocks in memory directly
 
