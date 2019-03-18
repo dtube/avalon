@@ -3,21 +3,64 @@ var sender = process.argv[4]
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
-const bs58 = require('bs58')
-
+const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+//const bs58 = require('bs58')
 let sign = (privKey, sender, tx) => {
-	// will return a new transaction with a hash and a signature
+	var times = [now('micro')]
+	// parsing the tx
 	tx = JSON.parse(tx)
-	tx.sender = sender
+	times.push(now('micro'))
+
 	// add timestamp to seed the hash (avoid transactions reuse)
+	tx.sender = sender
 	tx.ts = new Date().getTime()
+	var txString = JSON.stringify(tx)
+	times.push(now('micro'))
+
 	// hash the transaction
-	tx.hash = CryptoJS.SHA256(JSON.stringify(tx)).toString()
-	// sign the transaction
-	var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), bs58.decode(privKey))
+	tx.hash = CryptoJS.SHA256(txString).toString()
+	times.push(now('micro'))
+
+	// decode the key
+	var rawPriv = bs58.decode(privKey)
+	times.push(now('micro'))
+
+	// sign the tx
+	var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), rawPriv)
+	times.push(now('micro'))
+
+	// convert signature to '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 	tx.signature = bs58.encode(signature.signature)
+	times.push(now('micro'))
+
+	var timeResults = []
+	for (let i = 1; i < times.length; i++) {
+		timeResults.push(times[i]-times[i-1])
+	}
+	console.log(timeResults)
 	return tx
 }
+
+const now = (unit) => {
+	
+	  const hrTime = process.hrtime();
+	
+	  switch (unit) {
+	
+		case 'milli':
+		  return hrTime[0] * 1000 + hrTime[1] / 1000000;
+	
+		case 'micro':
+		  return hrTime[0] * 1000000 + hrTime[1] / 1000;
+	
+		case 'nano':
+		  return hrTime[0] * 1000000000 + hrTime[1];
+	
+		default:
+		  return hrTime[0] * 1000000000 + hrTime[1];
+	  }
+	
+	};
 
 let cmds = {
 	sign: (priv, sender, tx) => {

@@ -2,7 +2,7 @@ var p2p_port = process.env.P2P_PORT || 6001;
 var WebSocket = require("ws");
 var chain = require('./chain.js')
 var secp256k1 = require('secp256k1')
-var bs58 = require('bs58')
+var bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
 var CryptoJS = require("crypto-js")
 
 var MessageType = {

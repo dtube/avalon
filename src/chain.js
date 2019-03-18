@@ -1,7 +1,7 @@
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
-const bs58 = require('bs58')
+const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')

@@ -3,7 +3,7 @@ var command = process.argv[2]
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
-const bs58 = require('bs58')
+const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
 var fetch = require("node-fetch")
 
 function sendTx(tx) {
@@ -11,7 +11,6 @@ function sendTx(tx) {
 	var ip = process.env.API_IP || '[::1]'
 	var protocol = process.env.API_PROTOCOL || 'http'
 	var url = protocol+'://'+ip+':'+port+'/transact'
-	console.log(url)
 	fetch(url, {
 		method: 'post',
 		headers: {
@@ -20,7 +19,8 @@ function sendTx(tx) {
 		},
 		body: JSON.stringify(tx)
 	}).then(function(res) {
-		console.log(res.statusText)
+		if (res.statusText != 'OK')
+			console.log('Err: ' + res.statusText)
 	});
 }
 
