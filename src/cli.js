@@ -1,9 +1,10 @@
-var cmds = require('./clicmds.js');
+var config = require('./config.js')
+var cmds = require('./clicmds.js')
 var command = process.argv[2]
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
-const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+const bs58 = require('base-x')(config.b58Alphabet)
 var fetch = require("node-fetch")
 
 function sendTx(tx) {

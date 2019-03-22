@@ -85,7 +85,7 @@ transaction = {
 
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
-        if (chain.getLatestBlock().timestamp - tx.ts > 60000) {
+        if (chain.getLatestBlock().timestamp - tx.ts > config.txExpirationTime) {
             cb(false, 'invalid timestamp'); return
         }
         // check if this tx hash was already added to chain recently
@@ -102,7 +102,7 @@ transaction = {
                 cb(false, 'user has no bandwidth object'); return
             }
 
-            var newBw = new GrowInt(legitUser.bw, {growth:legitUser.balance/(60000), max:1048576}).grow(ts)
+            var newBw = new GrowInt(legitUser.bw, {growth:legitUser.balance/(config.bwGrowth), max:config.maxBw}).grow(ts)
 
             if (!newBw) {
                 logr.debug(legitUser)
@@ -129,7 +129,7 @@ transaction = {
                     for (let i = 0; i < lowerUser.length; i++) {
                         const c = lowerUser[i];
                         // allowed username chars
-                        if (chain.allowedUsernameChars.indexOf(c) == -1) {
+                        if (config.allowedUsernameChars.indexOf(c) == -1) {
                             cb(false, 'invalid tx data.name char'); return
                         }
                     }
@@ -247,7 +247,7 @@ transaction = {
                         cb(false, 'invalid tx data.json'); return
                     }
                     // commenting costs 1 vote token as a forced self-upvote
-                    var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
+                    var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
                     if (vt.v < 1) {
                         cb(false, 'invalid tx not enough vt'); return
                     }
@@ -290,7 +290,7 @@ transaction = {
                     if (typeof tx.data.tag !== "string" || tx.data.tag.length > 25) {
                         cb(false, 'invalid tx data.tag'); return
                     }
-                    var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(3600000)}).grow(ts)
+                    var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
                     if (vt.v < Math.abs(tx.data.vt)) {
                         cb(false, 'invalid tx not enough vt'); return
                     }
@@ -687,7 +687,7 @@ transaction = {
     collectGrowInts: (tx, ts, cb) => {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             // collect bandwidth
-            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576})
+            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.maxBw})
             var needed_bytes = JSON.stringify(tx).length;
             var bw = bandwidth.grow(ts)
             if (!bw) {
@@ -698,12 +698,12 @@ transaction = {
             // collect voting tokens when needed
             switch (tx.type) {
                 case TransactionType.COMMENT:
-                    var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
+                    var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
                     vt.v -= 1
                     break;
 
                 case TransactionType.VOTE:
-                    var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
+                    var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
                     vt.v -= Math.abs(tx.data.vt)
                     break;
             
@@ -728,8 +728,8 @@ transaction = {
         if (!account.bw || !account.vt) {
             logr.debug('error loading grow int', account)
         }
-        var bw = new GrowInt(account.bw, {growth:account.balance/(60000), max:1048576}).grow(ts)
-        var vt = new GrowInt(account.vt, {growth:account.balance/(3600000)}).grow(ts)
+        var bw = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.maxBw}).grow(ts)
+        var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
         if (!bw || !vt) {
             logr.debug('error growing grow int', account, ts)
         }

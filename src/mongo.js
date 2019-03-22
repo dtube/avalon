@@ -22,16 +22,16 @@ var mongo = {
                 
                 if (!acc) {
                     db.collection('accounts').insertOne({
-                        name: 'master',
-                        pub: 'qFsrM3bBfJmWsEZLxpv2QDrDnUtZTwqrrPiLsZpaGGSR',
-                        balance: 1000000,
+                        name: config.masterName,
+                        pub: config.masterPub,
+                        balance: config.masterBalance,
                         bw: {v:0,t:0},
                         vt: {v:0,t:0},
                         pr: {v:0,t:0},
                         uv: 0,
                         // we set those arbitrarily
-                        approves: ['master'],
-                        node_appr: 1000000
+                        approves: [config.masterName],
+                        node_appr: config.masterBalance
                     })
                     // then init genesis block if no block
                     db.collection('blocks').findOne({}, function(err, block) {

@@ -1,9 +1,10 @@
 var privKey = process.argv[3]
 var sender = process.argv[4]
+var config = require('./config.js')
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
-const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+const bs58 = require('base-x')(config.b58Alphabet)
 //const bs58 = require('bs58')
 let sign = (privKey, sender, tx) => {
 	// parsing the tx
@@ -23,7 +24,7 @@ let sign = (privKey, sender, tx) => {
 	// sign the tx
 	var signature = secp256k1.sign(new Buffer(tx.hash, "hex"), rawPriv)
 
-	// convert signature to '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+	// convert signature to base58
 	tx.signature = bs58.encode(signature.signature)
 	return tx
 }

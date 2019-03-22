@@ -1,4 +1,5 @@
 // starting sub modules
+config = require('./config.js')
 logr = require('./logger.js')
 http = require('./http.js')
 p2p = require('./p2p.js')
@@ -7,10 +8,8 @@ chain = require('./chain.js')
 transaction = require('./transaction.js')
 cache = require('./cache.js')
 
-originHash = "0000000000000000000000000000000000000000000000000000000000000019"
 
 // init the database and load most recent blocks in memory directly
-
 mongo.init(function() {
     mongo.fillInMemoryBlocks(function() {
         logr.info('#' + chain.getLatestBlock()._id + ' is the latest block in our db')
@@ -35,10 +34,10 @@ mongo.init(function() {
 process.on('SIGINT', function() {
     if (typeof closing !== 'undefined') return
     closing = true
-    logr.warn('Waiting 3 secs before shut down...')
+    logr.warn('Waiting '+config.blockTime+' ms before shut down...')
     chain.shuttingDown = true
     setTimeout(function() {
         logr.trace('Avalon exitted safely')
         process.exit(0)
-    }, 3000);
+    }, config.blockTime);
 });

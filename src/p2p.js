@@ -2,7 +2,7 @@ var p2p_port = process.env.P2P_PORT || 6001;
 var WebSocket = require("ws");
 var chain = require('./chain.js')
 var secp256k1 = require('secp256k1')
-var bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+var bs58 = require('base-x')(config.b58Alphabet)
 var CryptoJS = require("crypto-js")
 
 var MessageType = {
@@ -99,7 +99,7 @@ var p2p = {
             switch (message.t) {
                 case MessageType.QUERY_NODE_STATUS:
                     var d = {
-                        origin_block: originHash,
+                        origin_block: config.originHash,
                         head_block: chain.getLatestBlock()._id,
                         owner: process.env.NODE_OWNER
                     }
@@ -214,7 +214,7 @@ var p2p = {
         for (let i = 0; i < p2p.sockets.length; i++)
             if (p2p.sockets[i].node_status 
             && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id
-            && p2p.sockets[i].node_status.origin_block == originHash)
+            && p2p.sockets[i].node_status.origin_block == config.originHash)
                 peersAhead.push(p2p.sockets[i])
         
         if (peersAhead.length == 0) {

@@ -1,7 +1,7 @@
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
-const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+const bs58 = require('base-x')(config.b58Alphabet)
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
@@ -44,15 +44,14 @@ chain = {
             "0",
             0,
             [],
-            "master",
+            config.masterName,
             null,
             null,
             null,
             "0000000000000000000000000000000000000000000000000000000000000000",
-            originHash
+            config.originHash
         );
     },
-    allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
     prepareBlock: () => {
         var previousBlock = chain.getLatestBlock()
         var nextIndex = previousBlock._id + 1
@@ -165,9 +164,9 @@ chain = {
         // if we are the next miner or backup miner, prepare to mine
         clearTimeout(chain.worker)
         if (block.miner == process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%20].name == process.env.NODE_OWNER) {
-            var mineInMs = 3000
+            var mineInMs = config.blockTime
             if (chain.schedule.shuffle[(block._id)%20].name != process.env.NODE_OWNER)
-                mineInMs += 3000
+                mineInMs += config.blockTime
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
                     if (error)
@@ -302,7 +301,7 @@ chain = {
         }
 
         // check if new block isnt too early
-        if (newBlock.timestamp - previousBlock.timestamp < 3000) {
+        if (newBlock.timestamp - previousBlock.timestamp < config.blockTime) {
             logr.debug('block too early')
             cb(false); return
         }
