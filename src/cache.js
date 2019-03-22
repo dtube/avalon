@@ -41,7 +41,10 @@ var cache = {
                 switch (c) {
                     case '$inc':
                         for (var i in changes[c]) {
-                            cache[collection][obj[key]][i] += changes[c][i]
+                            if (!cache[collection][obj[key]][i])
+                                cache[collection][obj[key]][i] = changes[c][i]
+                            else
+                                cache[collection][obj[key]][i] += changes[c][i]
                         }
                         break;
 
