@@ -312,7 +312,7 @@ chain = {
             isMinerAuthorized = true;
         } else if (newBlock.miner == previousBlock.miner) {
             // allow the previous miner to mine again if current miner misses the block
-            if (newBlock.timestamp - previousBlock.timestamp < 6000) {
+            if (newBlock.timestamp - previousBlock.timestamp < (2*configure.blockTime)) {
                 logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
                 cb(false); return
             } else {
