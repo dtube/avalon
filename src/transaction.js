@@ -50,13 +50,8 @@ transaction = {
     },
     isPublished: (tx) => {
         if (!tx.hash) return
-        for (let i = 0; i < chain.recentBlocks.length; i++) {
-            const txs = chain.recentBlocks[i].txs
-            for (let y = 0; y < txs.length; y++) {
-                if (txs[y].hash == tx.hash)
-                    return true
-            }
-        }
+        if (chain.recentTxs[tx.hash])
+            return true
         return false
     },
     isValid: (tx, ts, cb) => {
@@ -110,7 +105,7 @@ transaction = {
             }
 
             // checking if the user has enough bandwidth
-            if (JSON.stringify(tx).length > newBw.v) {
+            if (JSON.stringify(tx).length > newBw.v && tx.sender != config.masterName) {
                 cb(false, 'not enough bandwidth'); return
             }
 

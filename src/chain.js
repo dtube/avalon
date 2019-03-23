@@ -25,6 +25,7 @@ class Block {
 chain = {
     schedule: null,
     recentBlocks: [],
+    recentTxs: {},
     getNewKeyPair: () => {
         const msg = randomBytes(32)
         let privKey, pubKey
@@ -182,6 +183,7 @@ chain = {
             if (err) throw err;
             // push cached accounts and contents to mongodb
             cache.writeToDisk(function() {
+                chain.cleanMemoryTx()
                 // if block id is mult of 20, reschedule next 20 blocks
                 if (block._id%20 == 0) {
                     chain.minerSchedule(block, function(minerSchedule) {
@@ -233,12 +235,11 @@ chain = {
                         allowedPubKeys.push(account.keys[i].pub)
                 }
             }
-
             for (let i = 0; i < allowedPubKeys.length; i++) {
-                if (secp256k1.verify(
-                new Buffer(hash, "hex"),
-                bs58.decode(sign),
-                bs58.decode(allowedPubKeys[i]))) {
+                var bufferHash = new Buffer(hash, "hex")
+                var b58sign = bs58.decode(sign)
+                var b58pub = bs58.decode(allowedPubKeys[i])
+                if (secp256k1.verify(bufferHash, b58sign, b58pub)) {
                     cb(account)
                     return
                 }
@@ -356,6 +357,7 @@ chain = {
                         transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                             if (!executed)
                                 logr.fatal('Tx execution failure', tx)
+                            chain.recentTxs[tx.hash] = tx
                             callback(null, {
                                 executed: executed,
                                 distributed: distributed,
@@ -371,9 +373,9 @@ chain = {
             })
         }
         var i = 0
-        //var timeBefore = new Date().getTime()
+        var blockTimeBefore = new Date().getTime()
         series(executions, function(err, results) {
-            //logr.debug('Block executed in '+(new Date().getTime()-timeBefore)+'ms')
+            logr.debug('Block executed in '+(new Date().getTime()-blockTimeBefore)+'ms')
             if (err) throw err;
             var executedSuccesfully = []
             var distributedInBlock = 0
@@ -444,6 +446,12 @@ chain = {
     },    
     getFirstMemoryBlock: () => {
         return chain.recentBlocks[0]
+    },
+    cleanMemoryTx: () => {
+        for (const hash in chain.recentTxs) {
+            if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().ts)
+            delete chain.recentTxs[hash]
+        }
     }
 }
 
