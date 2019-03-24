@@ -9,7 +9,8 @@ mongo avalon --eval "db.accounts.find({},{_id: 0,name: 1, pub:1}).pretty()"|grep
 # Get acc names
 mongo avalon --eval "db.accounts.find({},{_id: 0,name: 1, pub:1}).pretty()"|sed s/','/\\n","/g|grep pub|cut -f 4 -d '"' >> /tmp/pub.txt
 
-# Data extracted from old DB, sleep here so new DB can be setup?
+# Wait for an "enter"
+echo "Waiting for Enter to progress with an import:"
 read
 
 while read name
@@ -21,9 +22,13 @@ while read pub
 done < /tmp/pub.txt
 
 # Make new accounts
-
 name=0
 for key in "${acc_Pub[@]}"
 do node src/cli.js createAccount $PRIVATE_KEY master $key ${acc_Name[name]}
 name=$name+1
+done
+
+# send some tokens
+for name in "${acc_Name[@]}"
+do node src/cli.js transfer $PRIVATE_KEY master $name 1000
 done
