@@ -7,7 +7,7 @@ var config = {
     b58Alphabet: '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',
     // allowed username chars
     allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
-    // allowedUsernameCharsOnlyMiddle: '-.',
+    allowedUsernameCharsOnlyMiddle: '-.',
     // the init account username
     masterName: 'master',
     // the init account starting stake (total starting supply)
