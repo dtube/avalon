@@ -7,7 +7,7 @@ notifications = {
             notifications.processTx(block.txs[i], block.timestamp);
     },
     purgeOld: (block) => {
-        db.collection('notifications').remove({
+        db.collection('notifications').deleteMany({
             blockId: {$lt: block._id-(3600*56)}
         })
     },
