@@ -1,6 +1,6 @@
 var config = {
     // the fake hash of block 0 (new origin hash -> new chain)
-    originHash: "0000000000000000000000000000000000000000000000000000000000000019",
+    originHash: "0000000000000000000000000000000000000000000000000000000000000020",
     // the block time in ms
     blockTime: 3000,
     // the base58 encoding alphabet
