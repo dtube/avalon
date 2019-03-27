@@ -31,7 +31,9 @@ var mongo = {
                         uv: 0,
                         // we set those arbitrarily
                         approves: [config.masterName],
-                        node_appr: config.masterBalance
+                        node_appr: config.masterBalance,
+                        follows: [],
+                        followers: []
                     })
                     // then init genesis block if no block
                     db.collection('blocks').findOne({}, function(err, block) {
@@ -53,7 +55,7 @@ var mongo = {
     fillInMemoryBlocks: (cb) => {
         db.collection('blocks').find({}, {
             sort: {_id: -1},
-            limit: 100
+            limit: config.ecoBlocks
         }).toArray(function(err, blocks) {
             if (err) throw err;
             chain.recentBlocks = blocks.reverse()

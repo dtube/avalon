@@ -313,7 +313,7 @@ chain = {
             isMinerAuthorized = true;
         } else if (newBlock.miner == previousBlock.miner) {
             // allow the previous miner to mine again if current miner misses the block
-            if (newBlock.timestamp - previousBlock.timestamp < (2*configure.blockTime)) {
+            if (newBlock.timestamp - previousBlock.timestamp < (2*config.blockTime)) {
                 logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
                 cb(false); return
             } else {
@@ -352,9 +352,13 @@ chain = {
         for (let i = 0; i < block.txs.length; i++) {
             executions.push(function(callback) {
                 var tx = block.txs[i]
+                //var time = new Date().getTime()
                 transaction.isValid(tx, block.timestamp, function(isValid) {
+                    //logr.debug('Tx validated in '+(new Date().getTime()-time)+'ms')
+                    //time = new Date().getTime()
                     if (isValid) {
                         transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
+                            //logr.debug('Tx executed in '+(new Date().getTime()-time)+'ms')
                             if (!executed)
                                 logr.fatal('Tx execution failure', tx)
                             chain.recentTxs[tx.hash] = tx

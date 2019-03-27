@@ -22,6 +22,8 @@ var config = {
     vtGrowth: 3600000,
     // the time after which transactions expire and wont be accepted by nodes anymore
     txExpirationTime: 60000,
+    // the number of blocks from the past taken into consideration for econonomics
+    ecoBlocks: 1200,
     // if you want to create more startup accounts
     // extraAccounts: [
     //     {name: 'miner1', pub: 'reztkvUuGDReb7vihBiVS6kJkFLfJchYrQDgFzA76Kfx', balance: 1000},

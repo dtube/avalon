@@ -189,6 +189,14 @@ var http = {
             res.send(p2p.possibleNextBlocks)
         });
 
+        // get in-memory data (intensive)
+        app.get('/cache', (req,res) => {
+            res.send(cache)
+        });
+        app.get('/cacheb', (req,res) => {
+            res.send(chain.recentBlocks)
+        });
+
         // get hot
         app.get('/hot', (req, res) => {
             if (!http.rankings.hot || http.rankings.hot.length < 1) {

@@ -17,6 +17,8 @@ var eco = {
         // we consider anyone with a non zero balance to be active, otherwise he loses out
         db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
             if (err) throw err;
+            // minimum of 100 for easier testing
+            if (count < 100) count = 100
             cb(count)
         })
     },
@@ -43,38 +45,39 @@ var eco = {
         })
     },
     rewardPool: (cb) => {
-        // 1200 blocks ~= 1 hour
         // this might need to get reduced in the future as volume grows
         eco.theoricalRewardPool(function(theoricalPool){
-            db.collection('blocks').find({}, {sort: {_id:-1}, limit: 1200}).toArray(function(err, blocks) {
-                var rewardPool = theoricalPool
-                var burned = 0
-                var distributed = 0
-                var votes = 0
-                for (let i = 0; i < blocks.length; i++) {
-                    if (blocks[i].burn)
-                        burned += blocks[i].burn
-                    if (blocks[i].dist)
-                        distributed += blocks[i].dist
-                    
-                    for (let y = 0; y < blocks[i].txs.length; y++) {
-                        var tx = blocks[i].txs[y]
-                        if (tx.type == 5)
-                            votes += Math.abs(tx.data.vt)
-                    }
+            var rewardPool = theoricalPool
+            var burned = 0
+            var distributed = 0
+            var votes = 0
+            var firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
+            if (firstBlockIndex < 0) firstBlockIndex = 0
+            for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
+                const block = chain.recentBlocks[i];
+                if (block.burn)
+                    burned += block.burn
+                if (block.dist)
+                    distributed += block.dist
+                
+                for (let y = 0; y < block.txs.length; y++) {
+                    var tx = block.txs[y]
+                    if (tx.type == 5)
+                        votes += Math.abs(tx.data.vt)
                 }
-                cb({
-                    theo: theoricalPool,
-                    burn: burned + eco.currentBlock.burn,
-                    dist: distributed + eco.currentBlock.dist,
-                    votes: votes + eco.currentBlock.votes,
-                    avail: theoricalPool - distributed - eco.currentBlock.dist
-                })
+            }
+            cb({
+                theo: theoricalPool,
+                burn: burned + eco.currentBlock.burn,
+                dist: distributed + eco.currentBlock.dist,
+                votes: votes + eco.currentBlock.votes,
+                avail: theoricalPool - distributed - eco.currentBlock.dist
             })
         })
     },
     curation: (author, link, cb) => {
-        cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
+        cache.findOne('contents', {_id: author+'/'+link}, function(err, original) {
+            var content = JSON.parse(JSON.stringify(original))
             var firstVote = content.votes[0]
             var sumVt = 0
             // first loop to calculate the vp per day of each upvote
@@ -142,9 +145,9 @@ var eco = {
                 var newCoins = 0
                 for (let r = 0; r < results.length; r++)
                     newCoins += results[r];
-                db.collection('contents').updateOne({author: author, link: link}, {
+                cache.updateOne('contents', {_id: author+'/'+link}, {
                     $inc: {dist: newCoins}
-                }).then(function() {
+                }, function() {
                     cb(newCoins)
                 })
             })
@@ -155,13 +158,17 @@ var eco = {
             cache.findOne('accounts', {name: name}, function(err, account) {
                 if (err) throw err;
                 if (!account.uv) account.uv = 0
-                var thNewCoins = stats.avail * Math.abs((vt+account.uv) / (Math.abs(vt)+stats.votes))
+                if (stats.votes == 0) {
+                    var thNewCoins = 1
+                } else {
+                    var thNewCoins = stats.avail * Math.abs((vt+account.uv) / stats.votes)
+                }
                 var newCoins = Math.floor(thNewCoins)
                 
                 // make sure one person cant empty the whole pool
                 // eg stats.votes = 0
-                if (newCoins > Math.floor(stats.avail/2))
-                    newCoins = Math.floor(stats.avail/2)
+                if (newCoins > Math.floor(stats.avail/10))
+                    newCoins = Math.floor(stats.avail/10)
 
                 if (vt<0) newCoins *= -1
 

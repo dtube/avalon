@@ -421,7 +421,9 @@ transaction = {
                         bw: {v:0,t:0},
                         vt: {v:0,t:0},
                         pr: {v:0,t:0},
-                        uv: 0
+                        uv: 0,
+                        follows: [],
+                        followers: []
                     }).then(function(){
                         if (tx.data.name !== tx.data.pub.toLowerCase() || tx.data.name.length < 25) {
                             cache.updateOne('accounts', 
