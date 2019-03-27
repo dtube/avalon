@@ -29,7 +29,7 @@ var http = {
                         contents[i].downs += Math.abs(contents[i].votes[y].vt)
                     if (!contents[i].dist) contents[i].dist = 0
                 }
-                contents[i].score = hotScore(contents[i].ups, contents[i].downs, contents[i]._id.getTimestamp())
+                contents[i].score = hotScore(contents[i].ups, contents[i].downs, new Date(contents[i].ts))
             }
             contents = contents.sort(function(a,b) {
                 return b.score - a.score

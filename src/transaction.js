@@ -253,11 +253,11 @@ transaction = {
 
                     if (tx.data.pa && tx.data.pp) {
                         // its a comment of another comment
-                        db.collection('contents').findOne({author: tx.data.pa, link: tx.data.pp}, function(err, content) {
+                        cache.findOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, function(err, content) {
                             if (!content) {
                                 cb(false, 'invalid tx parent comment does not exist'); return
                             }
-                            db.collection('contents').findOne({author: tx.sender, link: tx.data.link}, function(err, content) {
+                            cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
                                 if (content) {
                                     // user is editing an existing comment
                                     if (content.pa != tx.data.pa || content.pp != tx.data.pp) {
@@ -548,16 +548,13 @@ transaction = {
                     break;
 
                 case TransactionType.COMMENT:
-                    db.collection('contents').findOne({author: tx.sender, link: tx.data.link}, function(err, content) {
+                    cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
                         if (err) throw err;
                         if (content) {
                             // existing content being edited
-                            db.collection('contents').updateOne({
-                                author: tx.sender,
-                                link: tx.data.link
-                            }, {
+                            cache.updateOne('contents', {_id: tx.sender+'/'+tx.data.link}, {
                                 $set: {json: tx.data.json}
-                            }).then(function(){
+                            }, function(){
                                 content.json = tx.data.json
                                 if (!tx.data.pa && !tx.data.pp)
                                     http.newRankingContent(content)
@@ -566,26 +563,21 @@ transaction = {
                         } else {
                             // new content
                             var content = {
+                                _id: tx.sender+'/'+tx.data.link,
                                 author: tx.sender,
                                 link: tx.data.link,
                                 pa: tx.data.pa,
                                 pp: tx.data.pp,
                                 json: tx.data.json,
+                                child: [],
+                                votes: [],
                                 ts: ts
                             }
-                            db.collection('contents').replaceOne({
-                                author: tx.sender,
-                                link: tx.data.link
-                            }, content, {
-                                upsert: true
-                            }).then(function(){
+                            db.collection('contents').insertOne(content).then(function(){
                                 if (tx.data.pa && tx.data.pp) {
-                                    db.collection('contents').updateOne({
-                                        author: tx.data.pa,
-                                        link: tx.data.pp
-                                    }, { $addToSet: {
+                                    cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                                         child: [tx.sender, tx.data.link]
-                                    }})
+                                    }}, function() {})
                                 } else {
                                     http.newRankingContent(content)
                                 }
@@ -602,14 +594,9 @@ transaction = {
                         vt: tx.data.vt,
                         tag: tx.data.tag
                     }
-                    db.collection('contents').updateOne({
-                        author: tx.data.author,
-                        link: tx.data.link
-                    },{$push: {
+                    cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$push: {
                         votes: vote
-                    }}, {
-                        upsert: true
-                    }).then(function(){
+                    }}, function(){
                         eco.curation(tx.data.author, tx.data.link, function(distributed) {
                             if (!tx.data.pa && !tx.data.pp)
                                 http.updateRankings(tx.data.author, tx.data.link, vote, distributed)

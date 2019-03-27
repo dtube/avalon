@@ -74,7 +74,7 @@ var eco = {
         })
     },
     curation: (author, link, cb) => {
-        db.collection('contents').findOne({author: author, link: link}, function(err, content) {
+        cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
             var firstVote = content.votes[0]
             var sumVt = 0
             // first loop to calculate the vp per day of each upvote
