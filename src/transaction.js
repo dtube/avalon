@@ -198,7 +198,7 @@ transaction = {
                     break;
 
                 case TransactionType.TRANSFER:
-                    if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.receiver.length > 25) {
+                    if (!tx.data.receiver || typeof tx.data.receiver !== "string" || tx.data.receiver.length > 50) {
                         cb(false, 'invalid tx data.receiver'); return
                     }
                     if (!tx.data.amount || typeof tx.data.amount !== "number" || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
@@ -213,7 +213,7 @@ transaction = {
                     if (tx.data.receiver === tx.sender) {
                         cb(false, 'invalid tx cannot send to self'); return
                     }
-                    
+
                     cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                         if (err) throw err;
                         if (account.balance < tx.data.amount)
