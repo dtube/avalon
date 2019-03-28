@@ -230,15 +230,15 @@ transaction = {
 
                 case TransactionType.COMMENT:
                     // permlink
-                    if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
+                    if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 50) {
                         cb(false, 'invalid tx data.link'); return
                     }
                     // parent author
-                    if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== "string" || tx.data.pa.length > 25)) {
+                    if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== "string" || tx.data.pa.length > 50)) {
                         cb(false, 'invalid tx data.pa'); return
                     }
                     // parent permlink
-                    if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== "string" || tx.data.pp.length > 25)) {
+                    if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== "string" || tx.data.pp.length > 50)) {
                         cb(false, 'invalid tx data.pp'); return
                     }
                     // handle arbitrary json input
@@ -276,11 +276,11 @@ transaction = {
                     break;
 
                 case TransactionType.VOTE:
-                    if (!tx.data.author || typeof tx.data.author !== "string" || tx.data.author.length > 25) {
+                    if (!tx.data.author || typeof tx.data.author !== "string" || tx.data.author.length > 50) {
                         logr.debug('invalid tx data.author')
                         cb(false); return
                     }
-                    if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 25) {
+                    if (!tx.data.link || typeof tx.data.link !== "string" || tx.data.link.length > 50) {
                         cb(false, 'invalid tx data.link'); return
                     }
                     if (!tx.data.vt || typeof tx.data.vt !== "number" || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
