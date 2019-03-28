@@ -16,7 +16,8 @@ var http = {
         hot: []
     },
     generateHot: function(cb) {
-        db.collection('contents').find({pa: null}, {sort: {_id: -1}}).toArray(function(err, contents) {
+        db.collection('contents').find({pa: null}, {sort: {ts: -1}}).toArray(function(err, contents) {
+            console.log(contents.length)
             for (let i = 0; i < contents.length; i++) {
                 contents[i].score = 0
                 contents[i].ups = 0
@@ -51,7 +52,7 @@ var http = {
         }
 
         if (!alreadyAdded) {
-            content._id = Math.floor(new Date().getTime() / 1000).toString(16) + "0000000000000000"
+            content._id = content.author+'/'+content.link
             content.score = 0
             content.ups = 0
             content.downs = 0
@@ -228,7 +229,7 @@ var http = {
 
         // get new contents
         app.get('/new', (req, res) => {
-            db.collection('contents').find({pa: null}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+            db.collection('contents').find({pa: null}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                 res.send(contents)
             })
         })
@@ -241,8 +242,8 @@ var http = {
                 db.collection('contents').find({
                 $and: [
                     {pa: null},
-                    {_id: {$lt: content._id}}
-                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                    {ts: {$lte: content.ts}}
+                ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
@@ -258,7 +259,7 @@ var http = {
                     $and: [
                         {author: {$in: account.follows}},
                         {pa: null}
-                    ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                    ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                         res.send(contents)
                     })
                 }
@@ -278,8 +279,8 @@ var http = {
                         $and: [
                             {author: {$in: account.follows}},
                             {pa: null},
-                            {_id: {$lt: content._id}}
-                        ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                            {ts: {$lte: content.ts}}
+                        ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                             res.send(contents)
                         })
                     }
@@ -290,7 +291,7 @@ var http = {
         // get blog of user
         app.get('/blog/:username', (req, res) => {
             var username = req.params.username
-            db.collection('contents').find({pa: null, author: username}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+            db.collection('contents').find({pa: null, author: username}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                 res.send(contents)
             })
         })
@@ -309,8 +310,8 @@ var http = {
                 $and: [
                     {pa: null},
                     {author: username},
-                    {_id: {$lt: content._id}}
-                ]}, {sort: {_id: -1}, limit: 50}).toArray(function(err, contents) {
+                    {ts: {$lte: content.ts}}
+                ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
