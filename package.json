@@ -17,6 +17,7 @@
     "mongodb": "^3.2.2",
     "node-fetch": "^2.3.0",
     "oembed-parser": "^1.2.2",
+    "open-graph-scraper": "^3.6.1",
     "run-series": "^1.1.8",
     "secp256k1": "^3.6.2",
     "signale": "^1.4.0",

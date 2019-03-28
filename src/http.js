@@ -6,6 +6,7 @@ var decay = require('decay')
 var hotScore = decay.redditHot()
 var fetchVideoInfo = require('youtube-info')
 const {extract} = require('oembed-parser')
+const ogs = require('open-graph-scraper');
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
@@ -493,6 +494,18 @@ var http = {
                 res.send(data)
             }).catch((err) => {
                 res.sendStatus(404)
+            });
+        })
+
+        // get open graph data for any url
+        app.get('/opengraph/:url', (req, res) => {
+            if (!req.params.url) {
+                res.sendStatus(500)
+                return
+            }
+            ogs({url: req.params.url}, function (error, results) {
+                if (error) res.sendStatus(404)
+                else res.send(results)
             });
         })
 
