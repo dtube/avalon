@@ -3,8 +3,9 @@ var express = require("express")
 var cors = require('cors')
 var bodyParser = require('body-parser')
 var decay = require('decay')
-var hotScore = decay.redditHot();
-var fetchVideoInfo = require('youtube-info');
+var hotScore = decay.redditHot()
+var fetchVideoInfo = require('youtube-info')
+const {extract} = require('oembed-parser')
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
@@ -479,6 +480,19 @@ var http = {
             }
             fetchVideoInfo(req.params.videoId, function(err, videoInfo) {
                 res.send(videoInfo)
+            });
+        })
+
+        // get oembed for any url
+        app.get('/oembed/:url', (req, res) => {
+            if (!req.params.url) {
+                res.sendStatus(500)
+                return
+            }
+            extract(req.params.url).then((data) => {
+                res.send(data)
+            }).catch((err) => {
+                res.sendStatus(404)
             });
         })
 
