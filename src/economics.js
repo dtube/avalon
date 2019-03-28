@@ -77,6 +77,9 @@ var eco = {
     },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, original) {
+            if (!original) {
+                cb(0); return;
+            }
             var content = JSON.parse(JSON.stringify(original))
             var firstVote = content.votes[0]
             var sumVt = 0
