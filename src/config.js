@@ -1,6 +1,6 @@
 var config = {
     // the fake hash of block 0 (new origin hash -> new chain)
-    originHash: "0000000000000000000000000000000000000000000000000000000000000020",
+    originHash: "0000000000000000000000000000000000000000000000000000000000000021",
     // the block time in ms
     blockTime: 3000,
     // the base58 encoding alphabet
@@ -14,6 +14,12 @@ var config = {
     masterBalance: 1000000,
     // the init account public key
     masterPub: 'qFsrM3bBfJmWsEZLxpv2QDrDnUtZTwqrrPiLsZpaGGSR',
+    // the number of tokens distributed before master gets 1 free token printed.
+    // masterFee = 2 => 33% fee
+    // masterFee = 4 => 20% fee
+    // masterFee = 9 => 10% fee
+    // masterFee = 19 => 5% fee
+    masterFee: 9,
     // the number of ms needed for 1 DTC to generate 1 byte of bw
     bwGrowth: 60000,
     // the maximum bandwidth an account can have available

@@ -80,7 +80,7 @@ var eco = {
             if (!original) {
                 cb(0); return;
             }
-            var content = JSON.parse(JSON.stringify(original))
+            var content = Object.assign({}, original)
             var firstVote = content.votes[0]
             var sumVt = 0
             // first loop to calculate the vp per day of each upvote
@@ -151,7 +151,30 @@ var eco = {
                 cache.updateOne('contents', {_id: author+'/'+link}, {
                     $inc: {dist: newCoins}
                 }, function() {
-                    cb(newCoins)
+                    if (config.masterFee > 0 && newCoins > 0) {
+                        var distBefore = content.dist
+                        var distAfter = distBefore + newCoins
+                        var benefReward = Math.floor(distAfter/config.masterFee) - Math.floor(distBefore/config.masterFee)
+                        if (benefReward > 0) {
+                            cache.updateOne('accounts', {name: config.masterName}, {$inc: {balance: benefReward}}, function() {
+                                db.collection('distributed').insertOne({
+                                    name: config.masterName,
+                                    dist: benefReward,
+                                    ts: currentVote.ts
+                                }, function(err) {
+                                    if (err) throw err;
+                                    cache.findOne('accounts', {name: config.masterName}, function(err, account) {
+                                        var masterAccount = Object.assign({}, account)
+                                        transaction.updateGrowInts(masterAccount, currentVote.ts, function(success) {
+                                            transaction.adjustNodeAppr(masterAccount, benefReward, function(success) {
+                                                cb(newCoins)
+                                            })
+                                        })
+                                    })
+                                })
+                            })
+                        }
+                    } else cb(newCoins)
                 })
             })
         })
