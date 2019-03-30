@@ -252,7 +252,7 @@ var http = {
         // get feed contents
         app.get('/feed/:username', (req, res) => {
             db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
-                if (!account.follows) {
+                if (!account || !account.follows) {
                     res.send([])
                 } else {
                     db.collection('contents').find({
