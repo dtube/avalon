@@ -77,37 +77,36 @@ var eco = {
     },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, original) {
-            if (!original) {
-                cb(0); return;
-            }
             var content = Object.assign({}, original)
-            var firstVote = content.votes[0]
-            var sumVt = 0
             // first loop to calculate the vp per day of each upvote
             for (let i = 0; i < content.votes.length; i++) {
-                if (content.votes[i].ts == firstVote.ts) {
+                // first voter advantage is real !
+                if (i == 0)
                     content.votes[i].vpPerDayBefore = 0
-                } else {
-                    var dayDiff = (content.votes[i].ts - firstVote.ts) / (1000*60*60*24)
-                    content.votes[i].vpPerDayBefore = sumVt/dayDiff
-                }
-                sumVt += content.votes[i].vt
+                // two similar votes at the same block/timestamp should be have equal earnings / vp per day
+                else if (content.votes[i].ts == content.votes[i-1].ts)
+                    content.votes[i].vpPerDayBefore = content.votes[i-1].vpPerDayBefore
+                else
+                    content.votes[i].vpPerDayBefore = (content.votes[i].ts - content.votes[0].ts) / (1000*60*60*24)
             }
 
             var currentVote = content.votes[content.votes.length-1]
             var winners = []
-            sumVt = 0
+            var sumVt = 0
 
             logr.trace('Votes:', content.votes)
 
-            // second loop to filter winners (same vote direction and vpPerDay lower than current one)
+            // second loop to filter winners
             for (let i = 0; i < content.votes.length-1; i++) {
+                // votes from the same block cant win
+                if (content.votes[i].ts == currentVote.ts)
+                    continue
+                
+                // winners voted in the same direction
                 if (content.votes[i].vt * currentVote.vt > 0) {
-                    if (currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore) {
-                        sumVt += content.votes[i].vt
-                        winners.push(content.votes[i])
-                    }
-                    if (currentVote.vt < 0 && content.votes[i].vpPerDayBefore > currentVote.vpPerDayBefore) {
+                    // upvotes win if they were done at a lower vp per day, the opposite for downvotes
+                    if ((currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore)
+                        || (currentVote.vt < 0 && content.votes[i].vpPerDayBefore > currentVote.vpPerDayBefore)) {
                         sumVt += content.votes[i].vt
                         winners.push(content.votes[i])
                     }
