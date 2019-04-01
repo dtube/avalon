@@ -63,11 +63,13 @@ let cmds = {
 		return sign(privKey, sender, tx)
 	},
 
-	comment: (uri, pa, pp, content) => {
+	comment: (uri, pa, pp, content, weight, tag) => {
 		var tx = '{"type":4,"data":{"link":"'+
 			uri+'", "pa":"'+
 			pa+'", "pp":"'+
-			pp+'","json":'+content+'}}'
+			pp+'", "vt":'+
+			parseInt(weight)+', "tag":"'+
+			tag+'","json":'+content+'}}'
 		return sign(privKey, sender, tx)
 	},
 

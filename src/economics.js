@@ -78,7 +78,9 @@ var eco = {
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, original) {
             var content = Object.assign({}, original)
+
             // first loop to calculate the vp per day of each upvote
+            var sumVt = 0
             for (let i = 0; i < content.votes.length; i++) {
                 // first voter advantage is real !
                 if (i == 0)
@@ -87,16 +89,17 @@ var eco = {
                 else if (content.votes[i].ts == content.votes[i-1].ts)
                     content.votes[i].vpPerDayBefore = content.votes[i-1].vpPerDayBefore
                 else
-                    content.votes[i].vpPerDayBefore = (content.votes[i].ts - content.votes[0].ts) / (1000*60*60*24)
+                    content.votes[i].vpPerDayBefore = sumVt/(content.votes[i].ts - content.votes[0].ts) / (1000*60*60*24)
+            
+                sumVt += content.votes[i].vt
             }
 
-            var currentVote = content.votes[content.votes.length-1]
-            var winners = []
-            var sumVt = 0
-
             logr.trace('Votes:', content.votes)
+            var currentVote = content.votes[content.votes.length-1]
 
             // second loop to filter winners
+            var winners = []
+            var sumVtWinners = 0
             for (let i = 0; i < content.votes.length-1; i++) {
                 // votes from the same block cant win
                 if (content.votes[i].ts == currentVote.ts)
@@ -107,7 +110,7 @@ var eco = {
                     // upvotes win if they were done at a lower vp per day, the opposite for downvotes
                     if ((currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore)
                         || (currentVote.vt < 0 && content.votes[i].vpPerDayBefore > currentVote.vpPerDayBefore)) {
-                        sumVt += content.votes[i].vt
+                        sumVtWinners += content.votes[i].vt
                         winners.push(content.votes[i])
                     }
                 }
@@ -115,13 +118,13 @@ var eco = {
 
             // third loop to calculate each winner shares
             for (let i = 0; i < winners.length; i++)
-                winners[i].share = winners[i].vt / sumVt
+                winners[i].share = winners[i].vt / sumVtWinners
 
             winners.sort(function(a,b) {
                 return b.share - a.share
             })
 
-            logr.trace('WINNERS:', winners)
+            logr.trace(currentVote, winners.length+'/'+content.votes.length+' won')
 
             // forth loop to pay out
             var executions = []

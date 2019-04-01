@@ -245,9 +245,16 @@ transaction = {
                     if (!tx.data.json || typeof tx.data.json !== "object" || JSON.stringify(tx.data.json).length > 250000) {
                         cb(false, 'invalid tx data.json'); return
                     }
-                    // commenting costs 1 vote token as a forced self-upvote
+                    // users need to vote the content at the same time with vt and tag field
+                    if (!tx.data.vt || typeof tx.data.vt !== "number" || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
+                        cb(false, 'invalid tx data.vt'); return
+                    }
+                    if (tx.data.tag && (typeof tx.data.tag !== "string" || tx.data.tag.length > 25)) {
+                        cb(false, 'invalid tx data.tag'); return
+                    }
+                    // checking if they have enough VTs
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
-                    if (vt.v < 1) {
+                    if (vt.v < Math.abs(tx.data.vt)) {
                         cb(false, 'invalid tx not enough vt'); return
                     }
 
@@ -286,7 +293,7 @@ transaction = {
                     if (!tx.data.vt || typeof tx.data.vt !== "number" || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
                         cb(false, 'invalid tx data.vt'); return
                     }
-                    if (typeof tx.data.tag !== "string" || tx.data.tag.length > 25) {
+                    if (tx.data.tag && (typeof tx.data.tag !== "string" || tx.data.tag.length > 25)) {
                         cb(false, 'invalid tx data.tag'); return
                     }
                     var vt = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
@@ -564,6 +571,12 @@ transaction = {
                             })
                         } else {
                             // new content
+                            var vote = {
+                                u: tx.sender,
+                                ts: ts,
+                                vt: tx.data.vt
+                            }
+                            if (tx.data.tag) vote.tag = tx.data.tag
                             var content = {
                                 _id: tx.sender+'/'+tx.data.link,
                                 author: tx.sender,
@@ -572,7 +585,7 @@ transaction = {
                                 pp: tx.data.pp,
                                 json: tx.data.json,
                                 child: [],
-                                votes: [],
+                                votes: [vote],
                                 ts: ts
                             }
                             db.collection('contents').insertOne(content).then(function(){
@@ -593,9 +606,9 @@ transaction = {
                     var vote = {
                         u: tx.sender,
                         ts: ts,
-                        vt: tx.data.vt,
-                        tag: tx.data.tag
+                        vt: tx.data.vt
                     }
+                    if (tx.data.tag) vote.tag = tx.data.tag
                     cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$push: {
                         votes: vote
                     }}, function(){
@@ -686,10 +699,6 @@ transaction = {
             // collect voting tokens when needed
             switch (tx.type) {
                 case TransactionType.COMMENT:
-                    var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-                    vt.v -= 1
-                    break;
-
                 case TransactionType.VOTE:
                     var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
                     vt.v -= Math.abs(tx.data.vt)

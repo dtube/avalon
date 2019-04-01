@@ -85,7 +85,7 @@ function handle() {
 	
 		case 'comment':
 			// uri, parent author, parent permalink, content json
-			sendTx(cmds.comment(process.argv[5], process.argv[6], process.argv[7], process.argv[8]))
+			sendTx(cmds.comment(process.argv[5], process.argv[6], process.argv[7], process.argv[8], process.argv[9], process.argv[10]))
 			break;
 	
 		case 'vote':
