@@ -186,7 +186,7 @@ chain = {
                 chain.cleanMemoryTx()
                 config = require('./config.js').read(block._id)
                 // if block id is mult of 20, reschedule next 20 blocks
-                if (block._id%20 == 0) {
+                if (block._id % config.leaders == 0) {
                     chain.minerSchedule(block, function(minerSchedule) {
                         chain.schedule = minerSchedule
                         chain.recentBlocks.push(block)
@@ -401,7 +401,7 @@ chain = {
         var hash = block.hash
         var rand = parseInt("0x"+hash.substr(hash.length-6))
         logr.info('Generating schedule... NRNG: ' + rand)
-        chain.generateTop20Miner(function(miners) {
+        chain.generateLeaders(function(miners) {
             miners = miners.sort(function(a,b) {
                 if(a.name < b.name) return -1;
                 if(a.name > b.name) return 1;
@@ -426,10 +426,10 @@ chain = {
             })
         })
     },
-    generateTop20Miner: (cb) => {
+    generateLeaders: (cb) => {
         db.collection('accounts').find({node_appr: {$gt: 0}}, {
             sort: {node_appr: -1},
-            limit: 20
+            limit: config.leaders
         }).toArray(function(err, accounts) {
             if (err) throw err;
             cb(accounts)

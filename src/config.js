@@ -51,7 +51,8 @@ var config = {
                 4: 2
             },
             // should we allow people to vote multiple times on the same content ?
-            allowRevotes: false
+            allowRevotes: false,
+            leaders: 4
         },
         5: {
             txLimits: {}

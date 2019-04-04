@@ -23,7 +23,7 @@ var p2p = {
     recoveredBlocks: [],
     recovering: false,
     discoveryWorker: () => {
-        chain.generateTop20Miner(function(miners) {
+        chain.generateLeaders(function(miners) {
             for (let i = 0; i < miners.length; i++) {
                 if (miners[i].name == process.env.NODE_OWNER) continue
                 if (!miners[i].json) continue

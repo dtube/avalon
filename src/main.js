@@ -16,7 +16,7 @@ mongo.init(function() {
         config = require('./config.js').read(chain.getLatestBlock()._id)
         
         // start miner schedule
-        db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id%20)}, function(err, block) {
+        db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
             if (err) throw err;
             chain.minerSchedule(block, function(minerSchedule) {
                 chain.schedule = minerSchedule
