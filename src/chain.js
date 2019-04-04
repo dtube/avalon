@@ -101,8 +101,8 @@ chain = {
                 transaction.pool = []
 
                 // always record the failure of others
-                if (chain.schedule.shuffle[(newBlock._id-1)%20].name !== process.env.NODE_OWNER)
-                    newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%20].name
+                if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name !== process.env.NODE_OWNER)
+                    newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name
 
                 // hash and sign the block with our private key
                 newBlock = chain.hashAndSignBlock(newBlock)
@@ -164,9 +164,9 @@ chain = {
         if (p2p.recovering) return
         // if we are the next miner or backup miner, prepare to mine
         clearTimeout(chain.worker)
-        if (block.miner === process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%20].name === process.env.NODE_OWNER) {
+        if (block.miner === process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%config.leaders].name === process.env.NODE_OWNER) {
             var mineInMs = config.blockTime
-            if (chain.schedule.shuffle[(block._id)%20].name !== process.env.NODE_OWNER)
+            if (chain.schedule.shuffle[(block._id)%config.leaders].name !== process.env.NODE_OWNER)
                 mineInMs += config.blockTime
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
@@ -310,7 +310,7 @@ chain = {
 
         // check if miner is scheduled
         var isMinerAuthorized = false
-        if (chain.schedule.shuffle[(newBlock._id-1)%20].name === newBlock.miner) 
+        if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name === newBlock.miner) 
             isMinerAuthorized = true
         else if (newBlock.miner === previousBlock.miner) 
             // allow the previous miner to mine again if current miner misses the block

@@ -49,6 +49,13 @@ module.exports = {
             'error',
             'smart'
         ],
+        'no-magic-numbers': [
+            'warn',
+            {
+                'ignore': [0, 1]
+            }
+        ],
+        'no-useless-concat': 'error'
         // 'complexity': [
         //     'warn',
         //     20
