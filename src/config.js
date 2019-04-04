@@ -1,13 +1,4 @@
 var config = {
-    read: (blockNum) => {
-        var finalConfig = {}
-        for (const key in config.history) {
-            if (blockNum >= key)
-                Object.assign(finalConfig, config.history[key])
-            else break
-        }
-        return finalConfig
-    },
     history: {
         0: {
             // the fake hash of block 0 (new origin hash -> new chain)
@@ -41,6 +32,8 @@ var config = {
             txExpirationTime: 60000,
             // the number of blocks from the past taken into consideration for econonomics
             ecoBlocks: 1200,
+            // the account pricing options
+            // see: https://www.wolframalpha.com/input/?i=plot+10%2B100*(1.1%5E(14-x))+from+x%3D1+to+x%3D40
             baseAccountPrice: 100,
             baseAccountChars: 14,
             extraCharPriceMult: 1.1,
@@ -50,10 +43,29 @@ var config = {
             //     {name: 'miner1', pub: 'reztkvUuGDReb7vihBiVS6kJkFLfJchYrQDgFzA76Kfx', balance: 1000},
             //     {name: 'miner2', pub: '27nC6LqdkTNsQF2srecqPxxCpcTbNYHSa5fa2G6q3vVwu', balance: 1000},
             // ]
+            // configure which transactions are allowed
+            // key: transaction id (see transaction.js:TransactionType)
+            // value: null/0 (default): enabled, 1: disabled, 2: master-only
+            txLimits: {
+                0: 2,
+                4: 2
+            }
         },
-        100: {
-            minAccountPrice: 10
+        5: {
+            txLimits: {}
+        },
+        1100: {
+            txLimits: {0: 2}
         }
+    },
+    read: (blockNum) => {
+        var finalConfig = {}
+        for (const key in config.history) {
+            if (blockNum >= key)
+                Object.assign(finalConfig, config.history[key])
+            else break
+        }
+        return finalConfig
     }
 } 
 

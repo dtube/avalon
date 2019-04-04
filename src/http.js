@@ -398,6 +398,11 @@ var http = {
             })
         })
 
+        // get current chain config
+        app.get('/config', (req, res) => {
+            res.send(config)
+        })
+
         // get username price
         app.get('/accountPrice/:name', (req, res) => {
             if (!req.params.name) {

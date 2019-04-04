@@ -77,7 +77,14 @@ transaction = {
         if (!tx.signature || typeof tx.signature !== "string") {
             cb(false, 'invalid tx signature'); return
         }
-
+        // enforce transaction limits
+        if (config.txLimits[tx.type] && config.txLimits[tx.type] == 1) {
+            cb(false, 'transaction type is disabled'); return
+        }
+        if (config.txLimits[tx.type] && config.txLimits[tx.type] == 2
+            && tx.sender != config.masterName) {
+            cb(false, 'transaction type is master-only'); return
+        }
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
         if (chain.getLatestBlock().timestamp - tx.ts > config.txExpirationTime) {
@@ -87,7 +94,6 @@ transaction = {
         if (transaction.isPublished(tx)) {
             cb(false, 'transaction already in chain'); return
         }
-
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser) {
             if (!legitUser) {
