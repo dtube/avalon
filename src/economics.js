@@ -59,7 +59,7 @@ var eco = {
                 
                 for (let y = 0; y < block.txs.length; y++) {
                     var tx = block.txs[y]
-                    if (tx.type == 5)
+                    if (tx.type === 5)
                         votes += Math.abs(tx.data.vt)
                 }
             }
@@ -86,10 +86,10 @@ var eco = {
             var sumVt = 0
             for (let i = 0; i < content.votes.length; i++) {
                 // first voter advantage is real !
-                if (i == 0)
+                if (i === 0)
                     content.votes[i].vpPerDayBefore = 0
                 // two similar votes at the same block/timestamp should be have equal earnings / vp per day
-                else if (content.votes[i].ts == content.votes[i-1].ts)
+                else if (content.votes[i].ts === content.votes[i-1].ts)
                     content.votes[i].vpPerDayBefore = content.votes[i-1].vpPerDayBefore
                 else
                     content.votes[i].vpPerDayBefore = sumVt/(content.votes[i].ts - content.votes[0].ts) / (1000*60*60*24)
@@ -105,7 +105,7 @@ var eco = {
             var sumVtWinners = 0
             for (let i = 0; i < content.votes.length-1; i++) {
                 // votes from the same block cant win
-                if (content.votes[i].ts == currentVote.ts)
+                if (content.votes[i].ts === currentVote.ts)
                     continue
                 
                 // winners voted in the same direction
@@ -137,7 +137,7 @@ var eco = {
                     if (payout < 0) 
                         throw 'Fatal distribution error (negative payout)'
                     
-                    if (payout == 0) {
+                    if (payout === 0) {
                         callback(null, 0)
                         return
                     }
@@ -191,7 +191,7 @@ var eco = {
                 if (!account.uv) account.uv = 0
 
                 var thNewCoins = 0
-                if (stats.votes == 0)
+                if (stats.votes === 0)
                     thNewCoins = 1
                 else
                     thNewCoins = stats.avail * Math.abs((vt+account.uv) / stats.votes)

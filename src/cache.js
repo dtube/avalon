@@ -5,7 +5,7 @@ var cache = {
     contents: {},
     changes: [],
     findOne: function(collection, query, cb) {
-        if (['accounts','blocks','contents'].indexOf(collection) == -1) {
+        if (['accounts','blocks','contents'].indexOf(collection) === -1) {
             cb(true)
             return
         }
@@ -57,7 +57,7 @@ var cache = {
                 case '$pull':
                     for (var l in changes[c]) 
                         for (let y = 0; y < cache[collection][obj[key]][l].length; y++) 
-                            if (cache[collection][obj[key]][l][y] == changes[c][l]) 
+                            if (cache[collection][obj[key]][l][y] === changes[c][l]) 
                                 cache[collection][obj[key]][l].splice(y, 1)
                             
                         

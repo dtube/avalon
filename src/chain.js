@@ -101,7 +101,7 @@ chain = {
                 transaction.pool = []
 
                 // always record the failure of others
-                if (chain.schedule.shuffle[(newBlock._id-1)%20].name != process.env.NODE_OWNER)
+                if (chain.schedule.shuffle[(newBlock._id-1)%20].name !== process.env.NODE_OWNER)
                     newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%20].name
 
                 // hash and sign the block with our private key
@@ -130,19 +130,19 @@ chain = {
                 
             chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
-                if (newBlock.txs.length != validTxs.length) {
+                if (newBlock.txs.length !== validTxs.length) {
                     logr.error('Invalid tx(s) in block')
                     cb(true, newBlock); return
                 }
 
                 // error if distributed or burned computed amounts are different than the reported one
                 var blockDist = newBlock.dist || 0
-                if (blockDist != distributed) {
+                if (blockDist !== distributed) {
                     logr.error('Wrong dist amount', blockDist, distributed)
                     cb(true, newBlock); return
                 }
                 var blockBurn = newBlock.burn || 0
-                if (blockBurn != burned) {
+                if (blockBurn !== burned) {
                     logr.error('Wrong burn amount', blockBurn, burned)
                     cb(true, newBlock); return
                 }
@@ -164,9 +164,9 @@ chain = {
         if (p2p.recovering) return
         // if we are the next miner or backup miner, prepare to mine
         clearTimeout(chain.worker)
-        if (block.miner == process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%20].name == process.env.NODE_OWNER) {
+        if (block.miner === process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%20].name === process.env.NODE_OWNER) {
             var mineInMs = config.blockTime
-            if (chain.schedule.shuffle[(block._id)%20].name != process.env.NODE_OWNER)
+            if (chain.schedule.shuffle[(block._id)%20].name !== process.env.NODE_OWNER)
                 mineInMs += config.blockTime
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
@@ -186,7 +186,7 @@ chain = {
                 chain.cleanMemoryTx()
                 config = require('./config.js').read(block._id)
                 // if block id is mult of 20, reschedule next 20 blocks
-                if (block._id % config.leaders == 0) 
+                if (block._id % config.leaders === 0) 
                     chain.minerSchedule(block, function(minerSchedule) {
                         chain.schedule = minerSchedule
                         chain.recentBlocks.push(block)
@@ -310,9 +310,9 @@ chain = {
 
         // check if miner is scheduled
         var isMinerAuthorized = false
-        if (chain.schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) 
+        if (chain.schedule.shuffle[(newBlock._id-1)%20].name === newBlock.miner) 
             isMinerAuthorized = true
-        else if (newBlock.miner == previousBlock.miner) 
+        else if (newBlock.miner === previousBlock.miner) 
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - previousBlock.timestamp < (2*config.blockTime)) {
                 logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)

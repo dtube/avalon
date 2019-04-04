@@ -17,7 +17,7 @@ module.exports = class GrowInt {
 
     grow(time) {
         if (time < this.t) return
-        if (this.config.growth == 0) return {
+        if (this.config.growth === 0) return {
             v: this.v,
             t: time
         }

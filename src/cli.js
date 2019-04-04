@@ -7,7 +7,7 @@ const bs58 = require('base-x')(config.b58Alphabet)
 var fetch = require('node-fetch')
 
 for (let i = 0; i < process.argv.length; i++) 
-    if (process.argv[i] == '--spam') {
+    if (process.argv[i] === '--spam') {
         var spamming = true
         var spamDelay = Math.round(1000/parseInt(process.argv[i+1]))
         process.argv.splice(i,2)
@@ -27,7 +27,7 @@ function sendTx(tx) {
         },
         body: JSON.stringify(tx)
     }).then(function(res) {
-        if (res.statusText != 'OK')
+        if (res.statusText !== 'OK')
             process.stdout.write('Err: ' + res.statusText)
     })
 }

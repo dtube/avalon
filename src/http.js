@@ -43,7 +43,7 @@ var http = {
     newRankingContent: function(content) {
         var alreadyAdded = false
         for (let i = 0; i < http.rankings.hot.length; i++) 
-            if (content.author == http.rankings.hot[i].author && content.link == http.rankings.hot[i].link) {
+            if (content.author === http.rankings.hot[i].author && content.link === http.rankings.hot[i].link) {
                 alreadyAdded = true
                 http.rankings.hot[i].json = content.json
                 break
@@ -67,7 +67,7 @@ var http = {
         newRankings = []
         for (let i = 0; i < http.rankings.hot.length; i++) {
             var ts = http.rankings.hot[i].ts
-            if (http.rankings.hot[i].author == author && http.rankings.hot[i].link == link) {
+            if (http.rankings.hot[i].author === author && http.rankings.hot[i].link === link) {
                 if (vote.vt > 0)
                     http.rankings.hot[i].ups += Math.abs(vote.vt)
                 if (vote.vt < 0)
@@ -223,8 +223,8 @@ var http = {
                     added++
                 }
                 if (added >= 50) break
-                if (http.rankings.hot[i].author == req.params.author
-                && http.rankings.hot[i].link == req.params.link)
+                if (http.rankings.hot[i].author === req.params.author
+                && http.rankings.hot[i].link === req.params.link)
                     isPastRelativeContent = true
             }
             res.send(filteredContents)
@@ -357,13 +357,13 @@ var http = {
                     res.sendStatus(404)
                     return
                 }
-                if (!post.child || post.child.length == 0) {
+                if (!post.child || post.child.length === 0) {
                     res.send(post)
                     return
                 }
                 post.comments = {}
                 function fillComments(posts, cb) {
-                    if (!posts || posts.length == 0) {
+                    if (!posts || posts.length === 0) {
                         cb()
                         return
                     }

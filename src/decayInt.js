@@ -15,7 +15,7 @@ module.exports = class DecayInt {
 
     decay(time) {
         if (time < this.t) return
-        if (this.v == 0) return {v:0,t:time}
+        if (this.v === 0) return {v:0,t:time}
 
         var tmpValue = this.v
         var timeDiff = time-this.t

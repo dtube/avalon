@@ -62,7 +62,7 @@ notifications = {
             var mentions = 0
             while (mentions < 10 && i<words.length) {
                 for (let y = 0; y < words[i].length; y++) 
-                    if (config.allowedUsernameChars.indexOf(words[i][y]) == -1) {
+                    if (config.allowedUsernameChars.indexOf(words[i][y]) === -1) {
                         if (y > 0) {
                             notif = {
                                 u: words[i].substring(0,y),

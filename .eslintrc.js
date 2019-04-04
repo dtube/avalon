@@ -44,6 +44,14 @@ module.exports = {
         'curly': [
             'error',
             'multi'
-        ]
+        ],
+        'eqeqeq': [
+            'error',
+            'smart'
+        ],
+        // 'complexity': [
+        //     'warn',
+        //     20
+        // ]
     }
 }

@@ -22,7 +22,7 @@ transaction = {
         for (let y = 0; y < txs.length; y++) {
             var exists = false
             for (let i = 0; i < transaction.pool.length; i++)
-                if (transaction.pool[i].hash == txs[y].hash)
+                if (transaction.pool[i].hash === txs[y].hash)
                     exists = true
             
             if (!exists)
@@ -33,7 +33,7 @@ transaction = {
     removeFromPool: (txs) => {
         for (let y = 0; y < txs.length; y++)
             for (let i = 0; i < transaction.pool.length; i++)
-                if (transaction.pool[i].hash == txs[y].hash) {
+                if (transaction.pool[i].hash === txs[y].hash) {
                     transaction.pool.splice(i, 1)
                     break
                 }
@@ -42,7 +42,7 @@ transaction = {
     isInPool: (tx) => {
         var isInPool = false
         for (let i = 0; i < transaction.pool.length; i++)
-            if (transaction.pool[i].hash == tx.hash) {
+            if (transaction.pool[i].hash === tx.hash) {
                 isInPool = true
                 break
             }
@@ -78,11 +78,11 @@ transaction = {
             cb(false, 'invalid tx signature'); return
         }
         // enforce transaction limits
-        if (config.txLimits[tx.type] && config.txLimits[tx.type] == 1) {
+        if (config.txLimits[tx.type] && config.txLimits[tx.type] === 1) {
             cb(false, 'transaction type is disabled'); return
         }
-        if (config.txLimits[tx.type] && config.txLimits[tx.type] == 2
-            && tx.sender != config.masterName) {
+        if (config.txLimits[tx.type] && config.txLimits[tx.type] === 2
+            && tx.sender !== config.masterName) {
             cb(false, 'transaction type is master-only'); return
         }
         // avoid transaction reuse
@@ -111,7 +111,7 @@ transaction = {
             }
 
             // checking if the user has enough bandwidth
-            if (JSON.stringify(tx).length > newBw.v && tx.sender != config.masterName) {
+            if (JSON.stringify(tx).length > newBw.v && tx.sender !== config.masterName) {
                 cb(false, 'not enough bandwidth'); return
             }
 
@@ -130,10 +130,10 @@ transaction = {
                 for (let i = 0; i < lowerUser.length; i++) {
                     const c = lowerUser[i]
                     // allowed username chars
-                    if (config.allowedUsernameChars.indexOf(c) == -1) 
-                        if (config.allowedUsernameCharsOnlyMiddle.indexOf(c) == -1) {
+                    if (config.allowedUsernameChars.indexOf(c) === -1) 
+                        if (config.allowedUsernameCharsOnlyMiddle.indexOf(c) === -1) {
                             cb(false, 'invalid tx data.name char '+c); return
-                        } else if (i == 0 || i == lowerUser.length-1) {
+                        } else if (i === 0 || i === lowerUser.length-1) {
                             cb(false, 'invalid tx data.name char '+c+' can only be in the middle'); return
                         }
                     
@@ -190,7 +190,7 @@ transaction = {
                 cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                     if (err) throw err
                     if (!acc.approves) acc.approves = []
-                    if (acc.approves.indexOf(tx.data.target) == -1) {
+                    if (acc.approves.indexOf(tx.data.target) === -1) {
                         cb(false, 'invalid tx already unvoted'); return
                     }
                     cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
@@ -213,7 +213,7 @@ transaction = {
                 if (typeof tx.data.memo !== 'string' || tx.data.memo.length > 250) {
                     cb(false, 'invalid tx data.memo'); return
                 }
-                if (tx.data.amount != Math.floor(tx.data.amount)) {
+                if (tx.data.amount !== Math.floor(tx.data.amount)) {
                     cb(false, 'invalid tx data.amount not an integer'); return
                 }
                 if (tx.data.receiver === tx.sender) {
@@ -273,7 +273,7 @@ transaction = {
                         cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
                             if (content) {
                                 // user is editing an existing comment
-                                if (content.pa != tx.data.pa || content.pp != tx.data.pp) {
+                                if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
                                     cb(false, 'invalid tx parent comment cannot be edited'); return
                                 }
                             } else 
@@ -313,7 +313,7 @@ transaction = {
                     }
                     if (!config.allowRevotes) 
                         for (let i = 0; i < content.votes.length; i++) 
-                            if (tx.sender == content.votes[i].u) {
+                            if (tx.sender === content.votes[i].u) {
                                 cb(false, 'invalid tx user has already voted'); return
                             }
                         
@@ -363,7 +363,7 @@ transaction = {
                 cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                     if (err) throw err
                     if (!acc.follows) acc.follows = []
-                    if (acc.follows.indexOf(tx.data.target) == -1) {
+                    if (acc.follows.indexOf(tx.data.target) === -1) {
                         cb(false, 'invalid tx not following target'); return
                     }
                     cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
@@ -452,7 +452,7 @@ transaction = {
                     followers: []
                 }).then(function(){
                     if (tx.data.name !== tx.data.pub.toLowerCase()) 
-                        if (tx.sender != config.masterName || config.masterPaysForUsernames) {
+                        if (tx.sender !== config.masterName || config.masterPaysForUsernames) {
                             cache.updateOne('accounts', 
                                 {name: tx.sender},
                                 {$inc: {balance: -eco.accountPrice(tx.data.name)}}, function() {
@@ -493,10 +493,10 @@ transaction = {
                             if (err) throw err
                             if (!acc.approves) acc.approves = []
                             var node_appr = Math.floor(acc.balance/acc.approves.length)
-                            var node_appr_before = (acc.approves.length == 1 ? 0 : Math.floor(acc.balance/(acc.approves.length-1)))
+                            var node_appr_before = (acc.approves.length === 1 ? 0 : Math.floor(acc.balance/(acc.approves.length-1)))
                             var node_owners = []
                             for (let i = 0; i < acc.approves.length; i++)
-                                if (acc.approves[i] != tx.data.target)
+                                if (acc.approves[i] !== tx.data.target)
                                     node_owners.push(acc.approves[i])
     
                             cache.updateMany('accounts', 
@@ -521,11 +521,11 @@ transaction = {
                         cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                             if (err) throw err
                             if (!acc.approves) acc.approves = []
-                            var node_appr = (acc.approves.length == 0 ? 0 : Math.floor(acc.balance/acc.approves.length))
+                            var node_appr = (acc.approves.length === 0 ? 0 : Math.floor(acc.balance/acc.approves.length))
                             var node_appr_before = Math.floor(acc.balance/(acc.approves.length+1))
                             var node_owners = []
                             for (let i = 0; i < acc.approves.length; i++)
-                                if (acc.approves[i] != tx.data.target)
+                                if (acc.approves[i] !== tx.data.target)
                                     node_owners.push(acc.approves[i])
     
                             cache.updateMany('accounts', 

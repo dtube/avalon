@@ -25,14 +25,14 @@ var p2p = {
     discoveryWorker: () => {
         chain.generateLeaders(function(miners) {
             for (let i = 0; i < miners.length; i++) {
-                if (miners[i].name == process.env.NODE_OWNER) continue
+                if (miners[i].name === process.env.NODE_OWNER) continue
                 if (!miners[i].json) continue
 
                 // are we already connected?
                 var connected = false
                 for (let y = 0; y < p2p.sockets.length; y++) {
                     if (!p2p.sockets[y] || !p2p.sockets[y].node_status) continue
-                    if (miners[i].name == p2p.sockets[y].node_status.owner)
+                    if (miners[i].name === p2p.sockets[y].node_status.owner)
                         connected = true
                 }
 
@@ -75,8 +75,8 @@ var p2p = {
         }
         // close connection if we already have this peer ip in our connected sockets
         for (let i = 0; i < p2p.sockets.length; i++)
-            if (p2p.sockets[i]._socket.remoteAddress == ws._socket.remoteAddress
-                && p2p.sockets[i]._socket.remotePort == ws._socket.remotePort) {
+            if (p2p.sockets[i]._socket.remoteAddress === ws._socket.remoteAddress
+                && p2p.sockets[i]._socket.remotePort === ws._socket.remotePort) {
                 ws.close()
                 return
             }
@@ -126,12 +126,12 @@ var p2p = {
 
             case MessageType.BLOCK:
                 for (let i = 0; i < p2p.recoveringBlocks.length; i++)
-                    if (p2p.recoveringBlocks[i] == message.d._id) {
+                    if (p2p.recoveringBlocks[i] === message.d._id) {
                         p2p.recoveringBlocks.splice(i, 1)
                         break
                     }
                             
-                if (chain.getLatestBlock()._id+1 == message.d._id)
+                if (chain.getLatestBlock()._id+1 === message.d._id)
                     p2p.addRecursive(message.d)
                 else {
                     p2p.recoveredBlocks[message.d._id] = message.d
@@ -165,8 +165,8 @@ var p2p = {
                 var socketPc = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socketPc || !socketPc.node_status) return
                 for (let i = 0; i < p2p.possibleNextBlocks.length; i++) 
-                    if (blockToPrecommit.hash == p2p.possibleNextBlocks[i].block.hash
-                        && p2p.possibleNextBlocks[i].pc.indexOf(socketPc.node_status.owner) == -1) {
+                    if (blockToPrecommit.hash === p2p.possibleNextBlocks[i].block.hash
+                        && p2p.possibleNextBlocks[i].pc.indexOf(socketPc.node_status.owner) === -1) {
                         p2p.possibleNextBlocks[i].pc.push(socketPc.node_status.owner)
                         p2p.consensusWorker()
                     }
@@ -178,8 +178,8 @@ var p2p = {
                 var socketC = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socketC || !socketC.node_status) return
                 for (let i = 0; i < p2p.possibleNextBlocks.length; i++) 
-                    if (blockToCommit.hash == p2p.possibleNextBlocks[i].block.hash
-                        && p2p.possibleNextBlocks[i].c.indexOf(socketC.node_status.owner) == -1) {
+                    if (blockToCommit.hash === p2p.possibleNextBlocks[i].block.hash
+                        && p2p.possibleNextBlocks[i].c.indexOf(socketC.node_status.owner) === -1) {
                         p2p.possibleNextBlocks[i].c.push(socketC.node_status.owner)
                         p2p.consensusWorker()
                     }
@@ -189,7 +189,7 @@ var p2p = {
         })
     },
     recover: () => {
-        if (!p2p.sockets || p2p.sockets.length == 0) return
+        if (!p2p.sockets || p2p.sockets.length === 0) return
         if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > 100) return
         if (!p2p.recovering) p2p.recovering = chain.getLatestBlock()._id
 
@@ -198,10 +198,10 @@ var p2p = {
         for (let i = 0; i < p2p.sockets.length; i++)
             if (p2p.sockets[i].node_status 
             && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id
-            && p2p.sockets[i].node_status.origin_block == config.originHash)
+            && p2p.sockets[i].node_status.origin_block === config.originHash)
                 peersAhead.push(p2p.sockets[i])
         
-        if (peersAhead.length == 0) {
+        if (peersAhead.length === 0) {
             p2p.recovering = false
             return
         }
@@ -253,11 +253,11 @@ var p2p = {
         })
     },
     precommit: (block, cb) => {
-        if (block._id != chain.getLatestBlock()._id+1)
+        if (block._id !== chain.getLatestBlock()._id+1)
             return
 
         for (let i = 0; i < p2p.possibleNextBlocks.length; i++)
-            if (p2p.possibleNextBlocks[i].block.hash == block.hash)
+            if (p2p.possibleNextBlocks[i].block.hash === block.hash)
                 return
 
         chain.isValidNewBlock(block, true, function(isValid) {
@@ -269,7 +269,7 @@ var p2p = {
                     pc: [block.miner],
                     c: [block.miner]
                 }
-                if (block.miner != process.env.NODE_OWNER)
+                if (block.miner !== process.env.NODE_OWNER)
                     possBlock.pc.push(process.env.NODE_OWNER)
         
                 p2p.possibleNextBlocks.push(possBlock)
@@ -281,8 +281,8 @@ var p2p = {
     },
     commit: (block) => {
         for (let b = 0; b < p2p.possibleNextBlocks.length; b++) 
-            if (p2p.possibleNextBlocks[b].block.hash == block.hash
-            && p2p.possibleNextBlocks[b].c.indexOf(process.env.NODE_OWNER) == -1) {
+            if (p2p.possibleNextBlocks[b].block.hash === block.hash
+            && p2p.possibleNextBlocks[b].c.indexOf(process.env.NODE_OWNER) === -1) {
                 p2p.possibleNextBlocks[b].c.push(process.env.NODE_OWNER)
                 p2p.broadcast({t:7, d:block})
                 p2p.consensusWorker()
@@ -292,15 +292,15 @@ var p2p = {
     consensusWorker: () => {
         var activeWitnesses = []
         for (let y = 0; y < chain.schedule.shuffle.length; y++)
-            if (activeWitnesses.indexOf(chain.schedule.shuffle[y].name) == -1)
+            if (activeWitnesses.indexOf(chain.schedule.shuffle[y].name) === -1)
                 activeWitnesses.push(chain.schedule.shuffle[y].name)
             
         var connectedWitnesses = [process.env.NODE_OWNER]
         for (let i = 0; i < p2p.sockets.length; i++) {
             if (!p2p.sockets[i].node_status) continue
             for (let y = 0; y < activeWitnesses.length; y++)
-                if (activeWitnesses[y] == p2p.sockets[i].node_status.owner
-                    && connectedWitnesses.indexOf(activeWitnesses[y]) == -1)
+                if (activeWitnesses[y] === p2p.sockets[i].node_status.owner
+                    && connectedWitnesses.indexOf(activeWitnesses[y]) === -1)
                     connectedWitnesses.push(activeWitnesses[y])
         }
 
@@ -308,7 +308,7 @@ var p2p = {
         logr.trace('CONSENSUS ',activeWitnesses,connectedWitnesses, threshold, p2p.possibleNextBlocks)
         for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
             const possBlock = p2p.possibleNextBlocks[i]
-            if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id == chain.getLatestBlock()._id+1) {
+            if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id === chain.getLatestBlock()._id+1) {
                 p2p.processing = true
                 logr.trace('Consensus block approved')
                 chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
