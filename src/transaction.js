@@ -311,9 +311,11 @@ transaction = {
                         if (!content) {
                             cb(false, 'invalid tx non-existing content'); return
                         }
-                        for (let i = 0; i < content.votes.length; i++) {
-                            if (tx.sender == content.votes[i].u) {
-                                cb(false, 'invalid tx user has already voted'); return
+                        if (!config.allowRevotes) {
+                            for (let i = 0; i < content.votes.length; i++) {
+                                if (tx.sender == content.votes[i].u) {
+                                    cb(false, 'invalid tx user has already voted'); return
+                                }
                             }
                         }
                         cb(true)

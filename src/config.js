@@ -49,7 +49,9 @@ var config = {
             txLimits: {
                 0: 2,
                 4: 2
-            }
+            },
+            // should we allow people to vote multiple times on the same content ?
+            allowRevotes: false
         },
         5: {
             txLimits: {}
