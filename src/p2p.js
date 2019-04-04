@@ -1,9 +1,9 @@
-var p2p_port = process.env.P2P_PORT || 6001;
-var WebSocket = require("ws");
+var p2p_port = process.env.P2P_PORT || 6001
+var WebSocket = require('ws')
 var chain = require('./chain.js')
 var secp256k1 = require('secp256k1')
 var bs58 = require('base-x')(config.b58Alphabet)
-var CryptoJS = require("crypto-js")
+var CryptoJS = require('crypto-js')
 
 var MessageType = {
     QUERY_NODE_STATUS: 0,
@@ -14,7 +14,7 @@ var MessageType = {
     NEW_TX: 5,
     BLOCK_PRECOMMIT: 6,
     BLOCK_COMMIT: 7
-};
+}
 
 var p2p = {
     sockets: [],
@@ -46,9 +46,9 @@ var p2p = {
         })
     },
     init: () => {
-        var server = new WebSocket.Server({port: p2p_port});
-        server.on('connection', ws => p2p.handshake(ws));
-        logr.info('Listening websocket p2p port on: ' + p2p_port);
+        var server = new WebSocket.Server({port: p2p_port})
+        server.on('connection', ws => p2p.handshake(ws))
+        logr.info('Listening websocket p2p port on: ' + p2p_port)
         setTimeout(function(){p2p.recover()}, 1500)
         if (!process.env.NO_DISCOVERY) {
             setInterval(function(){p2p.discoveryWorker()}, 60000)
@@ -62,7 +62,7 @@ var p2p = {
             ws.on('error', () => {
                 logr.warn('peer connection failed', peer)
             })
-        });
+        })
     },
     handshake: (ws) => {
         if (process.env.OFFLINE) {
@@ -81,132 +81,116 @@ var p2p = {
                 return
             }
         logr.debug('Handshaking new peer', ws.url || ws._socket.remoteAddress+':'+ws._socket.remotePort)
-        p2p.sockets.push(ws);
-        p2p.messageHandler(ws);
-        p2p.errorHandler(ws);
-        p2p.sendJSON(ws, {t: MessageType.QUERY_NODE_STATUS});
+        p2p.sockets.push(ws)
+        p2p.messageHandler(ws)
+        p2p.errorHandler(ws)
+        p2p.sendJSON(ws, {t: MessageType.QUERY_NODE_STATUS})
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
             var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
             logr.trace('P2P:', user, data)
             try {
-                var message = JSON.parse(data);
+                var message = JSON.parse(data)
             } catch(e) {
                 logr.warn('Received non-JSON, doing nothing ;)')
             }
             
             switch (message.t) {
-                case MessageType.QUERY_NODE_STATUS:
-                    var d = {
-                        origin_block: config.originHash,
-                        head_block: chain.getLatestBlock()._id,
-                        owner: process.env.NODE_OWNER
+            case MessageType.QUERY_NODE_STATUS:
+                var d = {
+                    origin_block: config.originHash,
+                    head_block: chain.getLatestBlock()._id,
+                    owner: process.env.NODE_OWNER
+                }
+                p2p.sendJSON(ws, p2p.hashAndSignMessage({t: MessageType.NODE_STATUS, d:d}))
+                break
+
+            case MessageType.NODE_STATUS:
+                p2p.verifySignedMessage(message, function(isValid) {
+                    if (isValid)
+                        p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
+                    else
+                        logr.debug('Wrong p2p sign')
+                })
+                break
+
+            case MessageType.QUERY_BLOCK:
+                db.collection('blocks').findOne({_id: message.d}, function(err, block) {
+                    if (err)
+                        throw err
+                    if (block)
+                        p2p.sendJSON(ws, {t:MessageType.BLOCK, d:block})
+                })
+                break
+
+            case MessageType.BLOCK:
+                for (let i = 0; i < p2p.recoveringBlocks.length; i++)
+                    if (p2p.recoveringBlocks[i] == message.d._id) {
+                        p2p.recoveringBlocks.splice(i, 1)
+                        break
                     }
-                    p2p.sendJSON(ws, p2p.hashAndSignMessage({t: MessageType.NODE_STATUS, d:d}))
-                    break;
-
-                case MessageType.NODE_STATUS:
-                    p2p.verifySignedMessage(message, function(isValid) {
-                        if (isValid)
-                            p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
-                        else
-                            logr.debug('Wrong p2p sign')
-                    })
-                    break;
-
-                case MessageType.QUERY_BLOCK:
-                    db.collection('blocks').findOne({_id: message.d}, function(err, block) {
-                        if (err)
-                            throw err;
-                        if (block)
-                            p2p.sendJSON(ws, {t:MessageType.BLOCK, d:block})
-                    })
-                    break;
-
-                case MessageType.BLOCK:
-                    for (let i = 0; i < p2p.recoveringBlocks.length; i++)
-                        if (p2p.recoveringBlocks[i] == message.d._id) {
-                            p2p.recoveringBlocks.splice(i, 1)
-                            break
-                        }
                             
-                    if (chain.getLatestBlock()._id+1 == message.d._id) {
-                        function addRecursive(block) {
-                            chain.validateAndAddBlock(block, function(err, newBlock) {
-                                if (err)
-                                    logr.error('Error Replay', newBlock)
-                                else {
-                                    delete p2p.recoveredBlocks[newBlock._id]
-                                    p2p.recover()
-                                    if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) {
-                                        setTimeout(function() {
-                                            addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
-                                        }, 1)
-                                    }
-                                }
-                                    
-                            })
-                        }
-                        addRecursive(message.d)
-                    } else {
-                        p2p.recoveredBlocks[message.d._id] = message.d
-                        p2p.recover()
-                    }
-                    break;
+                if (chain.getLatestBlock()._id+1 == message.d._id)
+                    p2p.addRecursive(message.d)
+                else {
+                    p2p.recoveredBlocks[message.d._id] = message.d
+                    p2p.recover()
+                }
+                break
 
-                case MessageType.NEW_BLOCK:
-                    var block = message.d
-                    p2p.precommit(block, function() {})
-                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
-                    if (!socket || !socket.node_status) return
-                    p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
-                    break;
-                case MessageType.NEW_TX:
-                    var tx = message.d
-                    transaction.isValid(tx, new Date().getTime(), function(isValid) {
-                        if (!isValid) {
-                            logr.warn('Invalid tx', tx)
-                        } else {
-                            if (!transaction.isInPool(tx)) {
-                                transaction.addToPool([tx])
-                                p2p.broadcast({t:5, d:tx})
-                            } 
-                        }
-                    })
-                    break;
-                case MessageType.BLOCK_PRECOMMIT:
-                    var block = message.d
-                    p2p.precommit(block, function() {})
-                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
-                    if (!socket || !socket.node_status) return
-                    for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
-                        if (block.hash == p2p.possibleNextBlocks[i].block.hash
-                        && p2p.possibleNextBlocks[i].pc.indexOf(socket.node_status.owner) == -1) {
-                            p2p.possibleNextBlocks[i].pc.push(socket.node_status.owner)
-                            p2p.consensusWorker()
-                        }
+            case MessageType.NEW_BLOCK:
+                var block = message.d
+                p2p.precommit(block, function() {})
+                var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
+                if (!socket || !socket.node_status) return
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
+                break
+            case MessageType.NEW_TX:
+                var tx = message.d
+                transaction.isValid(tx, new Date().getTime(), function(isValid) {
+                    if (!isValid) {
+                        logr.warn('Invalid tx', tx)
+                    } else {
+                        if (!transaction.isInPool(tx)) {
+                            transaction.addToPool([tx])
+                            p2p.broadcast({t:5, d:tx})
+                        } 
                     }
-                    break;
-                case MessageType.BLOCK_COMMIT:
-                    var block = message.d
-                    p2p.precommit(block, function() {})
-                    var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
-                    if (!socket || !socket.node_status) return
-                    for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
-                        if (block.hash == p2p.possibleNextBlocks[i].block.hash
-                        && p2p.possibleNextBlocks[i].c.indexOf(socket.node_status.owner) == -1) {
-                            p2p.possibleNextBlocks[i].c.push(socket.node_status.owner)
-                            p2p.consensusWorker()
-                        }
+                })
+                break
+            case MessageType.BLOCK_PRECOMMIT:
+                var blockToPrecommit = message.d
+                p2p.precommit(blockToPrecommit, function() {})
+                var socketPc = p2p.sockets[p2p.sockets.indexOf(ws)]
+                if (!socketPc || !socketPc.node_status) return
+                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                    if (blockToPrecommit.hash == p2p.possibleNextBlocks[i].block.hash
+                        && p2p.possibleNextBlocks[i].pc.indexOf(socketPc.node_status.owner) == -1) {
+                        p2p.possibleNextBlocks[i].pc.push(socketPc.node_status.owner)
+                        p2p.consensusWorker()
                     }
-                    break;
-               }
-        });
+                }
+                break
+            case MessageType.BLOCK_COMMIT:
+                var blockToCommit = message.d
+                p2p.precommit(blockToCommit, function() {})
+                var socketC = p2p.sockets[p2p.sockets.indexOf(ws)]
+                if (!socketC || !socketC.node_status) return
+                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                    if (blockToCommit.hash == p2p.possibleNextBlocks[i].block.hash
+                        && p2p.possibleNextBlocks[i].c.indexOf(socketC.node_status.owner) == -1) {
+                        p2p.possibleNextBlocks[i].c.push(socketC.node_status.owner)
+                        p2p.consensusWorker()
+                    }
+                }
+                break
+            }
+        })
     },
     recover: () => {
-        if (!p2p.sockets || p2p.sockets.length == 0) return;
-        if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > 100) return;
+        if (!p2p.sockets || p2p.sockets.length == 0) return
+        if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > 100) return
         if (!p2p.recovering) p2p.recovering = chain.getLatestBlock()._id
 
         p2p.recovering++
@@ -229,8 +213,8 @@ var p2p = {
         if (p2p.recovering%2) p2p.recover()
     },
     errorHandler: (ws) => {
-        ws.on('close', () => p2p.closeConnection(ws));
-        ws.on('error', () => p2p.closeConnection(ws));
+        ws.on('close', () => p2p.closeConnection(ws))
+        ws.on('error', () => p2p.closeConnection(ws))
     },
     closeConnection: (ws) => {
         p2p.sockets.splice(p2p.sockets.indexOf(ws), 1)
@@ -242,8 +226,8 @@ var p2p = {
         p2p.broadcast({t:4,d:block})
     },
     hashAndSignMessage: (message) => {
-        var hash = CryptoJS.SHA256(JSON.stringify(message)).toString();
-        var signature = secp256k1.sign(new Buffer(hash, "hex"), bs58.decode(process.env.NODE_OWNER_PRIV));
+        var hash = CryptoJS.SHA256(JSON.stringify(message)).toString()
+        var signature = secp256k1.sign(new Buffer(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
         message.s = {
             n: process.env.NODE_OWNER,
@@ -258,14 +242,14 @@ var p2p = {
         delete tmpMess.s
         var hash = CryptoJS.SHA256(JSON.stringify(tmpMess)).toString()
         db.collection('accounts').findOne({name: name}, function(err, account) {
-            if (err) throw err;
+            if (err) throw err
             if (account && secp256k1.verify(
-                new Buffer(hash, "hex"),
+                new Buffer(hash, 'hex'),
                 bs58.decode(sign),
                 bs58.decode(account.pub))) {
-                    cb(account)
-                    return
-                }
+                cb(account)
+                return
+            }
         })
     },
     precommit: (block, cb) => {
@@ -313,11 +297,11 @@ var p2p = {
             
         var connectedWitnesses = [process.env.NODE_OWNER]
         for (let i = 0; i < p2p.sockets.length; i++) {
-            if (!p2p.sockets[i].node_status) continue;
+            if (!p2p.sockets[i].node_status) continue
             for (let y = 0; y < activeWitnesses.length; y++)
                 if (activeWitnesses[y] == p2p.sockets[i].node_status.owner
                     && connectedWitnesses.indexOf(activeWitnesses[y]) == -1)
-                        connectedWitnesses.push(activeWitnesses[y])
+                    connectedWitnesses.push(activeWitnesses[y])
         }
 
         const threshold = Math.ceil(connectedWitnesses.length*2/3)
@@ -344,6 +328,22 @@ var p2p = {
                 p2p.commit(possBlock.block)
             
         }
+    },
+    addRecursive: (block) => {
+        chain.validateAndAddBlock(block, function(err, newBlock) {
+            if (err)
+                logr.error('Error Replay', newBlock)
+            else {
+                delete p2p.recoveredBlocks[newBlock._id]
+                p2p.recover()
+                if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) {
+                    setTimeout(function() {
+                        p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
+                    }, 1)
+                }
+            }
+                    
+        })
     }
 }
 

@@ -41,7 +41,7 @@ var config = {
             // the master account public original key
             masterPub: 'qFsrM3bBfJmWsEZLxpv2QDrDnUtZTwqrrPiLsZpaGGSR',
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: "0000000000000000000000000000000000000000000000000000000000000021",
+            originHash: '0000000000000000000000000000000000000000000000000000000000000021',
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
             // limit which transactions are available

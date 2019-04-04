@@ -1,12 +1,12 @@
-var http_port = process.env.HTTP_PORT || 3001;
-var express = require("express")
+var http_port = process.env.HTTP_PORT || 3001
+var express = require('express')
 var cors = require('cors')
 var bodyParser = require('body-parser')
 var decay = require('decay')
 var hotScore = decay.redditHot()
 var fetchVideoInfo = require('youtube-info')
 const {extract} = require('oembed-parser')
-const ogs = require('open-graph-scraper');
+const ogs = require('open-graph-scraper')
 const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
@@ -17,7 +17,6 @@ var http = {
     },
     generateHot: function(cb) {
         db.collection('contents').find({pa: null}, {sort: {ts: -1}}).toArray(function(err, contents) {
-            console.log(contents.length)
             for (let i = 0; i < contents.length; i++) {
                 contents[i].score = 0
                 contents[i].ups = 0
@@ -92,38 +91,38 @@ var http = {
     init: () => {
         var app = express()
         app.use(cors())
-        app.use(bodyParser.json());
+        app.use(bodyParser.json())
 
         // fetch a single block
         app.get('/block/:number', (req, res) => {
             var blockNumber = parseInt(req.params.number)
             db.collection('blocks').findOne({_id: blockNumber}, function(err, block) {
-                if (err) throw err;
+                if (err) throw err
                 res.send(block)
             })
-        });
+        })
         
         // count how many blocks are in the node
         app.get('/count', (req, res) => {
             db.collection('blocks').countDocuments(function(err, count) {
-                if (err) throw err;
+                if (err) throw err
                 res.send({
                     count: count
                 })
             })
-        });
+        })
 
         // check econ data
         app.get('/rewardPool', (req, res) => {
             eco.rewardPool(function(rp) {
                 res.send(rp)
             })
-        });
+        })
 
         // generate a new key pair
         app.get('/newKeyPair', (req, res) => {
             res.send(chain.getNewKeyPair())
-        });
+        })
 
         // this suggests the node to produce a block and submit it
         app.get('/mineBlock', (req, res) => {
@@ -133,7 +132,7 @@ var http = {
                 if (error)
                     logr.error('ERROR refused block', finalBlock)
             })
-        });
+        })
 
         // add data to the upcoming transactions pool
         app.post('/transact', (req, res) => {
@@ -149,10 +148,10 @@ var http = {
                 } else {
                     p2p.broadcast({t:5, d:tx})
                     transaction.addToPool([tx])
-                    res.send(chain.getLatestBlock()._id.toString());
+                    res.send(chain.getLatestBlock()._id.toString())
                 }
             })
-        });
+        })
 
         // list connected peers
         app.get('/peers', (req, res) => {
@@ -167,42 +166,42 @@ var http = {
 
                 peers.push(peer)
             }
-            res.send(peers);
-        });
+            res.send(peers)
+        })
         
         // connect to a new peer
         app.post('/addPeer', (req, res) => {
-            p2p.connect([req.body.peer]);
-            res.send();
-        });
+            p2p.connect([req.body.peer])
+            res.send()
+        })
 
         // look at the miner schedule
         app.get('/schedule', (req, res) => {
-            res.send(chain.schedule);
-        });
+            res.send(chain.schedule)
+        })
         
         // get full list of ranked miners
         app.get('/allminers', (req,res) => {
             db.collection('accounts').find({node_appr: {$gt: 0}}, {
                 sort: {node_appr: -1}
             }).toArray(function(err, accounts) {
-                if (err) throw err;
+                if (err) throw err
                 res.send(accounts)
             })
-        });
+        })
 
         // get possible next blocks
         app.get('/nextblock', (req,res) => {
             res.send(p2p.possibleNextBlocks)
-        });
+        })
 
         // get in-memory data (intensive)
         app.get('/cache', (req,res) => {
             res.send(cache)
-        });
+        })
         app.get('/cacheb', (req,res) => {
             res.send(chain.recentBlocks)
-        });
+        })
 
         // get hot
         app.get('/hot', (req, res) => {
@@ -239,15 +238,15 @@ var http = {
         })
         app.get('/new/:author/:link', (req, res) => {
             db.collection('contents').findOne({
-            $and: [
-                {author: req.params.author}, 
-                {link: req.params.link}
-            ]}, function(err, content) {
-                db.collection('contents').find({
                 $and: [
-                    {pa: null},
-                    {ts: {$lte: content.ts}}
-                ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
+                    {author: req.params.author}, 
+                    {link: req.params.link}
+                ]}, function(err, content) {
+                db.collection('contents').find({
+                    $and: [
+                        {pa: null},
+                        {ts: {$lte: content.ts}}
+                    ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
@@ -260,10 +259,10 @@ var http = {
                     res.send([])
                 } else {
                     db.collection('contents').find({
-                    $and: [
-                        {author: {$in: account.follows}},
-                        {pa: null}
-                    ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
+                        $and: [
+                            {author: {$in: account.follows}},
+                            {pa: null}
+                        ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                         res.send(contents)
                     })
                 }
@@ -271,20 +270,20 @@ var http = {
         })
         app.get('/feed/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
-            $and: [
-                {author: req.params.author}, 
-                {link: req.params.link}
-            ]}, function(err, content) {
+                $and: [
+                    {author: req.params.author}, 
+                    {link: req.params.link}
+                ]}, function(err, content) {
                 db.collection('accounts').findOne({name: req.params.username}, function(err, account) {
                     if (!account.follows) {
                         res.send([])
                     } else {
                         db.collection('contents').find({
-                        $and: [
-                            {author: {$in: account.follows}},
-                            {pa: null},
-                            {ts: {$lte: content.ts}}
-                        ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
+                            $and: [
+                                {author: {$in: account.follows}},
+                                {pa: null},
+                                {ts: {$lte: content.ts}}
+                            ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                             res.send(contents)
                         })
                     }
@@ -301,21 +300,21 @@ var http = {
         })
         app.get('/blog/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
-            $and: [
-                {author: req.params.author}, 
-                {link: req.params.link}
-            ]}, function(err, content) {
+                $and: [
+                    {author: req.params.author}, 
+                    {link: req.params.link}
+                ]}, function(err, content) {
                 if (err || !content)  {
                     res.send([])
                     return
                 }
                 var username = req.params.username
                 db.collection('contents').find({
-                $and: [
-                    {pa: null},
-                    {author: username},
-                    {ts: {$lte: content.ts}}
-                ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
+                    $and: [
+                        {pa: null},
+                        {author: username},
+                        {ts: {$lte: content.ts}}
+                    ]}, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                     res.send(contents)
                 })
             })
@@ -347,7 +346,7 @@ var http = {
         // get new contents
         app.get('/content/:author/:link', (req, res) => {
             if (!req.params.author || typeof req.params.link !== 'string') {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             db.collection('contents').findOne({
@@ -362,12 +361,10 @@ var http = {
                     res.send(post)
                     return
                 }
-                var tmpPost = post
                 post.comments = {}
-                //post.comments[post.author+'/'+post.link] = tmpPost
                 function fillComments(posts, cb) {
                     if (!posts || posts.length == 0) {
-                        cb(null, posts)
+                        cb()
                         return
                     }
                     var executions = []
@@ -379,20 +376,19 @@ var http = {
                             }).toArray(function(err, comments) {
                                 for (let y = 0; y < comments.length; y++)
                                     post.comments[comments[y].author+'/'+comments[y].link] = comments[y]
-                                fillComments(comments, function(err, comments) {
+                                fillComments(comments, function() {
                                     callback(null, true)
                                 })
                             })
                             i++
                         })
                     }
-                    var i = 0
                     series(executions, function(err, results) {
-                        if (err) throw err;
+                        if (err) throw err
                         cb(null, results)
                     })
                 }
-                fillComments([post], function(err, results) {
+                fillComments([post], function() {
                     res.send(post)
                 })
             })
@@ -406,7 +402,7 @@ var http = {
         // get username price
         app.get('/accountPrice/:name', (req, res) => {
             if (!req.params.name) {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
@@ -418,7 +414,7 @@ var http = {
         // get account info
         app.get('/account/:name', (req, res) => {
             if (!req.params.name) {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
@@ -430,10 +426,10 @@ var http = {
         // get accounts info
         app.get('/accounts/:names', (req, res) => {
             if (!req.params.names || typeof req.params.names !== 'string') {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
-            names = req.params.names.split(',', 100)
+            var names = req.params.names.split(',', 100)
             db.collection('accounts').find({name: {$in: names}}).toArray(function(err, accounts) {
                 if (!accounts) res.sendStatus(404)
                 else {
@@ -451,7 +447,7 @@ var http = {
         // get follows
         app.get('/follows/:name', (req, res) => {
             if (!req.params.name) {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
@@ -468,7 +464,7 @@ var http = {
         // get followers
         app.get('/followers/:name', (req, res) => {
             if (!req.params.name) {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             db.collection('accounts').findOne({name: req.params.name}, function(err, account) {
@@ -485,7 +481,7 @@ var http = {
         // get notifications for a user
         app.get('/notifications/:name', (req, res) => {
             if (!req.params.name) {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             db.collection('notifications').find({u: req.params.name}, {sort: {ts: -1}, limit: 200}).toArray(function(err, notifs) {
@@ -498,12 +494,12 @@ var http = {
         // get youtube info
         app.get('/youtube/:videoId', (req, res) => {
             if (!req.params.videoId) {
-                res.sendStatus(500);
+                res.sendStatus(500)
                 return
             }
             fetchVideoInfo(req.params.videoId, function(err, videoInfo) {
                 res.send(videoInfo)
-            });
+            })
         })
 
         // get oembed for any url
@@ -514,9 +510,9 @@ var http = {
             }
             extract(req.params.url).then((data) => {
                 res.send(data)
-            }).catch((err) => {
+            }).catch(() => {
                 res.sendStatus(404)
-            });
+            })
         })
 
         // get open graph data for any url
@@ -528,10 +524,10 @@ var http = {
             ogs({url: req.params.url}, function (error, results) {
                 if (error) res.sendStatus(404)
                 else res.send(results)
-            });
+            })
         })
 
-        app.listen(http_port, () => logr.info('Listening http on port: ' + http_port));
+        app.listen(http_port, () => logr.info('Listening http on port: ' + http_port))
     }
 }
 

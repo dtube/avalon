@@ -1,4 +1,4 @@
-var CryptoJS = require("crypto-js")
+var CryptoJS = require('crypto-js')
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
@@ -28,7 +28,6 @@ chain = {
     recentBlocks: [],
     recentTxs: {},
     getNewKeyPair: () => {
-        const msg = randomBytes(32)
         let privKey, pubKey
         do {
             privKey = randomBytes(32)
@@ -40,19 +39,19 @@ chain = {
             priv: bs58.encode(privKey)
         }
     },
-    getGenesisBlock: (data) => {
+    getGenesisBlock: () => {
         return new Block(
             0,
-            "0",
+            '0',
             0,
             [],
             config.masterName,
             null,
             null,
             null,
-            "0000000000000000000000000000000000000000000000000000000000000000",
+            '0000000000000000000000000000000000000000000000000000000000000000',
             config.originHash
-        );
+        )
     },
     prepareBlock: () => {
         var previousBlock = chain.getLatestBlock()
@@ -61,13 +60,13 @@ chain = {
         // grab all transactions and sort by ts
         var txs = transaction.pool.sort(function(a,b){return a.ts-b.ts})
         var miner = process.env.NODE_OWNER
-        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner);
+        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner)
     },
     hashAndSignBlock: (block) => {
-        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned);
-        var signature = secp256k1.sign(new Buffer(nextHash, "hex"), bs58.decode(process.env.NODE_OWNER_PRIV));
+        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned)
+        var signature = secp256k1.sign(new Buffer(nextHash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
-        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned, signature, nextHash);
+        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned, signature, nextHash)
         
     },
     canMineBlock: (cb) => {
@@ -109,7 +108,7 @@ chain = {
                 newBlock = chain.hashAndSignBlock(newBlock)
                 
                 // add it to our chain !
-                chain.addBlock(newBlock, function(added) {
+                chain.addBlock(newBlock, function() {
                     // and broadcast to peers
                     p2p.broadcastBlock(newBlock)
 
@@ -122,7 +121,7 @@ chain = {
     },
     validateAndAddBlock: (newBlock, cb) => {
         // when we receive an outside block and check whether we should add it to our chain or not
-        if (chain.shuttingDown) return;
+        if (chain.shuttingDown) return
         chain.isValidNewBlock(newBlock, true, function(isValid) {
             if (!isValid) {
                 logr.error('Invalid block')
@@ -151,7 +150,7 @@ chain = {
                 // remove all transactions from this block from our transaction pool
                 transaction.removeFromPool(newBlock.txs)
 
-                chain.addBlock(newBlock, function(added) {
+                chain.addBlock(newBlock, function() {
                     // and broadcast to peers
                     p2p.broadcastBlock(newBlock)
                     cb(null, newBlock)
@@ -162,7 +161,7 @@ chain = {
         })
     },
     minerWorker: (block) => {
-        if (p2p.recovering) return;
+        if (p2p.recovering) return
         // if we are the next miner or backup miner, prepare to mine
         clearTimeout(chain.worker)
         if (block.miner == process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%20].name == process.env.NODE_OWNER) {
@@ -181,7 +180,7 @@ chain = {
         eco.nextBlock()
         // add the block in our own db
         db.collection('blocks').insertOne(block, function(err) {
-            if (err) throw err;
+            if (err) throw err
             // push cached accounts and contents to mongodb
             cache.writeToDisk(function() {
                 chain.cleanMemoryTx()
@@ -202,7 +201,7 @@ chain = {
                     cb(true)
                 }
             })
-        });
+        })
     },
     output: (block) => {
         var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
@@ -224,7 +223,7 @@ chain = {
     isValidSignature: (user, txType, hash, sign, cb) => {
         // verify signature and bandwidth
         cache.findOne('accounts', {name: user}, function(err, account) {
-            if (err) throw err;
+            if (err) throw err
             if (!account) {
                 cb(false); return
             }
@@ -238,7 +237,7 @@ chain = {
                 }
             }
             for (let i = 0; i < allowedPubKeys.length; i++) {
-                var bufferHash = new Buffer(hash, "hex")
+                var bufferHash = new Buffer(hash, 'hex')
                 var b58sign = bs58.decode(sign)
                 var b58pub = bs58.decode(allowedPubKeys[i])
                 if (secp256k1.verify(bufferHash, b58sign, b58pub)) {
@@ -251,35 +250,35 @@ chain = {
     },
     isValidNewBlock: (newBlock, verifyHashAndSignature, cb) => {
         // verify all block fields one by one
-        if (!newBlock._id || typeof newBlock._id !== "number") {
+        if (!newBlock._id || typeof newBlock._id !== 'number') {
             logr.debug('invalid block _id')
             cb(false); return
         }
-        if (!newBlock.phash || typeof newBlock.phash !== "string") {
+        if (!newBlock.phash || typeof newBlock.phash !== 'string') {
             logr.debug('invalid block phash')
             cb(false); return
         }
-        if (!newBlock.timestamp || typeof newBlock.timestamp !== "number") {
+        if (!newBlock.timestamp || typeof newBlock.timestamp !== 'number') {
             logr.debug('invalid block timestamp')
             cb(false); return
         }
-        if (!newBlock.txs || typeof newBlock.txs !== "object" || !Array.isArray(newBlock.txs)) {
+        if (!newBlock.txs || typeof newBlock.txs !== 'object' || !Array.isArray(newBlock.txs)) {
             logr.debug('invalid block txs')
             cb(false); return
         }
-        if (!newBlock.miner || typeof newBlock.miner !== "string") {
+        if (!newBlock.miner || typeof newBlock.miner !== 'string') {
             logr.debug('invalid block miner')
             cb(false); return
         }
-        if (verifyHashAndSignature && (!newBlock.hash || typeof newBlock.hash !== "string")) {
+        if (verifyHashAndSignature && (!newBlock.hash || typeof newBlock.hash !== 'string')) {
             logr.debug('invalid block hash')
             cb(false); return
         }
-        if (verifyHashAndSignature && (!newBlock.signature || typeof newBlock.signature !== "string")) {
+        if (verifyHashAndSignature && (!newBlock.signature || typeof newBlock.signature !== 'string')) {
             logr.debug('invalid block signature')
             cb(false); return
         }
-        if (newBlock.missedBy && typeof newBlock.missedBy !== "string") {
+        if (newBlock.missedBy && typeof newBlock.missedBy !== 'string') {
             logr.debug('invalid block missedBy')
         }   
 
@@ -310,16 +309,16 @@ chain = {
         }
 
         // check if miner is scheduled
-        var isMinerAuthorized = false;
+        var isMinerAuthorized = false
         if (chain.schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) {
-            isMinerAuthorized = true;
+            isMinerAuthorized = true
         } else if (newBlock.miner == previousBlock.miner) {
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - previousBlock.timestamp < (2*config.blockTime)) {
                 logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
                 cb(false); return
             } else {
-                isMinerAuthorized = true;
+                isMinerAuthorized = true
             }
         }
         if (!isMinerAuthorized) {
@@ -378,11 +377,10 @@ chain = {
                 i++
             })
         }
-        var i = 0
         var blockTimeBefore = new Date().getTime()
         series(executions, function(err, results) {
             logr.debug('Block executed in '+(new Date().getTime()-blockTimeBefore)+'ms')
-            if (err) throw err;
+            if (err) throw err
             var executedSuccesfully = []
             var distributedInBlock = 0
             var burnedInBlock = 0
@@ -404,13 +402,13 @@ chain = {
     },
     minerSchedule: (block, cb) => {
         var hash = block.hash
-        var rand = parseInt("0x"+hash.substr(hash.length-6))
+        var rand = parseInt('0x'+hash.substr(hash.length-6))
         logr.info('Generating schedule... NRNG: ' + rand)
         chain.generateLeaders(function(miners) {
             miners = miners.sort(function(a,b) {
-                if(a.name < b.name) return -1;
-                if(a.name > b.name) return 1;
-                return 0;
+                if(a.name < b.name) return -1
+                if(a.name > b.name) return 1
+                return 0
             })
             var shuffledMiners = []
             while (miners.length > 0) {
@@ -419,10 +417,10 @@ chain = {
                 miners.splice(i, 1)
             }
             
-            var i = 0;
-            while (shuffledMiners.length < 20) {
-                shuffledMiners.push(shuffledMiners[i])
-                i++
+            var y = 0
+            while (shuffledMiners.length < config.leaders) {
+                shuffledMiners.push(shuffledMiners[y])
+                y++
             }
 
             cb({
@@ -436,7 +434,7 @@ chain = {
             sort: {node_appr: -1},
             limit: config.leaders
         }).toArray(function(err, accounts) {
-            if (err) throw err;
+            if (err) throw err
             cb(accounts)
         })
     },
@@ -455,20 +453,20 @@ chain = {
                     vt: newVt,
                     balance: newBalance
                 }},
-            function(err) {
-                if (err) throw err;
-                var accToUpdate = Object.assign({}, account)
-                accToUpdate.balance = newBalance
-                transaction.updateGrowInts(accToUpdate, ts, function(success) {
-                    transaction.adjustNodeAppr(accToUpdate, config.leaderReward, function(success) {
-                        cb(config.leaderReward)
+                function(err) {
+                    if (err) throw err
+                    var accToUpdate = Object.assign({}, account)
+                    accToUpdate.balance = newBalance
+                    transaction.updateGrowInts(accToUpdate, ts, function() {
+                        transaction.adjustNodeAppr(accToUpdate, config.leaderReward, function() {
+                            cb(config.leaderReward)
+                        })
                     })
                 })
-            })
         })
     },
     calculateHashForBlock: (block) => {
-        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn);
+        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn)
     },
     calculateHash: (index, phash, timestamp, txs, miner, missedBy, distributed, burned) => {
         var string = index + phash + timestamp + txs + miner
@@ -476,7 +474,7 @@ chain = {
         if (distributed) string += distributed
         if (burned) string += burned
 
-        return CryptoJS.SHA256(string).toString();
+        return CryptoJS.SHA256(string).toString()
     },    
     getLatestBlock: () => {
         return chain.recentBlocks[chain.recentBlocks.length-1]
@@ -487,7 +485,7 @@ chain = {
     cleanMemoryTx: () => {
         for (const hash in chain.recentTxs) {
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().ts)
-            delete chain.recentTxs[hash]
+                delete chain.recentTxs[hash]
         }
     }
 }

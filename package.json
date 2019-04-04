@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "start": "node src/main.js",
-    "cli": "node src/cli.js"
+    "cli": "node src/cli.js",
+    "lint": "eslint 'src/*.js'"
   },
   "dependencies": {
     "base-x": "^3.0.5",
@@ -40,5 +41,8 @@
     "underlinePrefix": false,
     "underlineSuffix": false,
     "uppercaseLabel": false
+  },
+  "devDependencies": {
+    "eslint": "^5.16.0"
   }
 }

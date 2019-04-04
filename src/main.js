@@ -17,7 +17,7 @@ mongo.init(function() {
         
         // start miner schedule
         db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
-            if (err) throw err;
+            if (err) throw err
             chain.minerSchedule(block, function(minerSchedule) {
                 chain.schedule = minerSchedule
             })
@@ -30,7 +30,7 @@ mongo.init(function() {
         // and connect to peers
         p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
     })
-});
+})
 
 process.on('SIGINT', function() {
     if (typeof closing !== 'undefined') return
@@ -40,5 +40,5 @@ process.on('SIGINT', function() {
     setTimeout(function() {
         logr.trace('Avalon exitted safely')
         process.exit(0)
-    }, config.blockTime);
-});
+    }, config.blockTime)
+})

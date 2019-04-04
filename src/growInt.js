@@ -25,12 +25,14 @@ module.exports = class GrowInt {
         var tmpValue = this.v
         tmpValue += (time-this.t)*this.config.growth
         
+        var newValue = 0
+        var newTime = 0
         if (this.config.growth > 0) {
-            var newValue = Math.floor(tmpValue)
-            var newTime = Math.ceil(this.t + ((newValue-this.v)/this.config.growth))
+            newValue = Math.floor(tmpValue)
+            newTime = Math.ceil(this.t + ((newValue-this.v)/this.config.growth))
         } else {
-            var newValue = Math.ceil(tmpValue)
-            var newTime = Math.floor(this.t + ((newValue-this.v)/this.config.growth))
+            newValue = Math.ceil(tmpValue)
+            newTime = Math.floor(this.t + ((newValue-this.v)/this.config.growth))
         }
 
         if (newValue > this.config.max)

@@ -32,46 +32,46 @@ var cache = {
     },
     updateOne: function(collection, query, changes, cb) {
         cache.findOne(collection, query, function(err, obj) {
-            if (err) throw err;
+            if (err) throw err
             if (!obj) {
                 cb(null, false); return
             }
             var key = cache.keyByCollection(collection)
             for (var c in changes) {
                 switch (c) {
-                    case '$inc':
-                        for (var i in changes[c]) {
-                            if (!cache[collection][obj[key]][i])
-                                cache[collection][obj[key]][i] = changes[c][i]
-                            else
-                                cache[collection][obj[key]][i] += changes[c][i]
-                        }
-                        break;
+                case '$inc':
+                    for (var i in changes[c]) {
+                        if (!cache[collection][obj[key]][i])
+                            cache[collection][obj[key]][i] = changes[c][i]
+                        else
+                            cache[collection][obj[key]][i] += changes[c][i]
+                    }
+                    break
 
-                    case '$push':
-                        for (var i in changes[c]) {
-                            cache[collection][obj[key]][i].push(changes[c][i])
-                        }
-                        break;
+                case '$push':
+                    for (var p in changes[c]) {
+                        cache[collection][obj[key]][p].push(changes[c][p])
+                    }
+                    break
 
-                    case '$pull':
-                        for (var i in changes[c]) {
-                            for (let y = 0; y < cache[collection][obj[key]][i].length; y++) {
-                                if (cache[collection][obj[key]][i][y] == changes[c][i]) {
-                                    cache[collection][obj[key]][i].splice(y, 1)
-                                }
+                case '$pull':
+                    for (var l in changes[c]) {
+                        for (let y = 0; y < cache[collection][obj[key]][l].length; y++) {
+                            if (cache[collection][obj[key]][l][y] == changes[c][l]) {
+                                cache[collection][obj[key]][l].splice(y, 1)
                             }
                         }
-                        break;
+                    }
+                    break
 
-                    case '$set':
-                        for (var i in changes[c]) {
-                            cache[collection][obj[key]][i] = changes[c][i]
-                        }
-                        break;
+                case '$set':
+                    for (var s in changes[c]) {
+                        cache[collection][obj[key]][s] = changes[c][s]
+                    }
+                    break
                 
-                    default:
-                        break;
+                default:
+                    break
                 }
             }
             cache.changes.push({
@@ -155,13 +155,11 @@ var cache = {
     },
     keyByCollection: function(collection) {
         switch (collection) {
-            case 'accounts':
-                return 'name'
-                break;
+        case 'accounts':
+            return 'name'
         
-            default:
-                return '_id'
-                break;
+        default:
+            return '_id'
         }
     }
 }

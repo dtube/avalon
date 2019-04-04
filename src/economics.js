@@ -1,5 +1,3 @@
-var GrowInt = require('./growInt.js')
-var DecayInt = require('./decayInt.js')
 const series = require('run-series')
 
 var eco = {
@@ -16,7 +14,7 @@ var eco = {
     activeUsersCount: (cb) => {
         // we consider anyone with a non zero balance to be active, otherwise he loses out
         db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
-            if (err) throw err;
+            if (err) throw err
             // minimum of 100 for easier testing
             if (count < 100) count = 100
             cb(count)
@@ -29,12 +27,12 @@ var eco = {
                 $group: {
                     _id: null,
                     count: {
-                        $sum:"$balance"
+                        $sum:'$balance'
                     }
                 }
             }
         ]).toArray(function(err, res) {
-            if (err) throw err;
+            if (err) throw err
             cb(res)
         })
     },
@@ -47,14 +45,13 @@ var eco = {
     rewardPool: (cb) => {
         // this might need to get reduced in the future as volume grows
         eco.theoricalRewardPool(function(theoricalPool){
-            var rewardPool = theoricalPool
             var burned = 0
             var distributed = 0
             var votes = 0
             var firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
             if (firstBlockIndex < 0) firstBlockIndex = 0
             for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
-                const block = chain.recentBlocks[i];
+                const block = chain.recentBlocks[i]
                 if (block.burn)
                     burned += block.burn
                 if (block.dist)
@@ -152,10 +149,10 @@ var eco = {
                 })
             }
             series(executions, function(err, results) {
-                if (err) throw err;
+                if (err) throw err
                 var newCoins = 0
                 for (let r = 0; r < results.length; r++)
-                    newCoins += results[r];
+                    newCoins += results[r]
                 cache.updateOne('contents', {_id: author+'/'+link}, {
                     $inc: {dist: newCoins}
                 }, function() {
@@ -170,11 +167,11 @@ var eco = {
                                     dist: benefReward,
                                     ts: currentVote.ts
                                 }, function(err) {
-                                    if (err) throw err;
+                                    if (err) throw err
                                     cache.findOne('accounts', {name: config.masterName}, function(err, account) {
                                         var masterAccount = Object.assign({}, account)
-                                        transaction.updateGrowInts(masterAccount, currentVote.ts, function(success) {
-                                            transaction.adjustNodeAppr(masterAccount, benefReward, function(success) {
+                                        transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
+                                            transaction.adjustNodeAppr(masterAccount, benefReward, function() {
                                                 cb(newCoins)
                                             })
                                         })
@@ -190,13 +187,15 @@ var eco = {
     distribute: (name, vt, ts, cb) => {
         eco.rewardPool(function(stats) {
             cache.findOne('accounts', {name: name}, function(err, account) {
-                if (err) throw err;
+                if (err) throw err
                 if (!account.uv) account.uv = 0
-                if (stats.votes == 0) {
-                    var thNewCoins = 1
-                } else {
-                    var thNewCoins = stats.avail * Math.abs((vt+account.uv) / stats.votes)
-                }
+
+                var thNewCoins = 0
+                if (stats.votes == 0)
+                    thNewCoins = 1
+                else
+                    thNewCoins = stats.avail * Math.abs((vt+account.uv) / stats.votes)
+
                 var newCoins = Math.floor(thNewCoins)
                 
                 // make sure one person cant empty the whole pool
@@ -241,9 +240,9 @@ var eco = {
                             dist: newCoins,
                             ts: ts
                         }, function(err) {
-                            if (err) throw err;
-                            transaction.updateGrowInts(account, ts, function(success) {
-                                transaction.adjustNodeAppr(account, newCoins, function(success) {
+                            if (err) throw err
+                            transaction.updateGrowInts(account, ts, function() {
+                                transaction.adjustNodeAppr(account, newCoins, function() {
                                     cb(newCoins)
                                 })
                             })
