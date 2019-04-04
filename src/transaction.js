@@ -141,7 +141,7 @@ transaction = {
                             // if it's not a free account, check tx sender balance
                             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                                 if (err) throw err;
-                                if (account.balance < 60)
+                                if (account.balance < eco.accountPrice(lowerUser))
                                     cb(false, 'invalid tx not enough balance')
                                 else
                                     cb(true)
@@ -435,16 +435,16 @@ transaction = {
                         if (tx.data.name !== tx.data.pub.toLowerCase() || tx.data.name.length < 25) {
                             cache.updateOne('accounts', 
                             {name: tx.sender},
-                            {$inc: {balance: -60}}, function() {
+                            {$inc: {balance: -eco.accountPrice(tx.data.name)}}, function() {
                                 cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                                     if (err) throw err;
                                     // update his bandwidth
-                                    acc.balance += 60
+                                    acc.balance += eco.accountPrice(tx.data.name)
                                     transaction.updateGrowInts(acc, ts, function(success) {
                                         if (!acc.approves) acc.approves = []
                                         // and update his node_owners approvals values too
                                         var node_appr_before = Math.floor(acc.balance/acc.approves.length)
-                                        acc.balance -= 60
+                                        acc.balance -= eco.accountPrice(tx.data.name)
                                         var node_appr = Math.floor(acc.balance/acc.approves.length)
                                         var node_owners = []
                                         for (let i = 0; i < acc.approves.length; i++)
@@ -454,7 +454,7 @@ transaction = {
                                             {$inc: {node_appr: node_appr-node_appr_before}},
                                         function(err) {
                                             if (err) throw err;
-                                            cb(true, null, 60)
+                                            cb(true, null, eco.accountPrice(tx.data.name))
                                         })
                                     })
                                 })

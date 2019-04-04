@@ -75,6 +75,12 @@ var eco = {
             })
         })
     },
+    accountPrice: (username) => {
+        var charDiff = config.baseAccountChars - username.length
+        var multiplier = Math.pow(config.extraCharPriceMult, charDiff)
+        var price = Math.ceil(multiplier * config.baseAccountPrice)
+        return price + config.minAccountPrice
+    },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, original) {
             var content = Object.assign({}, original)
