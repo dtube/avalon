@@ -306,7 +306,18 @@ transaction = {
                     if (vt.v < Math.abs(tx.data.vt)) {
                         cb(false, 'invalid tx not enough vt'); return
                     }
-                    cb(true)
+                    // checking if content exists
+                    cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
+                        if (!content) {
+                            cb(false, 'invalid tx non-existing content'); return
+                        }
+                        for (let i = 0; i < content.votes.length; i++) {
+                            if (tx.sender == content.votes[i].u) {
+                                cb(false, 'invalid tx user has already voted'); return
+                            }
+                        }
+                        cb(true)
+                    })
                     break;
 
                 case TransactionType.USER_JSON:
