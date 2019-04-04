@@ -38,9 +38,9 @@ var p2p = {
 
                 if (!connected) {
                     var json = miners[i].json
-                    if (json.node && json.node.ws) {
+                    if (json.node && json.node.ws) 
                         p2p.connect([json.node.ws])
-                    }
+                    
                 }
             }
         })
@@ -149,14 +149,14 @@ var p2p = {
             case MessageType.NEW_TX:
                 var tx = message.d
                 transaction.isValid(tx, new Date().getTime(), function(isValid) {
-                    if (!isValid) {
+                    if (!isValid) 
                         logr.warn('Invalid tx', tx)
-                    } else {
-                        if (!transaction.isInPool(tx)) {
-                            transaction.addToPool([tx])
-                            p2p.broadcast({t:5, d:tx})
-                        } 
-                    }
+                    else 
+                    if (!transaction.isInPool(tx)) {
+                        transaction.addToPool([tx])
+                        p2p.broadcast({t:5, d:tx})
+                    } 
+                    
                 })
                 break
             case MessageType.BLOCK_PRECOMMIT:
@@ -164,26 +164,26 @@ var p2p = {
                 p2p.precommit(blockToPrecommit, function() {})
                 var socketPc = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socketPc || !socketPc.node_status) return
-                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) 
                     if (blockToPrecommit.hash == p2p.possibleNextBlocks[i].block.hash
                         && p2p.possibleNextBlocks[i].pc.indexOf(socketPc.node_status.owner) == -1) {
                         p2p.possibleNextBlocks[i].pc.push(socketPc.node_status.owner)
                         p2p.consensusWorker()
                     }
-                }
+                
                 break
             case MessageType.BLOCK_COMMIT:
                 var blockToCommit = message.d
                 p2p.precommit(blockToCommit, function() {})
                 var socketC = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socketC || !socketC.node_status) return
-                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
+                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) 
                     if (blockToCommit.hash == p2p.possibleNextBlocks[i].block.hash
                         && p2p.possibleNextBlocks[i].c.indexOf(socketC.node_status.owner) == -1) {
                         p2p.possibleNextBlocks[i].c.push(socketC.node_status.owner)
                         p2p.consensusWorker()
                     }
-                }
+                
                 break
             }
         })
@@ -280,14 +280,14 @@ var p2p = {
         })
     },
     commit: (block) => {
-        for (let b = 0; b < p2p.possibleNextBlocks.length; b++) {
+        for (let b = 0; b < p2p.possibleNextBlocks.length; b++) 
             if (p2p.possibleNextBlocks[b].block.hash == block.hash
             && p2p.possibleNextBlocks[b].c.indexOf(process.env.NODE_OWNER) == -1) {
                 p2p.possibleNextBlocks[b].c.push(process.env.NODE_OWNER)
                 p2p.broadcast({t:7, d:block})
                 p2p.consensusWorker()
             }
-        }
+        
     },
     consensusWorker: () => {
         var activeWitnesses = []
@@ -318,10 +318,10 @@ var p2p = {
                 })
                 // clean up possible blocks that are in the past
                 var newPossBlocks = []
-                for (let y = 0; y < p2p.possibleNextBlocks.length; y++) {
+                for (let y = 0; y < p2p.possibleNextBlocks.length; y++) 
                     if (possBlock.block._id < p2p.possibleNextBlocks[y].block._id)
                         newPossBlocks.push(p2p.possibleNextBlocks[y])
-                }
+                
                 p2p.possibleNextBlocks = newPossBlocks
             }
             else if (possBlock.pc.length >= threshold)
@@ -336,11 +336,11 @@ var p2p = {
             else {
                 delete p2p.recoveredBlocks[newBlock._id]
                 p2p.recover()
-                if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) {
+                if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) 
                     setTimeout(function() {
                         p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
                     }, 1)
-                }
+                
             }
                     
         })

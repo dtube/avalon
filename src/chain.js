@@ -186,7 +186,7 @@ chain = {
                 chain.cleanMemoryTx()
                 config = require('./config.js').read(block._id)
                 // if block id is mult of 20, reschedule next 20 blocks
-                if (block._id % config.leaders == 0) {
+                if (block._id % config.leaders == 0) 
                     chain.minerSchedule(block, function(minerSchedule) {
                         chain.schedule = minerSchedule
                         chain.recentBlocks.push(block)
@@ -194,7 +194,7 @@ chain = {
                         chain.output(block)
                         cb(true)
                     })
-                } else {
+                else {
                     chain.recentBlocks.push(block)
                     chain.minerWorker(block)
                     chain.output(block)
@@ -230,12 +230,12 @@ chain = {
             // main key can authorize all transactions
             var allowedPubKeys = [account.pub]
             // add all secondary keys having this transaction type as allowed keys
-            if (account.keys && txType) {
-                for (let i = 0; i < account.keys.length; i++) {
+            if (account.keys && txType) 
+                for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
                         allowedPubKeys.push(account.keys[i].pub)
-                }
-            }
+                
+            
             for (let i = 0; i < allowedPubKeys.length; i++) {
                 var bufferHash = new Buffer(hash, 'hex')
                 var b58sign = bs58.decode(sign)
@@ -278,9 +278,9 @@ chain = {
             logr.debug('invalid block signature')
             cb(false); return
         }
-        if (newBlock.missedBy && typeof newBlock.missedBy !== 'string') {
+        if (newBlock.missedBy && typeof newBlock.missedBy !== 'string') 
             logr.debug('invalid block missedBy')
-        }   
+           
 
         // verify that its indeed the next block
         var previousBlock = chain.getLatestBlock()
@@ -310,9 +310,9 @@ chain = {
 
         // check if miner is scheduled
         var isMinerAuthorized = false
-        if (chain.schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) {
+        if (chain.schedule.shuffle[(newBlock._id-1)%20].name == newBlock.miner) 
             isMinerAuthorized = true
-        } else if (newBlock.miner == previousBlock.miner) {
+        else if (newBlock.miner == previousBlock.miner) 
             // allow the previous miner to mine again if current miner misses the block
             if (newBlock.timestamp - previousBlock.timestamp < (2*config.blockTime)) {
                 logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
@@ -320,7 +320,7 @@ chain = {
             } else {
                 isMinerAuthorized = true
             }
-        }
+        
         if (!isMinerAuthorized) {
             logr.debug('unauthorized miner')
             cb(false); return
@@ -350,14 +350,14 @@ chain = {
     },
     executeBlock: (block, cb) => {
         var executions = []
-        for (let i = 0; i < block.txs.length; i++) {
+        for (let i = 0; i < block.txs.length; i++) 
             executions.push(function(callback) {
                 var tx = block.txs[i]
                 //var time = new Date().getTime()
                 transaction.isValid(tx, block.timestamp, function(isValid) {
                     //logr.debug('Tx validated in '+(new Date().getTime()-time)+'ms')
                     //time = new Date().getTime()
-                    if (isValid) {
+                    if (isValid) 
                         transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                             //logr.debug('Tx executed in '+(new Date().getTime()-time)+'ms')
                             if (!executed)
@@ -369,14 +369,14 @@ chain = {
                                 burned: burned
                             })
                         })
-                    } else {
+                    else {
                         logr.error('Invalid transaction', tx)
                         callback(null, false)
                     }
                 })
                 i++
             })
-        }
+        
         var blockTimeBefore = new Date().getTime()
         series(executions, function(err, results) {
             logr.debug('Block executed in '+(new Date().getTime()-blockTimeBefore)+'ms')
@@ -443,9 +443,9 @@ chain = {
         cache.findOne('accounts', {name: name}, function(err, account) {
             var newBalance = account.balance + config.leaderReward
             var newVt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-            if (!newVt) {
+            if (!newVt) 
                 logr.debug('error growing grow int', account, ts)
-            }
+            
             newVt.v += config.leaderRewardVT
             cache.updateOne('accounts', 
                 {name: account.name},
@@ -483,10 +483,10 @@ chain = {
         return chain.recentBlocks[0]
     },
     cleanMemoryTx: () => {
-        for (const hash in chain.recentTxs) {
+        for (const hash in chain.recentTxs) 
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().ts)
                 delete chain.recentTxs[hash]
-        }
+        
     }
 }
 

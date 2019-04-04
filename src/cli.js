@@ -6,13 +6,13 @@ const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 var fetch = require('node-fetch')
 
-for (let i = 0; i < process.argv.length; i++) {
+for (let i = 0; i < process.argv.length; i++) 
     if (process.argv[i] == '--spam') {
         var spamming = true
         var spamDelay = Math.round(1000/parseInt(process.argv[i+1]))
         process.argv.splice(i,2)
     }
-}
+
 
 function sendTx(tx) {
     var port = process.env.API_PORT || 3001
@@ -32,11 +32,11 @@ function sendTx(tx) {
     })
 }
 
-if (spamming) {
+if (spamming) 
     setInterval(function() { handle() }, spamDelay)
-} else {
+else 
     handle()
-}
+
 
 function handle() {
     switch (command) {

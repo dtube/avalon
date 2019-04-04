@@ -43,9 +43,9 @@ var mongo = {
                             db.collection('blocks').insertOne(genesisBlock, function() {
                                 cb()
                             })
-                        } else {
+                        } else 
                             cb()
-                        }
+                        
                     })
                 }
             })

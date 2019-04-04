@@ -130,20 +130,20 @@ transaction = {
                 for (let i = 0; i < lowerUser.length; i++) {
                     const c = lowerUser[i]
                     // allowed username chars
-                    if (config.allowedUsernameChars.indexOf(c) == -1) {
+                    if (config.allowedUsernameChars.indexOf(c) == -1) 
                         if (config.allowedUsernameCharsOnlyMiddle.indexOf(c) == -1) {
                             cb(false, 'invalid tx data.name char '+c); return
                         } else if (i == 0 || i == lowerUser.length-1) {
                             cb(false, 'invalid tx data.name char '+c+' can only be in the middle'); return
                         }
-                    }
+                    
                 }
 
                 cache.findOne('accounts', {name: lowerUser}, function(err, account) {
                     if (err) throw err
                     if (account)
                         cb(false, 'invalid tx data.name already exists')
-                    else if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) {
+                    else if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) 
                         // if it's not a free account, check tx sender balance
                         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                             if (err) throw err
@@ -152,7 +152,7 @@ transaction = {
                             else
                                 cb(true)
                         })
-                    } else cb(true)
+                    else cb(true)
                 })
                 break
                 
@@ -170,15 +170,15 @@ transaction = {
                     }
                     if (acc.approves.length >= 5)
                         cb(false, 'invalid tx max votes reached')
-                    else {
+                    else 
                         cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                            if (!account) {
+                            if (!account) 
                                 cb(false, 'invalid tx target does not exist')
-                            } else {
+                            else 
                                 cb(true)
-                            }
+                            
                         })
-                    }
+                    
                 })
                 break
 
@@ -194,11 +194,11 @@ transaction = {
                         cb(false, 'invalid tx already unvoted'); return
                     }
                     cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                        if (!account) {
+                        if (!account) 
                             cb(false, 'invalid tx target does not exist')
-                        } else {
+                        else 
                             cb(true)
-                        }
+                        
                     })
                 })
                 break
@@ -224,13 +224,13 @@ transaction = {
                     if (err) throw err
                     if (account.balance < tx.data.amount)
                         cb(false, 'invalid tx not enough balance')
-                    else {
+                    else 
                         cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
                             if (err) throw err
                             if (!account) cb(false, 'invalid tx receiver does not exist')
                             else cb(true)
                         })
-                    }
+                    
                 })
                 break
 
@@ -264,7 +264,7 @@ transaction = {
                     cb(false, 'invalid tx not enough vt'); return
                 }
 
-                if (tx.data.pa && tx.data.pp) {
+                if (tx.data.pa && tx.data.pp) 
                     // its a comment of another comment
                     cache.findOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, function(err, content) {
                         if (!content) {
@@ -276,15 +276,15 @@ transaction = {
                                 if (content.pa != tx.data.pa || content.pp != tx.data.pp) {
                                     cb(false, 'invalid tx parent comment cannot be edited'); return
                                 }
-                            } else {
+                            } else 
                                 // it is a new comment
                                 cb(true)
-                            }
+                            
                         })
                     })
-                } else {
+                else 
                     cb(true)
-                }
+                
 
                 break
 
@@ -311,13 +311,13 @@ transaction = {
                     if (!content) {
                         cb(false, 'invalid tx non-existing content'); return
                     }
-                    if (!config.allowRevotes) {
-                        for (let i = 0; i < content.votes.length; i++) {
+                    if (!config.allowRevotes) 
+                        for (let i = 0; i < content.votes.length; i++) 
                             if (tx.sender == content.votes[i].u) {
                                 cb(false, 'invalid tx user has already voted'); return
                             }
-                        }
-                    }
+                        
+                    
                     cb(true)
                 })
                 break
@@ -343,15 +343,15 @@ transaction = {
                     }
                     if (acc.follows.length >= 2000)
                         cb(false, 'invalid tx reached max follows')
-                    else {
+                    else 
                         cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                            if (!account) {
+                            if (!account) 
                                 cb(false, 'invalid tx target does not exist')
-                            } else {
+                            else 
                                 cb(true)
-                            }
+                            
                         })
-                    }
+                    
                 })
                 break
 
@@ -367,11 +367,11 @@ transaction = {
                         cb(false, 'invalid tx not following target'); return
                     }
                     cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                        if (!account) {
+                        if (!account) 
                             cb(false, 'invalid tx target does not exist')
-                        } else {
+                        else 
                             cb(true)
-                        }
+                        
                     })
                 })
                 break
@@ -386,11 +386,11 @@ transaction = {
                 if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
                     cb(false, 'invalid tx data.types'); return
                 }
-                for (let i = 0; i < tx.data.types.length; i++) {
+                for (let i = 0; i < tx.data.types.length; i++) 
                     if (!Number.isInteger(tx.data.types[i])) {
                         cb(false, 'invalid tx all types must be integers'); return
                     }
-                }
+                
                 cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                     if (!account) {
                         cb(false, 'invalid tx sender does not exist'); return
@@ -398,11 +398,11 @@ transaction = {
                     if (!account.keys) {
                         cb(true); return
                     } else {
-                        for (let i = 0; i < account.keys.length; i++) {
+                        for (let i = 0; i < account.keys.length; i++) 
                             if (account.keys[i].id === tx.data.id) {
                                 cb(false, 'invalid tx data.id already exists'); return
                             }
-                        }
+                        
                         cb(true)
                     }
                 })
@@ -419,11 +419,11 @@ transaction = {
                     if (!account.keys) {
                         cb(false, 'invalid tx could not find key'); return
                     } else {
-                        for (let i = 0; i < account.keys.length; i++) {
+                        for (let i = 0; i < account.keys.length; i++) 
                             if (account.keys[i].id === tx.data.id) {
                                 cb(true); return
                             }
-                        }
+                        
                         cb(false, 'invalid tx could not find key')
                     }
                 })
@@ -451,7 +451,7 @@ transaction = {
                     follows: [],
                     followers: []
                 }).then(function(){
-                    if (tx.data.name !== tx.data.pub.toLowerCase()) {
+                    if (tx.data.name !== tx.data.pub.toLowerCase()) 
                         if (tx.sender != config.masterName || config.masterPaysForUsernames) {
                             cache.updateOne('accounts', 
                                 {name: tx.sender},
@@ -480,7 +480,7 @@ transaction = {
                                     })
                                 })
                         } else cb(true)
-                    } else cb(true)
+                    else cb(true)
                 })
                 break
     
@@ -580,7 +580,7 @@ transaction = {
             case TransactionType.COMMENT:
                 cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
                     if (err) throw err
-                    if (content) {
+                    if (content) 
                         // existing content being edited
                         cache.updateOne('contents', {_id: tx.sender+'/'+tx.data.link}, {
                             $set: {json: tx.data.json}
@@ -590,7 +590,7 @@ transaction = {
                                 http.newRankingContent(content)
                             cb(true)
                         })
-                    } else {
+                    else {
                         // new content
                         var vote = {
                             u: tx.sender,
@@ -610,13 +610,13 @@ transaction = {
                             ts: ts
                         }
                         db.collection('contents').insertOne(newContent).then(function(){
-                            if (tx.data.pa && tx.data.pp) {
+                            if (tx.data.pa && tx.data.pp) 
                                 cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                                     child: [tx.sender, tx.data.link]
                                 }}, function() {})
-                            } else {
+                            else 
                                 http.newRankingContent(newContent)
-                            }
+                            
                             cb(true)
                         })
                     }
@@ -712,9 +712,9 @@ transaction = {
             var bandwidth = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax})
             var needed_bytes = JSON.stringify(tx).length
             var bw = bandwidth.grow(ts)
-            if (!bw) {
+            if (!bw) 
                 throw 'No bandwidth error'
-            }
+            
             bw.v -= needed_bytes
 
             // collect voting tokens when needed
@@ -743,14 +743,14 @@ transaction = {
     },
     updateGrowInts: (account, ts, cb) => {
         // updates the bandwidth and vote tokens when the balance changes (transfer, monetary distribution)
-        if (!account.bw || !account.vt) {
+        if (!account.bw || !account.vt) 
             logr.debug('error loading grow int', account)
-        }
+        
         var bw = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax}).grow(ts)
         var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-        if (!bw || !vt) {
+        if (!bw || !vt) 
             logr.debug('error growing grow int', account, ts)
-        }
+        
         cache.updateOne('accounts', 
             {name: account.name},
             {$set: {

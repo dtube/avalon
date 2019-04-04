@@ -109,14 +109,14 @@ var eco = {
                     continue
                 
                 // winners voted in the same direction
-                if (content.votes[i].vt * currentVote.vt > 0) {
+                if (content.votes[i].vt * currentVote.vt > 0) 
                     // upvotes win if they were done at a lower vp per day, the opposite for downvotes
                     if ((currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore)
                         || (currentVote.vt < 0 && content.votes[i].vpPerDayBefore > currentVote.vpPerDayBefore)) {
                         sumVtWinners += content.votes[i].vt
                         winners.push(content.votes[i])
                     }
-                }
+                
             }
 
             // third loop to calculate each winner shares
@@ -131,12 +131,12 @@ var eco = {
 
             // forth loop to pay out
             var executions = []
-            for (let i = 0; i < winners.length; i++) {
+            for (let i = 0; i < winners.length; i++) 
                 executions.push(function(callback) {
                     var payout = Math.floor(winners[i].share * Math.abs(currentVote.vt))
-                    if (payout < 0) {
+                    if (payout < 0) 
                         throw 'Fatal distribution error (negative payout)'
-                    }
+                    
                     if (payout == 0) {
                         callback(null, 0)
                         return
@@ -147,7 +147,7 @@ var eco = {
                         callback(null, dist)
                     })
                 })
-            }
+            
             series(executions, function(err, results) {
                 if (err) throw err
                 var newCoins = 0
@@ -160,7 +160,7 @@ var eco = {
                         var distBefore = content.dist
                         var distAfter = distBefore + newCoins
                         var benefReward = Math.floor(distAfter/config.masterFee) - Math.floor(distBefore/config.masterFee)
-                        if (benefReward > 0) {
+                        if (benefReward > 0) 
                             cache.updateOne('accounts', {name: config.masterName}, {$inc: {balance: benefReward}}, function() {
                                 db.collection('distributed').insertOne({
                                     name: config.masterName,
@@ -178,7 +178,7 @@ var eco = {
                                     })
                                 })
                             })
-                        }
+                        
                     } else cb(newCoins)
                 })
             })

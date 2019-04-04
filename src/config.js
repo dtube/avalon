@@ -59,11 +59,11 @@ var config = {
     },
     read: (blockNum) => {
         var finalConfig = {}
-        for (const key in config.history) {
+        for (const key in config.history) 
             if (blockNum >= key)
                 Object.assign(finalConfig, config.history[key])
             else break
-        }
+        
         return finalConfig
     }
 } 

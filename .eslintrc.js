@@ -40,6 +40,10 @@ module.exports = {
         'semi': [
             'error',
             'never'
+        ],
+        'curly': [
+            'error',
+            'multi'
         ]
     }
 }
