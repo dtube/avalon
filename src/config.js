@@ -54,9 +54,10 @@ var config = {
             allowRevotes: false,
             leaders: 4,
             leaderReward: 1,
-            leaderRewardVT: 1000
+            leaderRewardVT: 1000,
+            masterPaysForUsernames: false
         },
-        1000: {leaderReward: 5}
+        100: {leaderReward: 5}
     },
     read: (blockNum) => {
         var finalConfig = {}
