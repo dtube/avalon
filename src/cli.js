@@ -1,4 +1,4 @@
-var config = require('./config.js')
+var config = require('./config.js').read(0)
 var cmds = require('./clicmds.js')
 var command = process.argv[2]
 var CryptoJS = require("crypto-js")

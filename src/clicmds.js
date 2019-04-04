@@ -1,6 +1,6 @@
 var privKey = process.argv[3]
 var sender = process.argv[4]
-var config = require('./config.js')
+var config = require('./config.js').read(0)
 var CryptoJS = require("crypto-js")
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')

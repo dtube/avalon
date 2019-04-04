@@ -1,5 +1,5 @@
 // starting sub modules
-config = require('./config.js')
+config = require('./config.js').read(0)
 logr = require('./logger.js')
 http = require('./http.js')
 p2p = require('./p2p.js')
@@ -13,6 +13,7 @@ cache = require('./cache.js')
 mongo.init(function() {
     mongo.fillInMemoryBlocks(function() {
         logr.info('#' + chain.getLatestBlock()._id + ' is the latest block in our db')
+        config = require('./config.js').read(chain.getLatestBlock()._id)
         
         // start miner schedule
         db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id%20)}, function(err, block) {

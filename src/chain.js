@@ -184,6 +184,7 @@ chain = {
             // push cached accounts and contents to mongodb
             cache.writeToDisk(function() {
                 chain.cleanMemoryTx()
+                config = require('./config.js').read(block._id)
                 // if block id is mult of 20, reschedule next 20 blocks
                 if (block._id%20 == 0) {
                     chain.minerSchedule(block, function(minerSchedule) {
