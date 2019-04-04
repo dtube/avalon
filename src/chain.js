@@ -6,6 +6,7 @@ const series = require('run-series')
 const transaction = require('./transaction.js')
 const eco = require('./economics.js')
 const notifications = require('./notifications.js')
+var GrowInt = require('./growInt.js')
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
@@ -393,8 +394,12 @@ chain = {
                 if (results[i].burned)
                     burnedInBlock += results[i].burned
             }
-                
-            cb(executedSuccesfully, distributedInBlock, burnedInBlock)
+
+            // add rewards for the leader who mined this block
+            chain.leaderRewards(block.miner, block.timestamp, function(dist) {
+                distributedInBlock += dist
+                cb(executedSuccesfully, distributedInBlock, burnedInBlock)
+            })
         })
     },
     minerSchedule: (block, cb) => {
@@ -433,6 +438,27 @@ chain = {
         }).toArray(function(err, accounts) {
             if (err) throw err;
             cb(accounts)
+        })
+    },
+    leaderRewards: (name, ts, cb) => {
+        // rewards leaders with 'free' voting power in the network
+        cache.findOne('accounts', {name: name}, function(err, account) {
+            var newBalance = account.balance + config.leaderReward
+            var newVt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+            if (!newVt) {
+                logr.debug('error growing grow int', account, ts)
+            }
+            newVt.v += config.leaderRewardVT
+            cache.updateOne('accounts', 
+                {name: account.name},
+                {$set: {
+                    vt: newVt,
+                    balance: newBalance
+                }},
+            function(err) {
+                if (err) throw err;
+                cb(config.leaderReward)
+            })
         })
     },
     calculateHashForBlock: (block) => {

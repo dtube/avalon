@@ -52,14 +52,11 @@ var config = {
             },
             // should we allow people to vote multiple times on the same content ?
             allowRevotes: false,
-            leaders: 4
+            leaders: 4,
+            leaderReward: 1,
+            leaderRewardVT: 1000
         },
-        5: {
-            txLimits: {}
-        },
-        1100: {
-            txLimits: {0: 2}
-        }
+        1000: {leaderReward: 5}
     },
     read: (blockNum) => {
         var finalConfig = {}
