@@ -457,7 +457,13 @@ chain = {
                 }},
             function(err) {
                 if (err) throw err;
-                cb(config.leaderReward)
+                var accToUpdate = Object.assign({}, account)
+                accToUpdate.balance = newBalance
+                transaction.updateGrowInts(accToUpdate, ts, function(success) {
+                    transaction.adjustNodeAppr(accToUpdate, config.leaderReward, function(success) {
+                        cb(config.leaderReward)
+                    })
+                })
             })
         })
     },
