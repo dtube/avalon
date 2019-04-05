@@ -13,10 +13,11 @@ process.stdout.writeLine = function(str) {
 }
 
 program
-    .version('0.2.0')
+    .version('0.2.0', '-V, --version')
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .option('-S, --spam [delay_in_ms]', 'repeats the tx every delay')
     
 program
@@ -62,6 +63,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
@@ -82,6 +84,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.approveNode(program.key, program.me, leader))
@@ -97,6 +100,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, leader))
@@ -113,6 +117,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, receiver, amount))
@@ -128,6 +133,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(link, pa, pp, json, vt, tag) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, link, pa, pp, json, vt, tag))
@@ -153,6 +159,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(json) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, json))
@@ -169,6 +176,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(target) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, target))
@@ -185,6 +193,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(target) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, target))
@@ -200,6 +209,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(id, pub, allowedTxs) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, id, pub, allowedTxs))
@@ -220,6 +230,7 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'Avalon API Url')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
@@ -237,6 +248,8 @@ function sendTx(tx) {
     var ip = process.env.API_IP || '[::1]'
     var protocol = process.env.API_PROTOCOL || 'http'
     var url = protocol+'://'+ip+':'+port+'/transact'
+    if (program.api)
+        url = program.api+'/transact'
     fetch(url, {
         method: 'post',
         headers: {
