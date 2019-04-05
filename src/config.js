@@ -7,6 +7,7 @@ var config = {
             accountPriceCharMult: 1.1,
             accountPriceChars: 14,
             accountPriceMin: 1,
+            accountMaxLength: 50,
             // allowed username chars
             allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
             allowedUsernameCharsOnlyMiddle: '-.',
@@ -22,10 +23,20 @@ var config = {
             bwMax: 1048576,
             // the number of blocks from the past taken into consideration for econonomics
             ecoBlocks: 1200,
+            // the maximum number of follows a single account can do
+            followsMax: 2000,
+            // the max size of a stringified json input (content / user profile)
+            jsonMaxBytes: 250000,
+            // the max length of a key identifier
+            keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
             leaderReward: 1,
             leaderRewardVT: 1000,
             leaders: 4,
+            // how long of the end of the block hash is used for the leader pseudo random generator shuffle
+            leaderShufflePrecision: 6,
+            // the maximum number of leaders an account can vote for
+            leaderMaxVotes: 5,
             // the "master" account starting stake (total starting supply)
             masterBalance: 1000000,
             // the number of tokens distributed before master gets 1 free token printed.
@@ -40,8 +51,25 @@ var config = {
             masterPaysForUsernames: false,
             // the master account public original key
             masterPub: 'qFsrM3bBfJmWsEZLxpv2QDrDnUtZTwqrrPiLsZpaGGSR',
+            // the maximum time drift in ms before a transaction is invalid
+            maxDrift: 200,
+            // the max length of a transfer memo
+            memoMaxLength: 250,
+            // defines how long it takes for a notification to get deleted, and how often the purge happens
+            // e.g.: purge notifications older than 56*3600 blocks every 3600 blocks
+            notifPurge: 3600,
+            notifPurgeAfter: 56,
+            // the maximum number of mentions triggering a notification
+            notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
             originHash: '0000000000000000000000000000000000000000000000000000000000000021',
+            randomBytesLength: 32,
+            // the minimum hourly reward pool (without leader rewards)
+            rewardPoolMin: 100,
+            // the maximum share of the reward pool a single distribution can generate
+            rewardPoolMaxShare: 0.1,
+            // the maximum length of tags (on votes)
+            tagMaxLength: 25,
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
             // limit which transactions are available

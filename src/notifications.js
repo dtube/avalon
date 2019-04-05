@@ -1,6 +1,8 @@
+var TransactionType = require('./transactionType.js')
+
 notifications = {
     processBlock: (block) => {
-        if (block._id % 3600)
+        if (block._id % config.notifPurge)
             notifications.purgeOld(block)
 
         for (let i = 0; i < block.txs.length; i++)
@@ -8,15 +10,14 @@ notifications = {
     },
     purgeOld: (block) => {
         db.collection('notifications').deleteMany({
-            blockId: {$lt: block._id-(3600*56)}
+            blockId: {$lt: block._id-(config.notifPurge*config.notifPurgeAfter)}
         })
     },
     processTx: (tx, ts) => {
         var notif = {}
         switch (tx.type) {
-        case 1:
-        case 7:
-            // approve node owner, follow
+        case TransactionType.APPROVE_NODE_OWNER:
+        case TransactionType.FOLLOW:
             notif = {
                 u: tx.data.target,
                 tx: tx,
@@ -27,8 +28,7 @@ notifications = {
             })
             break
 
-        case 3:
-            // transfer
+        case TransactionType.TRANSFER:
             notif = {
                 u: tx.data.receiver,
                 tx: tx,
@@ -39,7 +39,7 @@ notifications = {
             })
             break
 
-        case 4:
+        case TransactionType.COMMENT:
             // comment: see https://github.com/busyorg/busy-api/blob/develop/server.js#L125
                 
             /** Find replies */
@@ -60,7 +60,7 @@ notifications = {
             var words = content.split('@')
             var i = 1
             var mentions = 0
-            while (mentions < 10 && i<words.length) {
+            while (mentions < config.notifMaxMentions && i<words.length) {
                 for (let y = 0; y < words[i].length; y++) 
                     if (config.allowedUsernameChars.indexOf(words[i][y]) === -1) {
                         if (y > 0) {
@@ -82,8 +82,7 @@ notifications = {
             }
             break
 
-        case 5:
-            // vote
+        case TransactionType.VOTE:
             notif = {
                 u: tx.data.author,
                 tx: tx,

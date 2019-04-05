@@ -5,17 +5,19 @@ const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 var fetch = require('node-fetch')
+const argsStartIndex = 3
+const defaultPort = 3001
+const spamPrecision = 1000
 
-for (let i = 0; i < process.argv.length; i++) 
+for (let i = 0; i < process.argv.length; i++)
     if (process.argv[i] === '--spam') {
         var spamming = true
-        var spamDelay = Math.round(1000/parseInt(process.argv[i+1]))
+        var spamDelay = Math.round(spamPrecision/parseInt(process.argv[i+1]))
         process.argv.splice(i,2)
     }
 
-
 function sendTx(tx) {
-    var port = process.env.API_PORT || 3001
+    var port = process.env.API_PORT || defaultPort
     var ip = process.env.API_IP || '[::1]'
     var protocol = process.env.API_PROTOCOL || 'http'
     var url = protocol+'://'+ip+':'+port+'/transact'
@@ -44,7 +46,7 @@ function handle() {
         var priv
         var pub
         do {
-            priv = randomBytes(32)
+            priv = randomBytes(config.randomBytesLength)
             pub = secp256k1.publicKeyCreate(priv)
         } while (!secp256k1.privateKeyVerify(priv))
 		
@@ -55,66 +57,66 @@ function handle() {
         break
 			
     case 'sign':
-        process.stdout.write(cmds.sign(process.argv[3], process.argv[4], process.argv[5]))
+        process.stdout.write(JSON.stringify(cmds.sign(...process.argv.slice(argsStartIndex))))
         break
 	
     case 'createAccount':
-        sendTx(cmds.createAccount(process.argv[5], process.argv[6]))
+        sendTx(cmds.createAccount(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'approveNode':
         // node user
-        sendTx(cmds.approveNode(process.argv[5]))
+        sendTx(cmds.approveNode(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'disapproveNode':
         // node user
-        sendTx(cmds.disapproveNode(process.argv[5]))
+        sendTx(cmds.disapproveNode(...process.argv.slice(argsStartIndex)))
         break
 		
     case 'transfer':
         // reciever, amount
-        sendTx(cmds.transfer(process.argv[5], process.argv[6], process.argv[7]))
+        sendTx(cmds.transfer(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'post':
         // uri, conent json
-        sendTx(cmds.post(process.argv[5], process.argv[6]))
+        sendTx(cmds.post(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'comment':
         // uri, parent author, parent permalink, content json
-        sendTx(cmds.comment(process.argv[5], process.argv[6], process.argv[7], process.argv[8], process.argv[9], process.argv[10]))
+        sendTx(cmds.comment(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'vote':
         // uri, author, weight, tag
-        sendTx(cmds.vote(process.argv[5], process.argv[6], process.argv[7], process.argv[8]))
+        sendTx(cmds.vote(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'profile':
         // content
-        sendTx(cmds.profile(process.argv[5]))
+        sendTx(cmds.profile(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'follow':
         // username
-        sendTx(cmds.follow(process.argv[5]))
+        sendTx(cmds.follow(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'unfollow':
         // username
-        sendTx(cmds.unfollow(process.argv[5]))
+        sendTx(cmds.unfollow(...process.argv.slice(argsStartIndex)))
         break
 		
     case 'newKey':
         // username
-        sendTx(cmds.newKey(process.argv[5], process.argv[6], process.argv[7]))
+        sendTx(cmds.newKey(...process.argv.slice(argsStartIndex)))
         break
 	
     case 'removeKey':
         // username
-        sendTx(cmds.removeKey(process.argv[5]))
+        sendTx(cmds.removeKey(...process.argv.slice(argsStartIndex)))
         break
 	
     default:

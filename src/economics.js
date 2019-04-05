@@ -1,4 +1,6 @@
 const series = require('run-series')
+const one_day = 86400000
+var TransactionType = require('./transactionType.js')
 
 var eco = {
     currentBlock: {
@@ -15,8 +17,8 @@ var eco = {
         // we consider anyone with a non zero balance to be active, otherwise he loses out
         db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
             if (err) throw err
-            // minimum of 100 for easier testing
-            if (count < 100) count = 100
+            if (count < config.rewardPoolMin)
+                count = config.rewardPoolMin
             cb(count)
         })
     },
@@ -59,7 +61,7 @@ var eco = {
                 
                 for (let y = 0; y < block.txs.length; y++) {
                     var tx = block.txs[y]
-                    if (tx.type === 5)
+                    if (tx.type === TransactionType.VOTE)
                         votes += Math.abs(tx.data.vt)
                 }
             }
@@ -92,7 +94,7 @@ var eco = {
                 else if (content.votes[i].ts === content.votes[i-1].ts)
                     content.votes[i].vpPerDayBefore = content.votes[i-1].vpPerDayBefore
                 else
-                    content.votes[i].vpPerDayBefore = sumVt/(content.votes[i].ts - content.votes[0].ts) / (1000*60*60*24)
+                    content.votes[i].vpPerDayBefore = sumVt/(content.votes[i].ts - content.votes[0].ts) / one_day
             
                 sumVt += content.votes[i].vt
             }
@@ -200,8 +202,8 @@ var eco = {
                 
                 // make sure one person cant empty the whole pool
                 // eg stats.votes = 0
-                if (newCoins > Math.floor(stats.avail/10))
-                    newCoins = Math.floor(stats.avail/10)
+                if (newCoins > Math.floor(stats.avail*config.rewardPoolMaxShare))
+                    newCoins = Math.floor(stats.avail*config.rewardPoolMaxShare)
 
                 if (vt<0) newCoins *= -1
 

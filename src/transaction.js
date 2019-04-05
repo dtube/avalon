@@ -1,20 +1,6 @@
 var GrowInt = require('./growInt.js')
 var eco = require('./economics.js')
-
-var TransactionType = {
-    NEW_ACCOUNT: 0,
-    APPROVE_NODE_OWNER: 1,
-    DISAPROVE_NODE_OWNER: 2,
-    TRANSFER: 3,
-    COMMENT: 4,
-    VOTE: 5,
-    USER_JSON: 6,
-    FOLLOW: 7,
-    UNFOLLOW: 8,
-    RESHARE: 9, // not sure
-    NEW_KEY: 10,
-    REMOVE_KEY: 11
-}
+var TransactionType = require('./transactionType.js')
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
@@ -118,10 +104,10 @@ transaction = {
             // check transaction specifics
             switch (tx.type) {
             case TransactionType.NEW_ACCOUNT:
-                if (!tx.data.name || typeof tx.data.name !== 'string' || tx.data.name.length > 50) {
+                if (!tx.data.name || typeof tx.data.name !== 'string' || tx.data.name.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.name'); return
                 }
-                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > 50 || !chain.isValidPubKey(tx.data.pub)) {
+                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
                     cb(false, 'invalid tx data.pub'); return
                 }
 
@@ -143,7 +129,7 @@ transaction = {
                     if (err) throw err
                     if (account)
                         cb(false, 'invalid tx data.name already exists')
-                    else if (tx.data.name !== tx.data.pub || tx.data.name.length < 25) 
+                    else if (tx.data.name !== tx.data.pub) 
                         // if it's not a free account, check tx sender balance
                         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                             if (err) throw err
@@ -158,7 +144,7 @@ transaction = {
                 
 
             case TransactionType.APPROVE_NODE_OWNER:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > 50) {
+                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.target'); return
                 }
 
@@ -168,7 +154,7 @@ transaction = {
                     if (acc.approves.indexOf(tx.data.target) > -1) {
                         cb(false, 'invalid tx already voting'); return
                     }
-                    if (acc.approves.length >= 5)
+                    if (acc.approves.length >= config.leaderMaxVotes)
                         cb(false, 'invalid tx max votes reached')
                     else 
                         cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
@@ -183,7 +169,7 @@ transaction = {
                 break
 
             case TransactionType.DISAPROVE_NODE_OWNER:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > 50) {
+                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.target'); return
                 }
 
@@ -204,13 +190,13 @@ transaction = {
                 break
 
             case TransactionType.TRANSFER:
-                if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > 50) {
+                if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.receiver'); return
                 }
                 if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
                     cb(false, 'invalid tx data.amount'); return
                 }
-                if (typeof tx.data.memo !== 'string' || tx.data.memo.length > 250) {
+                if (typeof tx.data.memo !== 'string' || tx.data.memo.length > config.memoMaxLength) {
                     cb(false, 'invalid tx data.memo'); return
                 }
                 if (tx.data.amount !== Math.floor(tx.data.amount)) {
@@ -236,26 +222,26 @@ transaction = {
 
             case TransactionType.COMMENT:
                 // permlink
-                if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > 50) {
+                if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.link'); return
                 }
                 // parent author
-                if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== 'string' || tx.data.pa.length > 50)) {
+                if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== 'string' || tx.data.pa.length > config.accountMaxLength)) {
                     cb(false, 'invalid tx data.pa'); return
                 }
                 // parent permlink
-                if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== 'string' || tx.data.pp.length > 50)) {
+                if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== 'string' || tx.data.pp.length > config.accountMaxLength)) {
                     cb(false, 'invalid tx data.pp'); return
                 }
                 // handle arbitrary json input
-                if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > 250000) {
+                if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
                     cb(false, 'invalid tx data.json'); return
                 }
                 // users need to vote the content at the same time with vt and tag field
                 if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
                     cb(false, 'invalid tx data.vt'); return
                 }
-                if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > 25)) {
+                if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
                     cb(false, 'invalid tx data.tag'); return
                 }
                 // checking if they have enough VTs
@@ -289,17 +275,17 @@ transaction = {
                 break
 
             case TransactionType.VOTE:
-                if (!tx.data.author || typeof tx.data.author !== 'string' || tx.data.author.length > 50) {
+                if (!tx.data.author || typeof tx.data.author !== 'string' || tx.data.author.length > config.accountMaxLength) {
                     logr.debug('invalid tx data.author')
                     cb(false); return
                 }
-                if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > 50) {
+                if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.link'); return
                 }
                 if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
                     cb(false, 'invalid tx data.vt'); return
                 }
-                if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > 25)) {
+                if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
                     cb(false, 'invalid tx data.tag'); return
                 }
                 var vtBeforeVote = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
@@ -324,14 +310,14 @@ transaction = {
 
             case TransactionType.USER_JSON:
                 // handle arbitrary json input
-                if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > 250000) {
+                if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
                     cb(false, 'invalid tx data.json'); return
                 }
                 cb(true)
                 break
 
             case TransactionType.FOLLOW:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > 50) {
+                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.target'); return
                 }
 
@@ -341,7 +327,7 @@ transaction = {
                     if (acc.follows.indexOf(tx.data.target) > -1) {
                         cb(false, 'invalid tx already following'); return
                     }
-                    if (acc.follows.length >= 2000)
+                    if (acc.follows.length >= config.followsMax)
                         cb(false, 'invalid tx reached max follows')
                     else 
                         cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
@@ -356,7 +342,7 @@ transaction = {
                 break
 
             case TransactionType.UNFOLLOW:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > 50) {
+                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
                     cb(false, 'invalid tx data.target'); return
                 }
 
@@ -377,10 +363,10 @@ transaction = {
                 break
 
             case TransactionType.NEW_KEY:
-                if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > 25) {
+                if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
                     cb(false, 'invalid tx data.id'); return
                 }
-                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > 50 || !chain.isValidPubKey(tx.data.pub)) {
+                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
                     cb(false, 'invalid tx data.pub'); return
                 }
                 if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
@@ -409,7 +395,7 @@ transaction = {
                 break
 
             case TransactionType.REMOVE_KEY:
-                if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > 25) {
+                if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
                     cb(false, 'invalid tx data.id'); return
                 }
                 cache.findOne('accounts', {name: tx.sender}, function(err, account) {

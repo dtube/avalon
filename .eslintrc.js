@@ -52,7 +52,7 @@ module.exports = {
         'no-magic-numbers': [
             'warn',
             {
-                'ignore': [0, 1]
+                'ignore': [-1, 0, 1, 2]
             }
         ],
         'no-useless-concat': 'error'

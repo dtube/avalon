@@ -1,4 +1,11 @@
-var p2p_port = process.env.P2P_PORT || 6001
+const default_port = 6001
+const replay_interval = 1500
+const discovery_interval = 60000
+const max_blocks_buffer = 100
+const consensus_need = 2
+const consensus_total = 3
+const consensus_threshold = consensus_need/consensus_total
+var p2p_port = process.env.P2P_PORT || default_port
 var WebSocket = require('ws')
 var chain = require('./chain.js')
 var secp256k1 = require('secp256k1')
@@ -49,9 +56,9 @@ var p2p = {
         var server = new WebSocket.Server({port: p2p_port})
         server.on('connection', ws => p2p.handshake(ws))
         logr.info('Listening websocket p2p port on: ' + p2p_port)
-        setTimeout(function(){p2p.recover()}, 1500)
+        setTimeout(function(){p2p.recover()}, replay_interval)
         if (!process.env.NO_DISCOVERY) {
-            setInterval(function(){p2p.discoveryWorker()}, 60000)
+            setInterval(function(){p2p.discoveryWorker()}, discovery_interval)
             p2p.discoveryWorker()
         }
     },
@@ -190,7 +197,7 @@ var p2p = {
     },
     recover: () => {
         if (!p2p.sockets || p2p.sockets.length === 0) return
-        if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > 100) return
+        if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > max_blocks_buffer) return
         if (!p2p.recovering) p2p.recovering = chain.getLatestBlock()._id
 
         p2p.recovering++
@@ -304,7 +311,7 @@ var p2p = {
                     connectedWitnesses.push(activeWitnesses[y])
         }
 
-        const threshold = Math.ceil(connectedWitnesses.length*2/3)
+        const threshold = Math.ceil(connectedWitnesses.length*consensus_threshold)
         logr.trace('CONSENSUS ',activeWitnesses,connectedWitnesses, threshold, p2p.possibleNextBlocks)
         for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
             const possBlock = p2p.possibleNextBlocks[i]

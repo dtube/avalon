@@ -30,7 +30,7 @@ chain = {
     getNewKeyPair: () => {
         let privKey, pubKey
         do {
-            privKey = randomBytes(32)
+            privKey = randomBytes(config.randomBytesLength)
             pubKey = secp256k1.publicKeyCreate(privKey)
         } while (!secp256k1.privateKeyVerify(privKey))
     
@@ -296,8 +296,7 @@ chain = {
 
         // check if miner isnt trying to fast forward time
         // this might need to be tuned in the future to allow for network delay / clocks desync / etc
-        // added 200ms
-        if (newBlock.timestamp > new Date().getTime() + 200) {
+        if (newBlock.timestamp > new Date().getTime() + config.maxDrift) {
             logr.debug('timestamp from the future', newBlock.timestamp, new Date().getTime())
             cb(false); return
         }
@@ -314,7 +313,7 @@ chain = {
             isMinerAuthorized = true
         else if (newBlock.miner === previousBlock.miner) 
             // allow the previous miner to mine again if current miner misses the block
-            if (newBlock.timestamp - previousBlock.timestamp < (2*config.blockTime)) {
+            if (newBlock.timestamp - previousBlock.timestamp < (config.blockTime+config.blockTime)) {
                 logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
                 cb(false); return
             } else {
@@ -402,7 +401,7 @@ chain = {
     },
     minerSchedule: (block, cb) => {
         var hash = block.hash
-        var rand = parseInt('0x'+hash.substr(hash.length-6))
+        var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         logr.info('Generating schedule... NRNG: ' + rand)
         chain.generateLeaders(function(miners) {
             miners = miners.sort(function(a,b) {
