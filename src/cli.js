@@ -13,8 +13,8 @@ process.stdout.writeLine = function(str) {
 
 program
     .version('0.2.0')
-    .option('-K, --key [private_key_file]', 'plain-text private key')
-    .option('-F, --file [private_key]', 'file private key')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
     .option('-S, --spam [delay_in_ms]', 'repeats the tx every delay')
     
@@ -22,7 +22,7 @@ program
     .command('keypair')
     .description('generate a new keypair')
     .alias('key')
-    .option('-p, --prefix [prefix]', 'public key prefix')
+    .option('-P, --prefix [prefix]', 'public key prefix')
     .action(function(options) {
         var prefix = (options.prefix || '')
         var priv
@@ -60,12 +60,17 @@ program
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
     }).on('--help', function(){
         process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ account d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce new-username -F key.json -M alice')
+        process.stdout.writeLine('Extra Info:')
+        process.stdout.writeLine('  Account creation will burn coins depending on the chain config')
+        process.stdout.writeLine('  However, usernames matching public key are free (see second example)')
+        process.stdout.writeLine('')
+        process.stdout.writeLine('Examples:')
+        process.stdout.writeLine('  $ account d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce cool-name -F key.json -M alice')
+        process.stdout.writeLine('  $ account fR3e4CcvMRuv8yaGtoQ6t6j1hxfyocqhsKHi2qP9mb1E fr3e4ccvmruv8yagtoq6t6j1hxfyocqhskhi2qp9mb1e -F key.json -M alice')
     })
 
 program
-    .command('approveNode <leader>')
+    .command('vote-leader <leader>')
     .description('vote for a leader')
     .action(function(leader) {
         verifyKeyAndUser()
@@ -73,11 +78,11 @@ program
     }).on('--help', function(){
         process.stdout.writeLine('')
         process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ approveNode bob -F key.json -M alice')
+        process.stdout.writeLine('  $ vote-leader bob -F key.json -M alice')
     })
 
 program
-    .command('disapproveNode <leader>')
+    .command('unvote-leader <leader>')
     .description('remove a leader vote')
     .action(function(leader) {
         verifyKeyAndUser()
@@ -85,7 +90,7 @@ program
     }).on('--help', function(){
         process.stdout.writeLine('')
         process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ disapproveNode bob -F key.json -M alice')
+        process.stdout.writeLine('  $ unvote-leader bob -F key.json -M alice')
     })
 
 program
@@ -108,6 +113,14 @@ program
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, link, parentUser, parentLink, json, vt, tag))
     }).on('--help', function(){
+        process.stdout.writeLine('')
+        process.stdout.writeLine('Extra Info:')
+        process.stdout.writeLine('  <link>: an arbitrary string identifying your content')        
+        process.stdout.writeLine('  <pa>: parent author (if you are replying to another comment)')
+        process.stdout.writeLine('  <pp>: parent link (if you are replying to another comment)')
+        process.stdout.writeLine('  <json>: a json object')
+        process.stdout.writeLine('  <vt>: the amount of VT to spend on the forced vote')
+        process.stdout.writeLine('  <tag>: the tag of the forced vote')
         process.stdout.writeLine('')
         process.stdout.writeLine('Examples:')
         process.stdout.writeLine('  $ comment root-comment \'\' \'\' {"body": "Hello World"} 777 my-tag -F key.json -M alice')
@@ -154,8 +167,8 @@ program
     })
 
 program
-    .command('newKey <id> <pub> <allowed_txs>')
-    .description('add new key with custom perm')
+    .command('new-key <id> <pub> <allowed_txs>')
+    .description('add new key with custom perms')
     .action(function(id, pub, allowedTxs) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, id, pub, allowedTxs))
@@ -166,12 +179,12 @@ program
             process.stdout.writeLine('  '+TransactionType[key]+': '+key)
         process.stdout.writeLine('')
         process.stdout.writeLine('Examples:')
-        process.stdout.writeLine('  $ newKey posting tWWLqc5wPTbXPaWrFAfqUwGtEBLmUbyavp3utwPUop2g [4,5,6,7,8] -F key.json -M alice')
-        process.stdout.writeLine('  $ newKey finance wyPSnqfmAKoz5gAWyPcND7Rot6es2aFgcDGDTYB89b4q [3] -F key.json -M alice')
+        process.stdout.writeLine('  $ new-key posting tWWLqc5wPTbXPaWrFAfqUwGtEBLmUbyavp3utwPUop2g [4,5,6,7,8] -F key.json -M alice')
+        process.stdout.writeLine('  $ new-key finance wyPSnqfmAKoz5gAWyPcND7Rot6es2aFgcDGDTYB89b4q [3] -F key.json -M alice')
     })
 
 program
-    .command('removeKey <id>')
+    .command('remove-key <id>')
     .description('remove a previously added key')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
@@ -179,7 +192,7 @@ program
     }).on('--help', function(){
         process.stdout.writeLine('')
         process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ removeKey posting -F key.json -M alice')
+        process.stdout.writeLine('  $ remove-key posting -F key.json -M alice')
     })
       
 
