@@ -6,6 +6,7 @@ const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 var fetch = require('node-fetch')
+var fs = require('fs')
 const defaultPort = 3001
 process.stdout.writeLine = function(str) {
     process.stdout.write(str+'\n')
@@ -43,18 +44,24 @@ program
 program
     .command('sign <transaction>')
     .description('sign a transaction w/o broadcasting')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(transaction) {
         verifyKeyAndUser()
         process.stdout.writeLine(JSON.stringify(cmds.sign(program.key, program.me, transaction)))
     }).on('--help', function(){
         process.stdout.writeLine('')
         process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ sign {"type":1,"data":{"target":"bob"}} -F key.json -M alice')
+        process.stdout.writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
     })
 
 program
     .command('account <pub_key> <new_user>')
     .description('create a new account')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
@@ -72,6 +79,9 @@ program
 program
     .command('vote-leader <leader>')
     .description('vote for a leader')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.approveNode(program.key, program.me, leader))
@@ -84,6 +94,9 @@ program
 program
     .command('unvote-leader <leader>')
     .description('remove a leader vote')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, leader))
@@ -97,6 +110,9 @@ program
     .command('transfer <receiver> <amount>')
     .alias('xfer')
     .description('transfer coins')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, receiver, amount))
@@ -109,9 +125,12 @@ program
 program
     .command('comment <link> <pa> <pp> <json> <vt> <tag>')
     .description('publish a new JSON content')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(link, pa, pp, json, vt, tag) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, link, parentUser, parentLink, json, vt, tag))
+        sendTx(cmds.createAccount(program.key, program.me, link, pa, pp, json, vt, tag))
     }).on('--help', function(){
         process.stdout.writeLine('')
         process.stdout.writeLine('Extra Info:')
@@ -123,27 +142,33 @@ program
         process.stdout.writeLine('  <tag>: the tag of the forced vote')
         process.stdout.writeLine('')
         process.stdout.writeLine('Examples:')
-        process.stdout.writeLine('  $ comment root-comment \'\' \'\' {"body": "Hello World"} 777 my-tag -F key.json -M alice')
-        process.stdout.writeLine('  $ comment reply-to-bob bobs-post bob {"body": "Hello Bob"} 1 my-tag -F key.json -M alice')
+        process.stdout.writeLine('  $ comment root-comment \'\' \'\' \'{"body": "Hello World"}\' 777 my-tag -F key.json -M alice')
+        process.stdout.writeLine('  $ comment reply-to-bob bobs-post bob \'{"body": "Hello Bob"}\' 1 my-tag -F key.json -M alice')
     })
 
 program
     .command('profile <json>')
     .alias('userJson')
     .description('modify an account profile')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(json) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, json))
     }).on('--help', function(){
         process.stdout.writeLine('')
         process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ profile {"profile":{"avatar":"https://vignette.wikia.nocookie.net/the-demonic-paradise/images/f/f0/Avalon_by_iribel.jpg/revision/latest?cb=20161206193037"}} -F key.json -M alice')
+        process.stdout.writeLine('  $ profile \'{"profile":{"avatar":"https://i.imgur.com/4Bx2eQt.jpg"}}\' -F key.json -M bob')
     })
 
 program
     .command('follow <target>')
     .alias('subscribe')
     .description('start following another user')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(target) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, target))
@@ -157,6 +182,9 @@ program
     .command('unfollow <target>')
     .alias('unsubscribe')
     .description('stop following another user ')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(target) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, target))
@@ -169,6 +197,9 @@ program
 program
     .command('new-key <id> <pub> <allowed_txs>')
     .description('add new key with custom perms')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(id, pub, allowedTxs) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, id, pub, allowedTxs))
@@ -186,6 +217,9 @@ program
 program
     .command('remove-key <id>')
     .description('remove a previously added key')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
@@ -221,6 +255,14 @@ function sendTx(tx) {
 }
 
 function verifyKeyAndUser() {
+    if (program.file) {
+        var file = fs.readFileSync(program.file, 'utf8')
+        try {
+            program.key = JSON.parse(file).priv
+        } catch (error) {
+            program.key = file.trim()
+        }
+    }
     if (!program.key) {
         process.stdout.writeLine('no key?')
         process.exit()

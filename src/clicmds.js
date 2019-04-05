@@ -6,7 +6,6 @@ const bs58 = require('base-x')(config.b58Alphabet)
 let sign = (privKey, sender, tx) => {
     // parsing the tx
     tx = JSON.parse(tx)
-
     // add timestamp to seed the hash (avoid transactions reuse)
     tx.sender = sender
     tx.ts = new Date().getTime()
