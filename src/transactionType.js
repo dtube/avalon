@@ -8,7 +8,7 @@ module.exports = {
     USER_JSON: 6,
     FOLLOW: 7,
     UNFOLLOW: 8,
-    RESHARE: 9, // not sure
+    // RESHARE: 9, // not sure
     NEW_KEY: 10,
     REMOVE_KEY: 11
 }
