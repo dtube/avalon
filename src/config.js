@@ -30,8 +30,8 @@ var config = {
             // the max length of a key identifier
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
-            leaderReward: 1,
-            leaderRewardVT: 1000,
+            leaderReward: 0,
+            leaderRewardVT: 100,
             leaders: 4,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
@@ -80,10 +80,11 @@ var config = {
                 4: 2
             },
             // the number of ms needed for 1 DTC to generate 1 vt
-            vtGrowth: 3600000
+            vtGrowth: 3600000,
+            // freezeAccounts: ['hacker1', 'hacker2']
         },
         // example of increasing leader rewards to 5 after block 100
-        100: {leaderReward: 5}
+        100: {leaderReward: 5},
     },
     read: (blockNum) => {
         var finalConfig = {}

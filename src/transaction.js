@@ -23,7 +23,6 @@ transaction = {
                     transaction.pool.splice(i, 1)
                     break
                 }
-                    
     },
     isInPool: (tx) => {
         var isInPool = false
@@ -415,6 +414,13 @@ transaction = {
                 })
                 break
                 
+            case TransactionType.CHANGE_PASSWORD:
+                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+                    cb(false, 'invalid tx data.pub'); return
+                }
+                cb(true)
+                break
+            
             default:
                 cb(false, 'invalid tx unknown transaction type')
                 break
@@ -685,6 +691,12 @@ transaction = {
                 })
                 break
 
+            case TransactionType.CHANGE_PASSWORD:
+                cache.updateOne('accounts', {name: tx.sender}, {$set: {pub: tx.data.pub}}, function() {
+                    cb(true)
+                })
+                break
+            
             default:
                 cb(false)
                 break

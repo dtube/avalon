@@ -10,5 +10,7 @@ module.exports = {
     UNFOLLOW: 8,
     // RESHARE: 9, // not sure
     NEW_KEY: 10,
-    REMOVE_KEY: 11
+    REMOVE_KEY: 11,
+    CHANGE_PASSWORD: 12,
+    // PROMOTED_COMMENT: 13 // soon
 }
