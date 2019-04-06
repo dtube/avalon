@@ -8,16 +8,13 @@ const bs58 = require('base-x')(config.b58Alphabet)
 var fetch = require('node-fetch')
 var fs = require('fs')
 const defaultPort = 3001
-process.stdout.writeLine = function(str) {
-    process.stdout.write(str+'\n')
-}
 
 program
     .version('0.2.0', '-V, --version')
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .option('-S, --spam [delay_in_ms]', 'repeats the tx every delay')
     
 program
@@ -36,7 +33,7 @@ program
             pub58 = bs58.encode(pub)
         } while (!pub58.startsWith(prefix) || !secp256k1.privateKeyVerify(priv))
 
-        process.stdout.writeLine(JSON.stringify({
+        writeLine(JSON.stringify({
             pub: pub58,
             priv: bs58.encode(priv)
         }))
@@ -50,11 +47,11 @@ program
     .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(transaction) {
         verifyKeyAndUser()
-        process.stdout.writeLine(JSON.stringify(cmds.sign(program.key, program.me, transaction)))
+        writeLine(JSON.stringify(cmds.sign(program.key, program.me, transaction)))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
     })
 
 program
@@ -63,19 +60,19 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Extra Info:')
-        process.stdout.writeLine('  Account creation will burn coins depending on the chain config')
-        process.stdout.writeLine('  However, usernames matching public key are free (see second example)')
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Examples:')
-        process.stdout.writeLine('  $ account d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce cool-name -F key.json -M alice')
-        process.stdout.writeLine('  $ account fR3e4CcvMRuv8yaGtoQ6t6j1hxfyocqhsKHi2qP9mb1E fr3e4ccvmruv8yagtoq6t6j1hxfyocqhskhi2qp9mb1e -F key.json -M alice')
+        writeLine('')
+        writeLine('Extra Info:')
+        writeLine('  Account creation will burn coins depending on the chain config')
+        writeLine('  However, usernames matching public key are free (see second example)')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ account d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce cool-name -F key.json -M alice')
+        writeLine('  $ account fR3e4CcvMRuv8yaGtoQ6t6j1hxfyocqhsKHi2qP9mb1E fr3e4ccvmruv8yagtoq6t6j1hxfyocqhskhi2qp9mb1e -F key.json -M alice')
     })
 
 program
@@ -84,14 +81,14 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.approveNode(program.key, program.me, leader))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ vote-leader bob -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ vote-leader bob -F key.json -M alice')
     })
 
 program
@@ -100,14 +97,14 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(leader) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, leader))
+        sendTx(cmds.disapproveNode(program.key, program.me, leader))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ unvote-leader bob -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ unvote-leader bob -F key.json -M alice')
     })
 
 program
@@ -117,14 +114,14 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, receiver, amount))
+        sendTx(cmds.transfer(program.key, program.me, receiver, amount))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ transfer bob 777 -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ transfer bob 777 -F key.json -M alice')
     })
 
 program
@@ -133,23 +130,23 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(link, pa, pp, json, vt, tag) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, link, pa, pp, json, vt, tag))
+        sendTx(cmds.comment(program.key, program.me, link, pa, pp, json, vt, tag))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Extra Info:')
-        process.stdout.writeLine('  <link>: an arbitrary string identifying your content')        
-        process.stdout.writeLine('  <pa>: parent author (if you are replying to another comment)')
-        process.stdout.writeLine('  <pp>: parent link (if you are replying to another comment)')
-        process.stdout.writeLine('  <json>: a json object')
-        process.stdout.writeLine('  <vt>: the amount of VT to spend on the forced vote')
-        process.stdout.writeLine('  <tag>: the tag of the forced vote')
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Examples:')
-        process.stdout.writeLine('  $ comment root-comment \'\' \'\' \'{"body": "Hello World"}\' 777 my-tag -F key.json -M alice')
-        process.stdout.writeLine('  $ comment reply-to-bob bobs-post bob \'{"body": "Hello Bob"}\' 1 my-tag -F key.json -M alice')
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: an arbitrary string identifying your content')        
+        writeLine('  <pa>: parent author (if you are replying to another comment)')
+        writeLine('  <pp>: parent link (if you are replying to another comment)')
+        writeLine('  <json>: a json object')
+        writeLine('  <vt>: the amount of VT to spend on the forced vote')
+        writeLine('  <tag>: the tag of the forced vote')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ comment root-comment \'\' \'\' \'{"body": "Hello World"}\' 777 my-tag -F key.json -M alice')
+        writeLine('  $ comment reply-to-bob bobs-post bob \'{"body": "Hello Bob"}\' 1 my-tag -F key.json -M alice')
     })
 
 program
@@ -159,14 +156,14 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(json) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, json))
+        sendTx(cmds.profile(program.key, program.me, json))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ profile \'{"profile":{"avatar":"https://i.imgur.com/4Bx2eQt.jpg"}}\' -F key.json -M bob')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ profile \'{"profile":{"avatar":"https://i.imgur.com/4Bx2eQt.jpg"}}\' -F key.json -M bob')
     })
 
 program
@@ -176,14 +173,14 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(target) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, target))
+        sendTx(cmds.follow(program.key, program.me, target))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ follow bob -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ follow bob -F key.json -M alice')
     })
 
 program
@@ -193,14 +190,14 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(target) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, target))
+        sendTx(cmds.unfollow(program.key, program.me, target))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ unfollow bob -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ unfollow bob -F key.json -M alice')
     })
 
 program
@@ -209,19 +206,19 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
+    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(id, pub, allowedTxs) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, id, pub, allowedTxs))
+        sendTx(cmds.newKey(program.key, program.me, id, pub, allowedTxs))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Transaction Types:')
+        writeLine('')
+        writeLine('Transaction Types:')
         for (const key in TransactionType)
-            process.stdout.writeLine('  '+TransactionType[key]+': '+key)
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Examples:')
-        process.stdout.writeLine('  $ new-key posting tWWLqc5wPTbXPaWrFAfqUwGtEBLmUbyavp3utwPUop2g [4,5,6,7,8] -F key.json -M alice')
-        process.stdout.writeLine('  $ new-key finance wyPSnqfmAKoz5gAWyPcND7Rot6es2aFgcDGDTYB89b4q [3] -F key.json -M alice')
+            writeLine('  '+TransactionType[key]+': '+key)
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ new-key posting tWWLqc5wPTbXPaWrFAfqUwGtEBLmUbyavp3utwPUop2g [4,5,6,7,8] -F key.json -M alice')
+        writeLine('  $ new-key finance wyPSnqfmAKoz5gAWyPcND7Rot6es2aFgcDGDTYB89b4q [3] -F key.json -M alice')
     })
 
 program
@@ -230,18 +227,41 @@ program
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'Avalon API Url')
-    .action(function(pubKey, newUser) {
+    .option('-A, --api [api_url]', 'avalon api url')
+    .action(function(id) {
         verifyKeyAndUser()
-        sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
+        sendTx(cmds.removeKey(program.key, program.me, id))
     }).on('--help', function(){
-        process.stdout.writeLine('')
-        process.stdout.writeLine('Example:')
-        process.stdout.writeLine('  $ remove-key posting -F key.json -M alice')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ remove-key posting -F key.json -M alice')
     })
-      
+
+program
+    .command('change-password <pub>')
+    .description('change the master key of an account')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'avalon api url')
+    .action(function(pub) {
+        verifyKeyAndUser()
+        sendTx(cmds.changePassword(program.key, program.me, pub))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <pub>: the new public key that will have full control over your account')
+        writeLine('')
+        writeLine('WARNING:')
+        writeLine('  DO NOT lose the new associated private key!')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ change-password tK9DqTygrcwGWZPsyVtZXNpfiZcAZN83nietKbKY8aiH -F key.json -M alice')
+    })   
 
 program.parse(process.argv)
+
+function writeLine(str){process.stdout.write(str+'\n')}
 
 function sendTx(tx) {
     var port = process.env.API_PORT || defaultPort
@@ -259,9 +279,9 @@ function sendTx(tx) {
         body: JSON.stringify(tx)
     }).then(function(res) {
         if (res.statusText !== 'OK')
-            process.stdout.writeLine('Err: ' + res.statusText)
+            writeLine('Err: ' + res.statusText)
     }).catch(function(error) {
-        process.stdout.writeLine('Err: ' + error)
+        writeLine('Err: ' + error)
     })
     if (program.spam && program.spam > 0)
         setTimeout(function(){sendTx(tx)}, program.spam)
@@ -277,11 +297,11 @@ function verifyKeyAndUser() {
         }
     }
     if (!program.key) {
-        process.stdout.writeLine('no key?')
+        writeLine('no key?')
         process.exit()
     }
     if (!program.me) {
-        process.stdout.writeLine('no user?')
+        writeLine('no user?')
         process.exit()
     }
 }

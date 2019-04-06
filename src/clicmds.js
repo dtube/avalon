@@ -103,6 +103,11 @@ let cmds = {
     removeKey: (privKey, sender, id) => {
         var tx = '{"type":11,"data":{"id":"'+id+'"}}'
         return sign(privKey, sender, tx)
+    },
+	
+    changePassword: (privKey, sender, pub) => {
+        var tx = '{"type":12,"data":{"pub":"'+pub+'"}}'
+        return sign(privKey, sender, tx)
     }
 }
 
