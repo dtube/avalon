@@ -64,7 +64,7 @@ chain = {
     },
     hashAndSignBlock: (block) => {
         var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned)
-        var signature = secp256k1.sign(new Buffer(nextHash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
+        var signature = secp256k1.sign(Buffer.from(nextHash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
         return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned, signature, nextHash)
         
@@ -237,7 +237,7 @@ chain = {
                 
             
             for (let i = 0; i < allowedPubKeys.length; i++) {
-                var bufferHash = new Buffer(hash, 'hex')
+                var bufferHash = Buffer.from(hash, 'hex')
                 var b58sign = bs58.decode(sign)
                 var b58pub = bs58.decode(allowedPubKeys[i])
                 if (secp256k1.verify(bufferHash, b58sign, b58pub)) {

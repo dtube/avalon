@@ -11,6 +11,7 @@ const defaultPort = 3001
 
 program
     .version('0.2.0', '-V, --version')
+    .description('a cli tool to forge transactions and broadcast to avalon')
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
@@ -42,9 +43,6 @@ program
 program
     .command('sign <transaction>')
     .description('sign a tx w/o broadcasting')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
     .action(function(transaction) {
         verifyKeyAndUser()
         writeLine(JSON.stringify(cmds.sign(program.key, program.me, transaction)))
@@ -57,10 +55,6 @@ program
 program
     .command('account <pub_key> <new_user>')
     .description('create a new account')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(pubKey, newUser) {
         verifyKeyAndUser()
         sendTx(cmds.createAccount(program.key, program.me, pubKey, newUser))
@@ -78,10 +72,6 @@ program
 program
     .command('vote-leader <leader>')
     .description('vote for a leader')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.approveNode(program.key, program.me, leader))
@@ -94,10 +84,6 @@ program
 program
     .command('unvote-leader <leader>')
     .description('remove a leader vote')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(leader) {
         verifyKeyAndUser()
         sendTx(cmds.disapproveNode(program.key, program.me, leader))
@@ -111,10 +97,6 @@ program
     .command('transfer <receiver> <amount>')
     .alias('xfer')
     .description('transfer coins')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
         sendTx(cmds.transfer(program.key, program.me, receiver, amount))
@@ -127,10 +109,6 @@ program
 program
     .command('comment <link> <pa> <pp> <json> <vt> <tag>')
     .description('publish a new JSON content')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(link, pa, pp, json, vt, tag) {
         verifyKeyAndUser()
         sendTx(cmds.comment(program.key, program.me, link, pa, pp, json, vt, tag))
@@ -150,12 +128,26 @@ program
     })
 
 program
+    .command('vote <link> <author> <vt> <tag>')
+    .description('publish a new JSON content')
+    .action(function(link, author, vt, tag) {
+        verifyKeyAndUser()
+        sendTx(cmds.vote(program.key, program.me, link, author, vt, tag))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: the identifier of the comment to vote on')        
+        writeLine('  <author>: the author of the comment to vote on')
+        writeLine('  <vt>: the amount of VT to spend on the vote')
+        writeLine('  <tag>: the tag to associate with the vote')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ vote root-comment alice 1000 introduce-yourself -F key.json -M bob')
+    })
+
+program
     .command('promote <link> <pa> <pp> <json> <vt> <tag> <burn>')
     .description('publish and promote')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(link, pa, pp, json, vt, tag, burn) {
         verifyKeyAndUser()
         sendTx(cmds.promotedComment(program.key, program.me, link, pa, pp, json, vt, tag, burn))
@@ -181,10 +173,6 @@ program
     .command('profile <json>')
     .alias('userJson')
     .description('modify an account profile')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(json) {
         verifyKeyAndUser()
         sendTx(cmds.profile(program.key, program.me, json))
@@ -198,10 +186,6 @@ program
     .command('follow <target>')
     .alias('subscribe')
     .description('start following another user')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(target) {
         verifyKeyAndUser()
         sendTx(cmds.follow(program.key, program.me, target))
@@ -215,10 +199,6 @@ program
     .command('unfollow <target>')
     .alias('unsubscribe')
     .description('stop following another user ')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(target) {
         verifyKeyAndUser()
         sendTx(cmds.unfollow(program.key, program.me, target))
@@ -231,10 +211,6 @@ program
 program
     .command('new-key <id> <pub> <allowed_txs>')
     .description('add new key with custom perms')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(id, pub, allowedTxs) {
         verifyKeyAndUser()
         sendTx(cmds.newKey(program.key, program.me, id, pub, allowedTxs))
@@ -252,10 +228,6 @@ program
 program
     .command('remove-key <id>')
     .description('remove a previously added key')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(id) {
         verifyKeyAndUser()
         sendTx(cmds.removeKey(program.key, program.me, id))
@@ -268,10 +240,6 @@ program
 program
     .command('password <pub>')
     .description('change your master key')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(pub) {
         verifyKeyAndUser()
         sendTx(cmds.changePassword(program.key, program.me, pub))
@@ -291,10 +259,6 @@ program
     .command('transfer-vt <receiver> <amount>')
     .alias('xfer-vt')
     .description('transfer voting tokens')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
         sendTx(cmds.transferVt(program.key, program.me, receiver, amount))
@@ -308,10 +272,6 @@ program
     .command('transfer-bw <receiver> <amount>')
     .alias('xfer-bw')
     .description('transfer bandwidth')
-    .option('-K, --key [plaintext_key]', 'plain-text private key')
-    .option('-F, --file [file_key]', 'file private key')
-    .option('-M, --me [my_username]', 'username of the transactor')
-    .option('-A, --api [api_url]', 'avalon api url')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
         sendTx(cmds.transferBw(program.key, program.me, receiver, amount))
@@ -319,6 +279,31 @@ program
         writeLine('')
         writeLine('Example:')
         writeLine('  $ xfer-bw dan 777 -F key.json -M alice')
+    })
+
+program
+    .command('license')
+    .description('read the software license')
+    .action(function() {
+        writeLine('Copyright (c) 2018 Adrien Marie. https://d.tube')
+        writeLine('')
+        writeLine('Permission is hereby granted, free of charge, to any person obtaining a copy')
+        writeLine('of this software and associated documentation files (the "Software"), to deal')
+        writeLine('in the Software without restriction, including without limitation the rights')
+        writeLine('to use, copy, modify, merge, publish, distribute, sublicense, and/or sell')
+        writeLine('copies of the Software, and to permit persons to whom the Software is')
+        writeLine('furnished to do so, subject to the following conditions:')
+        writeLine('')
+        writeLine('The above copyright notice and this permission notice shall be included in')
+        writeLine('all copies or substantial portions of the Software.')
+        writeLine('')
+        writeLine('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR')
+        writeLine('IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,')
+        writeLine('FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE')
+        writeLine('AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER')
+        writeLine('LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,')
+        writeLine('OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN')
+        writeLine('THE SOFTWARE.')
     })
 
 // error on unknown commands
@@ -347,8 +332,12 @@ function sendTx(tx) {
         },
         body: JSON.stringify(tx)
     }).then(function(res) {
-        if (res.statusText !== 'OK')
-            writeLine('Err: ' + res.statusText)
+        return res.json()
+    }).then(function(res) {
+        if (res.error)
+            writeLine('Error: '+res.error)
+        else
+            writeLine(res)
     }).catch(function(error) {
         writeLine('Err: ' + error)
     })

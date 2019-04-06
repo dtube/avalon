@@ -18,7 +18,7 @@ let sign = (privKey, sender, tx) => {
     var rawPriv = bs58.decode(privKey)
 
     // sign the tx
-    var signature = secp256k1.sign(new Buffer(tx.hash, 'hex'), rawPriv)
+    var signature = secp256k1.sign(Buffer.from(tx.hash, 'hex'), rawPriv)
 
     // convert signature to base58
     tx.signature = bs58.encode(signature.signature)
@@ -69,10 +69,10 @@ let cmds = {
         return sign(privKey, sender, tx)
     },
 
-    vote: (privKey, sender, uri, author, weight, tag) => {
+    vote: (privKey, sender, link, author, weight, tag) => {
         if (!tag) tag = ''
         var tx = '{"type":5,"data":{"link":"'+
-			uri+'", "author":"'+
+			link+'", "author":"'+
 			author+'", "vt": '+
 			parseInt(weight)+', "tag": "'+tag+'"}}'
         return sign(privKey, sender, tx)

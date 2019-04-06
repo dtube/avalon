@@ -470,8 +470,8 @@ transaction = {
             }
             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                 if (err) throw err
-                var vtBeforeVote = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-                if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
+                var vtBefore = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                if (vtBefore.v < Math.abs(tx.data.vt)) {
                     cb(false, 'invalid tx not enough vt'); return
                 }
                 cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
@@ -491,8 +491,8 @@ transaction = {
             }
             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                 if (err) throw err
-                var vtBeforeVote = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-                if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
+                var bwBefore = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                if (bwBefore.v < Math.abs(tx.data.vt)) {
                     cb(false, 'invalid tx not enough vt'); return
                 }
                 cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {

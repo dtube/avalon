@@ -234,7 +234,7 @@ var p2p = {
     },
     hashAndSignMessage: (message) => {
         var hash = CryptoJS.SHA256(JSON.stringify(message)).toString()
-        var signature = secp256k1.sign(new Buffer(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
+        var signature = secp256k1.sign(Buffer.from(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
         message.s = {
             n: process.env.NODE_OWNER,
@@ -251,7 +251,7 @@ var p2p = {
         db.collection('accounts').findOne({name: name}, function(err, account) {
             if (err) throw err
             if (account && secp256k1.verify(
-                new Buffer(hash, 'hex'),
+                Buffer.from(hash, 'hex'),
                 bs58.decode(sign),
                 bs58.decode(account.pub))) {
                 cb(account)
