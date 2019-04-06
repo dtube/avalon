@@ -101,331 +101,370 @@ transaction = {
             }
 
             // check transaction specifics
-            switch (tx.type) {
-            case TransactionType.NEW_ACCOUNT:
-                if (!tx.data.name || typeof tx.data.name !== 'string' || tx.data.name.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.name'); return
-                }
-                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
-                    cb(false, 'invalid tx data.pub'); return
-                }
-
-                var lowerUser = tx.data.name.toLowerCase()
-
-                for (let i = 0; i < lowerUser.length; i++) {
-                    const c = lowerUser[i]
-                    // allowed username chars
-                    if (config.allowedUsernameChars.indexOf(c) === -1) 
-                        if (config.allowedUsernameCharsOnlyMiddle.indexOf(c) === -1) {
-                            cb(false, 'invalid tx data.name char '+c); return
-                        } else if (i === 0 || i === lowerUser.length-1) {
-                            cb(false, 'invalid tx data.name char '+c+' can only be in the middle'); return
-                        }
-                    
-                }
-
-                cache.findOne('accounts', {name: lowerUser}, function(err, account) {
-                    if (err) throw err
-                    if (account)
-                        cb(false, 'invalid tx data.name already exists')
-                    else if (tx.data.name !== tx.data.pub) 
-                        // if it's not a free account, check tx sender balance
-                        cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-                            if (err) throw err
-                            if (account.balance < eco.accountPrice(lowerUser))
-                                cb(false, 'invalid tx not enough balance')
-                            else
-                                cb(true)
-                        })
-                    else cb(true)
-                })
-                break
-                
-
-            case TransactionType.APPROVE_NODE_OWNER:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.target'); return
-                }
-
-                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
-                    if (err) throw err
-                    if (!acc.approves) acc.approves = []
-                    if (acc.approves.indexOf(tx.data.target) > -1) {
-                        cb(false, 'invalid tx already voting'); return
-                    }
-                    if (acc.approves.length >= config.leaderMaxVotes)
-                        cb(false, 'invalid tx max votes reached')
-                    else 
-                        cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                            if (!account) 
-                                cb(false, 'invalid tx target does not exist')
-                            else 
-                                cb(true)
-                            
-                        })
-                    
-                })
-                break
-
-            case TransactionType.DISAPROVE_NODE_OWNER:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.target'); return
-                }
-
-                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
-                    if (err) throw err
-                    if (!acc.approves) acc.approves = []
-                    if (acc.approves.indexOf(tx.data.target) === -1) {
-                        cb(false, 'invalid tx already unvoted'); return
-                    }
-                    cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                        if (!account) 
-                            cb(false, 'invalid tx target does not exist')
-                        else 
-                            cb(true)
-                        
-                    })
-                })
-                break
-
-            case TransactionType.TRANSFER:
-                if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.receiver'); return
-                }
-                if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
-                    cb(false, 'invalid tx data.amount'); return
-                }
-                if (typeof tx.data.memo !== 'string' || tx.data.memo.length > config.memoMaxLength) {
-                    cb(false, 'invalid tx data.memo'); return
-                }
-                if (tx.data.amount !== Math.floor(tx.data.amount)) {
-                    cb(false, 'invalid tx data.amount not an integer'); return
-                }
-                if (tx.data.receiver === tx.sender) {
-                    cb(false, 'invalid tx cannot send to self'); return
-                }
-
-                cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-                    if (err) throw err
-                    if (account.balance < tx.data.amount)
-                        cb(false, 'invalid tx not enough balance')
-                    else 
-                        cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
-                            if (err) throw err
-                            if (!account) cb(false, 'invalid tx receiver does not exist')
-                            else cb(true)
-                        })
-                    
-                })
-                break
-
-            case TransactionType.COMMENT:
-                // permlink
-                if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.link'); return
-                }
-                // parent author
-                if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== 'string' || tx.data.pa.length > config.accountMaxLength)) {
-                    cb(false, 'invalid tx data.pa'); return
-                }
-                // parent permlink
-                if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== 'string' || tx.data.pp.length > config.accountMaxLength)) {
-                    cb(false, 'invalid tx data.pp'); return
-                }
-                // handle arbitrary json input
-                if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
-                    cb(false, 'invalid tx data.json'); return
-                }
-                // users need to vote the content at the same time with vt and tag field
-                if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
-                    cb(false, 'invalid tx data.vt'); return
-                }
-                if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
-                    cb(false, 'invalid tx data.tag'); return
-                }
-                // checking if they have enough VTs
-                var vtBeforeComment = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
-                if (vtBeforeComment.v < Math.abs(tx.data.vt)) {
-                    cb(false, 'invalid tx not enough vt'); return
-                }
-
-                if (tx.data.pa && tx.data.pp) 
-                    // its a comment of another comment
-                    cache.findOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, function(err, content) {
-                        if (!content) {
-                            cb(false, 'invalid tx parent comment does not exist'); return
-                        }
-                        cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
-                            if (content) {
-                                // user is editing an existing comment
-                                if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
-                                    cb(false, 'invalid tx parent comment cannot be edited'); return
-                                }
-                            } else 
-                                // it is a new comment
-                                cb(true)
-                            
-                        })
-                    })
-                else 
-                    cb(true)
-                
-
-                break
-
-            case TransactionType.VOTE:
-                if (!tx.data.author || typeof tx.data.author !== 'string' || tx.data.author.length > config.accountMaxLength) {
-                    logr.debug('invalid tx data.author')
-                    cb(false); return
-                }
-                if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.link'); return
-                }
-                if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
-                    cb(false, 'invalid tx data.vt'); return
-                }
-                if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
-                    cb(false, 'invalid tx data.tag'); return
-                }
-                var vtBeforeVote = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
-                if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
-                    cb(false, 'invalid tx not enough vt'); return
-                }
-                // checking if content exists
-                cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
-                    if (!content) {
-                        cb(false, 'invalid tx non-existing content'); return
-                    }
-                    if (!config.allowRevotes) 
-                        for (let i = 0; i < content.votes.length; i++) 
-                            if (tx.sender === content.votes[i].u) {
-                                cb(false, 'invalid tx user has already voted'); return
-                            }
-                        
-                    
-                    cb(true)
-                })
-                break
-
-            case TransactionType.USER_JSON:
-                // handle arbitrary json input
-                if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
-                    cb(false, 'invalid tx data.json'); return
-                }
-                cb(true)
-                break
-
-            case TransactionType.FOLLOW:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.target'); return
-                }
-
-                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
-                    if (err) throw err
-                    if (!acc.follows) acc.follows = []
-                    if (acc.follows.indexOf(tx.data.target) > -1) {
-                        cb(false, 'invalid tx already following'); return
-                    }
-                    if (acc.follows.length >= config.followsMax)
-                        cb(false, 'invalid tx reached max follows')
-                    else 
-                        cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                            if (!account) 
-                                cb(false, 'invalid tx target does not exist')
-                            else 
-                                cb(true)
-                            
-                        })
-                    
-                })
-                break
-
-            case TransactionType.UNFOLLOW:
-                if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
-                    cb(false, 'invalid tx data.target'); return
-                }
-
-                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
-                    if (err) throw err
-                    if (!acc.follows) acc.follows = []
-                    if (acc.follows.indexOf(tx.data.target) === -1) {
-                        cb(false, 'invalid tx not following target'); return
-                    }
-                    cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
-                        if (!account) 
-                            cb(false, 'invalid tx target does not exist')
-                        else 
-                            cb(true)
-                        
-                    })
-                })
-                break
-
-            case TransactionType.NEW_KEY:
-                if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
-                    cb(false, 'invalid tx data.id'); return
-                }
-                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
-                    cb(false, 'invalid tx data.pub'); return
-                }
-                if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
-                    cb(false, 'invalid tx data.types'); return
-                }
-                for (let i = 0; i < tx.data.types.length; i++) 
-                    if (!Number.isInteger(tx.data.types[i])) {
-                        cb(false, 'invalid tx all types must be integers'); return
-                    }
-                
-                cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-                    if (!account) {
-                        cb(false, 'invalid tx sender does not exist'); return
-                    }
-                    if (!account.keys) {
-                        cb(true); return
-                    } else {
-                        for (let i = 0; i < account.keys.length; i++) 
-                            if (account.keys[i].id === tx.data.id) {
-                                cb(false, 'invalid tx data.id already exists'); return
-                            }
-                        
-                        cb(true)
-                    }
-                })
-                break
-
-            case TransactionType.REMOVE_KEY:
-                if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
-                    cb(false, 'invalid tx data.id'); return
-                }
-                cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-                    if (!account) {
-                        cb(false, 'invalid tx sender does not exist'); return
-                    }
-                    if (!account.keys) {
-                        cb(false, 'invalid tx could not find key'); return
-                    } else {
-                        for (let i = 0; i < account.keys.length; i++) 
-                            if (account.keys[i].id === tx.data.id) {
-                                cb(true); return
-                            }
-                        
-                        cb(false, 'invalid tx could not find key')
-                    }
-                })
-                break
-                
-            case TransactionType.CHANGE_PASSWORD:
-                if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
-                    cb(false, 'invalid tx data.pub'); return
-                }
-                cb(true)
-                break
-            
-            default:
-                cb(false, 'invalid tx unknown transaction type')
-                break
-            }
+            transaction.isValidTxData(tx, function(isValid, error) {
+                cb(isValid, error)
+            })
         })
+    },
+    isValidTxData: (tx, cb) => {
+        switch (tx.type) {
+        case TransactionType.NEW_ACCOUNT:
+            if (!tx.data.name || typeof tx.data.name !== 'string' || tx.data.name.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.name'); return
+            }
+            if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+                cb(false, 'invalid tx data.pub'); return
+            }
+
+            var lowerUser = tx.data.name.toLowerCase()
+
+            for (let i = 0; i < lowerUser.length; i++) {
+                const c = lowerUser[i]
+                // allowed username chars
+                if (config.allowedUsernameChars.indexOf(c) === -1) 
+                    if (config.allowedUsernameCharsOnlyMiddle.indexOf(c) === -1) {
+                        cb(false, 'invalid tx data.name char '+c); return
+                    } else if (i === 0 || i === lowerUser.length-1) {
+                        cb(false, 'invalid tx data.name char '+c+' can only be in the middle'); return
+                    }
+                
+            }
+
+            cache.findOne('accounts', {name: lowerUser}, function(err, account) {
+                if (err) throw err
+                if (account)
+                    cb(false, 'invalid tx data.name already exists')
+                else if (tx.data.name !== tx.data.pub) 
+                    // if it's not a free account, check tx sender balance
+                    cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                        if (err) throw err
+                        if (account.balance < eco.accountPrice(lowerUser))
+                            cb(false, 'invalid tx not enough balance')
+                        else
+                            cb(true)
+                    })
+                else cb(true)
+            })
+            break
+            
+
+        case TransactionType.APPROVE_NODE_OWNER:
+            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.target'); return
+            }
+
+            cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                if (err) throw err
+                if (!acc.approves) acc.approves = []
+                if (acc.approves.indexOf(tx.data.target) > -1) {
+                    cb(false, 'invalid tx already voting'); return
+                }
+                if (acc.approves.length >= config.leaderMaxVotes)
+                    cb(false, 'invalid tx max votes reached')
+                else 
+                    cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
+                        if (!account) 
+                            cb(false, 'invalid tx target does not exist')
+                        else 
+                            cb(true)
+                        
+                    })
+                
+            })
+            break
+
+        case TransactionType.DISAPROVE_NODE_OWNER:
+            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.target'); return
+            }
+
+            cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                if (err) throw err
+                if (!acc.approves) acc.approves = []
+                if (acc.approves.indexOf(tx.data.target) === -1) {
+                    cb(false, 'invalid tx already unvoted'); return
+                }
+                cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
+                    if (!account) 
+                        cb(false, 'invalid tx target does not exist')
+                    else 
+                        cb(true)
+                    
+                })
+            })
+            break
+
+        case TransactionType.TRANSFER:
+            if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.receiver'); return
+            }
+            if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
+                cb(false, 'invalid tx data.amount'); return
+            }
+            if (typeof tx.data.memo !== 'string' || tx.data.memo.length > config.memoMaxLength) {
+                cb(false, 'invalid tx data.memo'); return
+            }
+            if (tx.data.amount !== Math.floor(tx.data.amount)) {
+                cb(false, 'invalid tx data.amount not an integer'); return
+            }
+            if (tx.data.receiver === tx.sender) {
+                cb(false, 'invalid tx cannot send to self'); return
+            }
+
+            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                if (err) throw err
+                if (account.balance < tx.data.amount)
+                    cb(false, 'invalid tx not enough balance')
+                else 
+                    cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+                        if (err) throw err
+                        if (!account) cb(false, 'invalid tx receiver does not exist')
+                        else cb(true)
+                    })
+                
+            })
+            break
+
+        case TransactionType.COMMENT:
+            // permlink
+            if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.link'); return
+            }
+            // parent author
+            if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== 'string' || tx.data.pa.length > config.accountMaxLength)) {
+                cb(false, 'invalid tx data.pa'); return
+            }
+            // parent permlink
+            if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== 'string' || tx.data.pp.length > config.accountMaxLength)) {
+                cb(false, 'invalid tx data.pp'); return
+            }
+            // handle arbitrary json input
+            if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
+                cb(false, 'invalid tx data.json'); return
+            }
+            // users need to vote the content at the same time with vt and tag field
+            if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
+                cb(false, 'invalid tx data.vt'); return
+            }
+            if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
+                cb(false, 'invalid tx data.tag'); return
+            }
+            // checking if they have enough VTs
+            var vtBeforeComment = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
+            if (vtBeforeComment.v < Math.abs(tx.data.vt)) {
+                cb(false, 'invalid tx not enough vt'); return
+            }
+
+            if (tx.data.pa && tx.data.pp) 
+                // its a comment of another comment
+                cache.findOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, function(err, content) {
+                    if (!content) {
+                        cb(false, 'invalid tx parent comment does not exist'); return
+                    }
+                    cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
+                        if (content) {
+                            // user is editing an existing comment
+                            if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
+                                cb(false, 'invalid tx parent comment cannot be edited'); return
+                            }
+                        } else 
+                            // it is a new comment
+                            cb(true)
+                        
+                    })
+                })
+            else 
+                cb(true)
+            
+
+            break
+
+        case TransactionType.VOTE:
+            if (!tx.data.author || typeof tx.data.author !== 'string' || tx.data.author.length > config.accountMaxLength) {
+                logr.debug('invalid tx data.author')
+                cb(false); return
+            }
+            if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.link'); return
+            }
+            if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
+                cb(false, 'invalid tx data.vt'); return
+            }
+            if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
+                cb(false, 'invalid tx data.tag'); return
+            }
+            var vtBeforeVote = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
+            if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
+                cb(false, 'invalid tx not enough vt'); return
+            }
+            // checking if content exists
+            cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
+                if (!content) {
+                    cb(false, 'invalid tx non-existing content'); return
+                }
+                if (!config.allowRevotes) 
+                    for (let i = 0; i < content.votes.length; i++) 
+                        if (tx.sender === content.votes[i].u) {
+                            cb(false, 'invalid tx user has already voted'); return
+                        }
+                    
+                
+                cb(true)
+            })
+            break
+
+        case TransactionType.USER_JSON:
+            // handle arbitrary json input
+            if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
+                cb(false, 'invalid tx data.json'); return
+            }
+            cb(true)
+            break
+
+        case TransactionType.FOLLOW:
+            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.target'); return
+            }
+
+            cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                if (err) throw err
+                if (!acc.follows) acc.follows = []
+                if (acc.follows.indexOf(tx.data.target) > -1) {
+                    cb(false, 'invalid tx already following'); return
+                }
+                if (acc.follows.length >= config.followsMax)
+                    cb(false, 'invalid tx reached max follows')
+                else 
+                    cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
+                        if (!account) 
+                            cb(false, 'invalid tx target does not exist')
+                        else 
+                            cb(true)
+                        
+                    })
+                
+            })
+            break
+
+        case TransactionType.UNFOLLOW:
+            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.target'); return
+            }
+
+            cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                if (err) throw err
+                if (!acc.follows) acc.follows = []
+                if (acc.follows.indexOf(tx.data.target) === -1) {
+                    cb(false, 'invalid tx not following target'); return
+                }
+                cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
+                    if (!account) 
+                        cb(false, 'invalid tx target does not exist')
+                    else 
+                        cb(true)
+                    
+                })
+            })
+            break
+
+        case TransactionType.NEW_KEY:
+            if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
+                cb(false, 'invalid tx data.id'); return
+            }
+            if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+                cb(false, 'invalid tx data.pub'); return
+            }
+            if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
+                cb(false, 'invalid tx data.types'); return
+            }
+            for (let i = 0; i < tx.data.types.length; i++) 
+                if (!Number.isInteger(tx.data.types[i])) {
+                    cb(false, 'invalid tx all types must be integers'); return
+                }
+            
+            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                if (!account) {
+                    cb(false, 'invalid tx sender does not exist'); return
+                }
+                if (!account.keys) {
+                    cb(true); return
+                } else {
+                    for (let i = 0; i < account.keys.length; i++) 
+                        if (account.keys[i].id === tx.data.id) {
+                            cb(false, 'invalid tx data.id already exists'); return
+                        }
+                    
+                    cb(true)
+                }
+            })
+            break
+
+        case TransactionType.REMOVE_KEY:
+            if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
+                cb(false, 'invalid tx data.id'); return
+            }
+            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                if (!account) {
+                    cb(false, 'invalid tx sender does not exist'); return
+                }
+                if (!account.keys) {
+                    cb(false, 'invalid tx could not find key'); return
+                } else {
+                    for (let i = 0; i < account.keys.length; i++) 
+                        if (account.keys[i].id === tx.data.id) {
+                            cb(true); return
+                        }
+                    
+                    cb(false, 'invalid tx could not find key')
+                }
+            })
+            break
+            
+        case TransactionType.CHANGE_PASSWORD:
+            if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+                cb(false, 'invalid tx data.pub'); return
+            }
+            cb(true)
+            break
+        
+        case TransactionType.PROMOTED_COMMENT:
+            // first verify that the user isn't editing an existing content
+            if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.link'); return
+            }
+            cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
+                if (err) throw err
+                if (content)
+                    cb(false, 'cannot edit and promote')
+                else {
+                    // then verify that the new comment without promotion would be ok
+                    var comment = tx
+                    delete comment.data.burn
+                    comment.type = TransactionType.COMMENT
+                    transaction.isValidTxData(comment, function(isValid, error) {
+                        if (isValid) {
+                            // and checking if user has enough coins to burn
+                            if (!tx.data.burn || typeof tx.data.burn !== 'number' || tx.data.burn < 1 || tx.data.burn > Number.MAX_SAFE_INTEGER) {
+                                cb(false, 'invalid tx data.burn'); return
+                            }
+                            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                                if (err) throw err
+                                if (account.balance < tx.data.burn) {
+                                    cb(false, 'invalid tx not enough balance to burn'); return
+                                }
+                                cb(true)
+                            })
+                        } else
+                            cb(isValid, error)
+                    })
+                }
+            })
+            break
+        
+        default:
+            cb(false, 'invalid tx unknown transaction type')
+            break
+        }
     },
     execute: (tx, ts, cb) => {
         transaction.collectGrowInts(tx, ts, function(success) {
@@ -697,6 +736,42 @@ transaction = {
                 })
                 break
             
+            case TransactionType.PROMOTED_COMMENT:
+                // almost same logic as comment
+                // except we are sure its a new content
+                var superVote = {
+                    u: tx.sender,
+                    ts: ts,
+                    vt: tx.data.vt+(tx.data.burn * config.vtPerBurn) // we just add some extra VTs
+                }
+                if (tx.data.tag) superVote.tag = tx.data.tag
+                var newContent = {
+                    _id: tx.sender+'/'+tx.data.link,
+                    author: tx.sender,
+                    link: tx.data.link,
+                    pa: tx.data.pa,
+                    pp: tx.data.pp,
+                    json: tx.data.json,
+                    child: [],
+                    votes: [superVote],
+                    ts: ts
+                }
+                // and burn some coins
+                cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {
+                    db.collection('contents').insertOne(newContent).then(function(){
+                        if (tx.data.pa && tx.data.pp) 
+                            cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                child: [tx.sender, tx.data.link]
+                            }}, function() {})
+                        else 
+                            http.newRankingContent(newContent)
+                        
+                        // and report how much was burnt
+                        cb(true, null, tx.data.burn)
+                    })
+                })
+                break
+
             default:
                 cb(false)
                 break

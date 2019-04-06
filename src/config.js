@@ -80,7 +80,8 @@ var config = {
                 4: 2
             },
             // the number of ms needed for 1 DTC to generate 1 vt
-            vtGrowth: 3600000,
+            vtGrowth: 3600000, // +1 vt per hour per coin
+            vtPerBurn: 8760 // 24*365 (1 year worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']
         },
         // example of increasing leader rewards to 5 after block 100
