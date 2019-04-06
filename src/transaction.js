@@ -756,19 +756,28 @@ transaction = {
                     votes: [superVote],
                     ts: ts
                 }
-                // and burn some coins
+                // and burn some coins, update bw/vt and leader vote scores as usual
                 cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {
-                    db.collection('contents').insertOne(newContent).then(function(){
-                        if (tx.data.pa && tx.data.pp) 
-                            cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
-                                child: [tx.sender, tx.data.link]
-                            }}, function() {})
-                        else 
-                            http.newRankingContent(newContent)
-                        
-                        // and report how much was burnt
-                        cb(true, null, tx.data.burn)
+                    cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                        var sender = Object.assign({}, account)
+                        transaction.updateGrowInts(sender, tx.ts, function() {
+                            transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
+                                // insert content+vote into db
+                                db.collection('contents').insertOne(newContent).then(function(){
+                                    if (tx.data.pa && tx.data.pp) 
+                                        cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                            child: [tx.sender, tx.data.link]
+                                        }}, function() {})
+                                    else 
+                                        http.newRankingContent(newContent)
+                                    
+                                    // and report how much was burnt
+                                    cb(true, null, tx.data.burn)
+                                })
+                            })
+                        })
                     })
+                    
                 })
                 break
 
