@@ -101,12 +101,12 @@ transaction = {
             }
 
             // check transaction specifics
-            transaction.isValidTxData(tx, function(isValid, error) {
+            transaction.isValidTxData(tx, ts, legitUser, function(isValid, error) {
                 cb(isValid, error)
             })
         })
     },
-    isValidTxData: (tx, cb) => {
+    isValidTxData: (tx, ts, legitUser, cb) => {
         switch (tx.type) {
         case TransactionType.NEW_ACCOUNT:
             if (!tx.data.name || typeof tx.data.name !== 'string' || tx.data.name.length > config.accountMaxLength) {
@@ -434,30 +434,31 @@ transaction = {
             }
             cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
                 if (err) throw err
-                if (content)
-                    cb(false, 'cannot edit and promote')
-                else {
-                    // then verify that the new comment without promotion would be ok
-                    var comment = tx
-                    delete comment.data.burn
-                    comment.type = TransactionType.COMMENT
-                    transaction.isValidTxData(comment, function(isValid, error) {
-                        if (isValid) {
-                            // and checking if user has enough coins to burn
-                            if (!tx.data.burn || typeof tx.data.burn !== 'number' || tx.data.burn < 1 || tx.data.burn > Number.MAX_SAFE_INTEGER) {
-                                cb(false, 'invalid tx data.burn'); return
-                            }
-                            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-                                if (err) throw err
-                                if (account.balance < tx.data.burn) {
-                                    cb(false, 'invalid tx not enough balance to burn'); return
-                                }
-                                cb(true)
-                            })
-                        } else
-                            cb(isValid, error)
-                    })
+                if (content) {
+                    cb(false, 'cannot edit and promote'); return
                 }
+                // then verify that the same comment without promotion would be ok
+                var comment = {
+                    type: TransactionType.COMMENT,
+                    data: Object.assign({}, tx.data)
+                }
+                delete comment.data.burn
+                transaction.isValidTxData(comment, ts, legitUser, function(isValid, error) {
+                    if (isValid) {
+                        // and checking if user has enough coins to burn
+                        if (!tx.data.burn || typeof tx.data.burn !== 'number' || tx.data.burn < 1 || tx.data.burn > Number.MAX_SAFE_INTEGER) {
+                            cb(false, 'invalid tx data.burn'); return
+                        }
+                        cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                            if (err) throw err
+                            if (account.balance < tx.data.burn) {
+                                cb(false, 'invalid tx not enough balance to burn'); return
+                            }
+                            cb(true)
+                        })
+                    } else
+                        cb(isValid, error)
+                })
             })
             break
         
@@ -760,7 +761,7 @@ transaction = {
                 cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {
                     cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                         var sender = Object.assign({}, account)
-                        transaction.updateGrowInts(sender, tx.ts, function() {
+                        transaction.updateGrowInts(sender, ts, function() {
                             transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
                                 // insert content+vote into db
                                 db.collection('contents').insertOne(newContent).then(function(){
@@ -803,6 +804,7 @@ transaction = {
             switch (tx.type) {
             case TransactionType.COMMENT:
             case TransactionType.VOTE:
+            case TransactionType.PROMOTED_COMMENT:
                 var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
                 vt.v -= Math.abs(tx.data.vt)
                 break
@@ -830,9 +832,10 @@ transaction = {
         
         var bw = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax}).grow(ts)
         var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-        if (!bw || !vt) 
-            logr.debug('error growing grow int', account, ts)
-        
+        if (!bw || !vt) {
+            logr.fatal('error growing grow int', account, ts)
+            return
+        }
         cache.updateOne('accounts', 
             {name: account.name},
             {$set: {
