@@ -213,15 +213,14 @@ transaction = {
 
             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                 if (err) throw err
-                if (account.balance < tx.data.amount)
-                    cb(false, 'invalid tx not enough balance')
-                else 
-                    cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
-                        if (err) throw err
-                        if (!account) cb(false, 'invalid tx receiver does not exist')
-                        else cb(true)
-                    })
-                
+                if (account.balance < tx.data.amount) {
+                    cb(false, 'invalid tx not enough balance'); return
+                }
+                cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+                    if (err) throw err
+                    if (!account) cb(false, 'invalid tx receiver does not exist')
+                    else cb(true)
+                })
             })
             break
 
@@ -462,10 +461,94 @@ transaction = {
             })
             break
         
+        case TransactionType.TRANSFER_VT:
+            if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.receiver'); return
+            }
+            if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
+                cb(false, 'invalid tx data.amount'); return
+            }
+            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                if (err) throw err
+                var vtBeforeVote = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
+                    cb(false, 'invalid tx not enough vt'); return
+                }
+                cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+                    if (err) throw err
+                    if (!account) cb(false, 'invalid tx receiver does not exist')
+                    else cb(true)
+                })
+            })
+            break
+
+        case TransactionType.TRANSFER_BW:
+            if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
+                cb(false, 'invalid tx data.receiver'); return
+            }
+            if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
+                cb(false, 'invalid tx data.amount'); return
+            }
+            cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+                if (err) throw err
+                var vtBeforeVote = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
+                    cb(false, 'invalid tx not enough vt'); return
+                }
+                cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+                    if (err) throw err
+                    if (!account) cb(false, 'invalid tx receiver does not exist')
+                    else cb(true)
+                })
+            })
+            break
+
         default:
             cb(false, 'invalid tx unknown transaction type')
             break
         }
+    },
+    collectGrowInts: (tx, ts, cb) => {
+        cache.findOne('accounts', {name: tx.sender}, function(err, account) {
+            // collect bandwidth
+            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax})
+            var needed_bytes = JSON.stringify(tx).length
+            var bw = bandwidth.grow(ts)
+            if (!bw) 
+                throw 'No bandwidth error'
+            
+            bw.v -= needed_bytes
+            if (tx.type === TransactionType.TRANSFER_BW)
+                bw.v -= tx.data.amount
+
+            // collect voting tokens when needed
+            var vt = null
+            switch (tx.type) {
+            case TransactionType.COMMENT:
+            case TransactionType.VOTE:
+            case TransactionType.PROMOTED_COMMENT:
+                vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                vt.v -= Math.abs(tx.data.vt)
+                break
+            case TransactionType.TRANSFER_VT:
+                vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                vt.v -= tx.data.amount
+                break
+            default:
+                break
+            }
+
+            // update both at the same time !
+            var changes = {bw: bw}
+            if (vt) changes.vt = vt
+            cache.updateOne('accounts', 
+                {name: account.name},
+                {$set: changes},
+                function(err) {
+                    if (err) throw err
+                    cb(true)
+                })
+        })
     },
     execute: (tx, ts, cb) => {
         transaction.collectGrowInts(tx, ts, function(success) {
@@ -782,48 +865,32 @@ transaction = {
                 })
                 break
 
+            case TransactionType.TRANSFER_VT:
+                cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+                    if (err) throw err
+                    account.vt.v += tx.data.amount
+                    cache.updateOne('accounts', {name: tx.data.receiver}, {$set: {vt: account.vt}}, function() {
+                        cb(true)
+                    })
+                })
+                break
+
+            case TransactionType.TRANSFER_BW:
+                cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+                    if (err) throw err
+                    account.bw.v += tx.data.amount
+                    cache.updateOne('accounts', {name: tx.data.receiver}, {$set: {vt: account.vt}}, function() {
+                        cb(true)
+                    })
+                })
+                break
+            
             default:
                 cb(false)
                 break
             }
         })
 
-    },
-    collectGrowInts: (tx, ts, cb) => {
-        cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-            // collect bandwidth
-            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax})
-            var needed_bytes = JSON.stringify(tx).length
-            var bw = bandwidth.grow(ts)
-            if (!bw) 
-                throw 'No bandwidth error'
-            
-            bw.v -= needed_bytes
-
-            // collect voting tokens when needed
-            switch (tx.type) {
-            case TransactionType.COMMENT:
-            case TransactionType.VOTE:
-            case TransactionType.PROMOTED_COMMENT:
-                var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-                vt.v -= Math.abs(tx.data.vt)
-                break
-            
-            default:
-                break
-            }
-
-            // update both at the same time !
-            var changes = {bw: bw}
-            if (vt) changes.vt = vt
-            cache.updateOne('accounts', 
-                {name: account.name},
-                {$set: changes},
-                function(err) {
-                    if (err) throw err
-                    cb(true)
-                })
-        })
     },
     updateGrowInts: (account, ts, cb) => {
         // updates the bandwidth and vote tokens when the balance changes (transfer, monetary distribution)

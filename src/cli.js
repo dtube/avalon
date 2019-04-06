@@ -41,7 +41,7 @@ program
 
 program
     .command('sign <transaction>')
-    .description('sign a transaction w/o broadcasting')
+    .description('sign a tx w/o broadcasting')
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
@@ -150,6 +150,34 @@ program
     })
 
 program
+    .command('promote <link> <pa> <pp> <json> <vt> <tag> <burn>')
+    .description('publish and promote')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'avalon api url')
+    .action(function(link, pa, pp, json, vt, tag, burn) {
+        verifyKeyAndUser()
+        sendTx(cmds.promotedComment(program.key, program.me, link, pa, pp, json, vt, tag, burn))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: an arbitrary string identifying your content')        
+        writeLine('  <pa>: parent author (if you are replying to another comment)')
+        writeLine('  <pp>: parent link (if you are replying to another comment)')
+        writeLine('  <json>: a json object')
+        writeLine('  <vt>: the amount of VT to spend on the forced vote')
+        writeLine('  <tag>: the tag of the forced vote')
+        writeLine('  <burn>: the amount of coins to burn for promotion')
+        writeLine('')
+        writeLine('WARNING:')
+        writeLine('  Your balance will be reduced by <burn> coins')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ promote big-video \'\' \'\' \'{"title": "Check this out"}\' 777 my-tag 10 -F key.json -M alice')
+    })
+
+program
     .command('profile <json>')
     .alias('userJson')
     .description('modify an account profile')
@@ -238,8 +266,8 @@ program
     })
 
 program
-    .command('change-password <pub>')
-    .description('change the master key of an account')
+    .command('password <pub>')
+    .description('change your master key')
     .option('-K, --key [plaintext_key]', 'plain-text private key')
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
@@ -257,7 +285,48 @@ program
         writeLine('')
         writeLine('Example:')
         writeLine('  $ change-password tK9DqTygrcwGWZPsyVtZXNpfiZcAZN83nietKbKY8aiH -F key.json -M alice')
-    })   
+    })
+
+program
+    .command('transfer-vt <receiver> <amount>')
+    .alias('xfer-vt')
+    .description('transfer voting tokens')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'avalon api url')
+    .action(function(receiver, amount) {
+        verifyKeyAndUser()
+        sendTx(cmds.transferVt(program.key, program.me, receiver, amount))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ xfer-vt charlotte 777 -F key.json -M alice')
+    })
+
+program
+    .command('transfer-bw <receiver> <amount>')
+    .alias('xfer-bw')
+    .description('transfer bandwidth')
+    .option('-K, --key [plaintext_key]', 'plain-text private key')
+    .option('-F, --file [file_key]', 'file private key')
+    .option('-M, --me [my_username]', 'username of the transactor')
+    .option('-A, --api [api_url]', 'avalon api url')
+    .action(function(receiver, amount) {
+        verifyKeyAndUser()
+        sendTx(cmds.transferBw(program.key, program.me, receiver, amount))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ xfer-bw dan 777 -F key.json -M alice')
+    })
+
+// error on unknown commands
+program.on('command:*', function () {
+    writeLine('Unknown command: '+program.args[0])
+    writeLine('See --help for a list of available commands.')
+    process.exit(1)
+})
 
 program.parse(process.argv)
 

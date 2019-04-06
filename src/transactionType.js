@@ -12,5 +12,8 @@ module.exports = {
     NEW_KEY: 10,
     REMOVE_KEY: 11,
     CHANGE_PASSWORD: 12,
-    PROMOTED_COMMENT: 13
+    PROMOTED_COMMENT: 13,
+    TRANSFER_VT: 14,
+    TRANSFER_BW: 15,
+
 }

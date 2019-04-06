@@ -77,7 +77,9 @@ var config = {
             // value: null/0 (default): enabled, 1: disabled, 2: master-only
             txLimits: {
                 0: 2,
-                3: 2
+                3: 2,
+                14: 2,
+                15: 2
             },
             // the number of ms needed for 1 DTC to generate 1 vt
             vtGrowth: 3600000, // +1 vt per hour per coin

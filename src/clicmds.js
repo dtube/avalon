@@ -108,7 +108,31 @@ let cmds = {
     changePassword: (privKey, sender, pub) => {
         var tx = '{"type":12,"data":{"pub":"'+pub+'"}}'
         return sign(privKey, sender, tx)
-    }
+    },
+	
+    promotedComment: (privKey, sender, uri, pa, pp, content, weight, tag, burn) => {
+        var tx = '{"type":13,"data":{"link":"'+
+			uri+'", "pa":"'+
+			pa+'", "pp":"'+
+			pp+'", "vt":'+
+			parseInt(weight)+', "tag":"'+
+			tag+'","burn":'+burn+',"json":'+content+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    transferVt: (privKey, sender, receiver, amount) => {
+        var tx = '{"type":14,"data":{"receiver":"'+
+			receiver+'", "amount":'+
+			parseInt(amount)+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    transferBw: (privKey, sender, receiver, amount) => {
+        var tx = '{"type":15,"data":{"receiver":"'+
+			receiver+'", "amount":'+
+			parseInt(amount)+'}}'
+        return sign(privKey, sender, tx)
+    },
 }
 
 module.exports = cmds
