@@ -180,7 +180,7 @@ var eco = {
                                     })
                                 })
                             })
-                        
+                        else cb(newCoins)
                     } else cb(newCoins)
                 })
             })

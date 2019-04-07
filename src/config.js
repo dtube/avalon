@@ -66,10 +66,10 @@ var config = {
             // the fake hash of block 0 (new origin hash -> new chain)
             originHash: '0000000000000000000000000000000000000000000000000000000000000022',
             randomBytesLength: 32,
-            // the minimum hourly reward pool (without leader rewards)
-            rewardPoolMin: 100,
+            // the minimum hourly reward pool (including leader rewards)
+            rewardPoolMin: 10,
             // the multiplier for the reward pool,
-            rewardPoolMult: 100,
+            rewardPoolMult: 1,
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
             // the maximum length of tags (on votes)
