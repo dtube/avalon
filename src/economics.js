@@ -17,9 +17,7 @@ var eco = {
         // we consider anyone with a non zero balance to be active, otherwise he loses out
         db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
             if (err) throw err
-            if (count < config.rewardPoolMin)
-                count = config.rewardPoolMin
-            cb(count)
+            cb(config.rewardPoolMult*count+config.rewardPoolMin)
         })
     },
     totalSupply: (cb) => {
@@ -65,12 +63,14 @@ var eco = {
                         votes += Math.abs(tx.data.vt)
                 }
             }
+            var avail = theoricalPool - distributed - eco.currentBlock.dist
+            if (avail < 0) avail = 0
             cb({
                 theo: theoricalPool,
                 burn: burned + eco.currentBlock.burn,
                 dist: distributed + eco.currentBlock.dist,
                 votes: votes + eco.currentBlock.votes,
-                avail: theoricalPool - distributed - eco.currentBlock.dist
+                avail: avail
             })
         })
     },

@@ -97,7 +97,7 @@ transaction = {
 
             // checking if the user has enough bandwidth
             if (JSON.stringify(tx).length > newBw.v && tx.sender !== config.masterName) {
-                cb(false, 'not enough bandwidth'); return
+                cb(false, 'need more bandwidth ('+(JSON.stringify(tx).length-newBw.v)+' B)'); return
             }
 
             // check transaction specifics

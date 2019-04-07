@@ -3,7 +3,7 @@ var config = {
         0: {
             // the account pricing options
             // see: https://www.wolframalpha.com/input/?i=plot+10%2B100*(1.1%5E(14-x))+from+x%3D1+to+x%3D40
-            accountPriceBase: 100,
+            accountPriceBase: 10,
             accountPriceCharMult: 1.1,
             accountPriceChars: 14,
             accountPriceMin: 1,
@@ -33,7 +33,7 @@ var config = {
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
             leaderReward: 0,
-            leaderRewardVT: 100,
+            leaderRewardVT: 1,
             leaders: 4,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
@@ -64,10 +64,12 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000021',
+            originHash: '0000000000000000000000000000000000000000000000000000000000000022',
             randomBytesLength: 32,
             // the minimum hourly reward pool (without leader rewards)
             rewardPoolMin: 100,
+            // the multiplier for the reward pool,
+            rewardPoolMult: 100,
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
             // the maximum length of tags (on votes)
@@ -78,18 +80,15 @@ var config = {
             // key: transaction id (see transaction.js:TransactionType)
             // value: null/0 (default): enabled, 1: disabled, 2: master-only
             txLimits: {
-                0: 2,
                 3: 2,
                 14: 2,
                 15: 2
             },
             // the number of ms needed for 1 DTC to generate 1 vt
             vtGrowth: 3600000, // +1 vt per hour per coin
-            vtPerBurn: 8760 // 24*365 (1 year worth of generation)
+            vtPerBurn: 168 // 24*7 (1 week worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']
-        },
-        // example of increasing leader rewards to 5 after block 100
-        100: {leaderReward: 5},
+        }
     },
     read: (blockNum) => {
         var finalConfig = {}
