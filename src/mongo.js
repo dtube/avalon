@@ -25,9 +25,9 @@ var mongo = {
                         name: config.masterName,
                         pub: config.masterPub,
                         balance: config.masterBalance,
-                        bw: {v:0,t:0},
-                        vt: {v:0,t:0},
-                        pr: {v:0,t:0},
+                        bw: {v:0,t:config.block0ts},
+                        vt: {v:0,t:config.block0ts},
+                        pr: {v:0,t:config.block0ts},
                         uv: 0,
                         // we set those arbitrarily
                         approves: [config.masterName],

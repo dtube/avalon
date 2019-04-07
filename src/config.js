@@ -15,6 +15,8 @@ var config = {
             allowRevotes: false,
             // the base58 encoding alphabet
             b58Alphabet: '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',
+            // the start time of the chain
+            block0ts: 1554643902092,
             // the block time in ms
             blockTime: 3000,
             // the number of ms needed for 1 DTC to generate 1 byte of bw
