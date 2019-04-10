@@ -351,7 +351,10 @@ function sendTx(tx) {
         writeLine('Err: ' + error)
     })
     if (program.spam && program.spam > 0)
-        setTimeout(function(){sendTx(tx)}, program.spam)
+        setTimeout(function(){
+            var newTx = JSON.stringify(tx)
+            sendTx(cmds.sign(program.key, program.me, newTx))
+        }, program.spam)
 }
 
 function verifyKeyAndUser() {
