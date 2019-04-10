@@ -227,7 +227,14 @@ var p2p = {
         p2p.sockets.splice(p2p.sockets.indexOf(ws), 1)
         logr.debug('a peer disconnected, '+p2p.sockets.length+' peers left')
     },
-    sendJSON: (ws, d) => ws.send(JSON.stringify(d)),
+    sendJSON: (ws, d) => {
+        try {
+            ws.send(JSON.stringify(d))
+        } catch (error) {
+            logr.warning('Tried sending p2p message and failed')
+        }
+        
+    },
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
     broadcastBlock: (block) => {
         p2p.broadcast({t:4,d:block})
