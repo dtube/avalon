@@ -564,7 +564,8 @@ transaction = {
                     pr: {v:0,t:0},
                     uv: 0,
                     follows: [],
-                    followers: []
+                    followers: [],
+                    keys: []
                 }).then(function(){
                     if (tx.data.name !== tx.data.pub.toLowerCase()) 
                         if (tx.sender !== config.masterName || config.masterPaysForUsernames) {

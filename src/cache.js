@@ -49,9 +49,11 @@ var cache = {
                     break
 
                 case '$push':
-                    for (var p in changes[c]) 
+                    for (var p in changes[c]) {
+                        if (!cache[collection][obj[key]][p])
+                            cache[collection][obj[key]][p] = []
                         cache[collection][obj[key]][p].push(changes[c][p])
-                    
+                    }
                     break
 
                 case '$pull':
