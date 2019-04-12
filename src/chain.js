@@ -230,7 +230,7 @@ chain = {
             // main key can authorize all transactions
             var allowedPubKeys = [account.pub]
             // add all secondary keys having this transaction type as allowed keys
-            if (account.keys && txType) 
+            if (account.keys && typeof txType === 'number' && Number.isInteger(txType))
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
                         allowedPubKeys.push(account.keys[i].pub)
