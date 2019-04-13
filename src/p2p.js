@@ -231,7 +231,7 @@ var p2p = {
         try {
             ws.send(JSON.stringify(d))
         } catch (error) {
-            logr.warning('Tried sending p2p message and failed')
+            logr.warn('Tried sending p2p message and failed')
         }
         
     },
