@@ -52,7 +52,7 @@ var config = {
             // if false master can create accounts with usernames without burning tokens
             masterPaysForUsernames: false,
             // the master account public original key
-            masterPub: 'qFsrM3bBfJmWsEZLxpv2QDrDnUtZTwqrrPiLsZpaGGSR',
+            masterPub: 'yLuiXbuU1Pw8SbzJ3BYhcXdCQ81jFPsYwryKEibGWRNo',
             // the maximum time drift in ms before a transaction is invalid
             maxDrift: 200,
             // the max length of a transfer memo
@@ -64,7 +64,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000022',
+            originHash: '0000000000000000000000000000000000000000000000000000000000000023',
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 10,

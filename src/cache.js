@@ -26,7 +26,10 @@ var cache = {
                 }
                 // found, adding to cache
                 cache[collection][obj[key]] = obj
-                cb(null, obj)
+
+                // cloning the object before sending it
+                var res = JSON.parse(JSON.stringify(obj))
+                cb(null, res)
             }
         })
     },

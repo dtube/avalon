@@ -843,8 +843,7 @@ transaction = {
                 }
                 // and burn some coins, update bw/vt and leader vote scores as usual
                 cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {
-                    cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-                        var sender = Object.assign({}, account)
+                    cache.findOne('accounts', {name: tx.sender}, function(err, sender) {
                         transaction.updateGrowInts(sender, ts, function() {
                             transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
                                 // insert content+vote into db

@@ -59,7 +59,9 @@ var eco = {
                 
                 for (let y = 0; y < block.txs.length; y++) {
                     var tx = block.txs[y]
-                    if (tx.type === TransactionType.VOTE)
+                    if (tx.type === TransactionType.VOTE
+                        || tx.type === TransactionType.COMMENT
+                        || tx.type === TransactionType.PROMOTED_COMMENT)
                         votes += Math.abs(tx.data.vt)
                 }
             }
@@ -81,9 +83,7 @@ var eco = {
         return price + config.accountPriceMin
     },
     curation: (author, link, cb) => {
-        cache.findOne('contents', {_id: author+'/'+link}, function(err, original) {
-            var content = Object.assign({}, original)
-
+        cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
             // first loop to calculate the vp per day of each upvote
             var sumVt = 0
             for (let i = 0; i < content.votes.length; i++) {
@@ -170,8 +170,7 @@ var eco = {
                                     ts: currentVote.ts
                                 }, function(err) {
                                     if (err) throw err
-                                    cache.findOne('accounts', {name: config.masterName}, function(err, account) {
-                                        var masterAccount = Object.assign({}, account)
+                                    cache.findOne('accounts', {name: config.masterName}, function(err, masterAccount) {
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
                                             transaction.adjustNodeAppr(masterAccount, benefReward, function() {
                                                 cb(newCoins)
@@ -210,7 +209,7 @@ var eco = {
                 // calculate unpaid votes and keep them for the next distribute()
                 var unpaidVotes = (thNewCoins-newCoins)
                 unpaidVotes /= stats.avail
-                unpaidVotes *= (vt+stats.votes)
+                unpaidVotes *= stats.votes
                 if (vt<0) unpaidVotes = Math.ceil(unpaidVotes)
                 else unpaidVotes = Math.floor(unpaidVotes)
 
