@@ -1,6 +1,7 @@
 var GrowInt = require('./growInt.js')
 var eco = require('./economics.js')
 var TransactionType = require('./transactionType.js')
+var validate = require('./validate/validate.js')
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
@@ -44,16 +45,17 @@ transaction = {
             cb(false, 'no transaction'); return
         }
         // checking required variables one by one
-        if (typeof tx.type !== 'number' || tx.type < 0 || tx.type > Number.MAX_SAFE_INTEGER) {
+        
+        if (!validate.integer(tx.type, true, false)) {
             cb(false, 'invalid tx type'); return
         }
         if (!tx.data || typeof tx.data !== 'object') {
             cb(false, 'invalid tx data'); return
         }
-        if (!tx.sender || typeof tx.sender !== 'string') {
+        if (!validate.string(tx.sender, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
             cb(false, 'invalid tx sender'); return
         }
-        if (!tx.ts || typeof tx.ts !== 'number' || tx.ts < 0 || tx.ts > Number.MAX_SAFE_INTEGER) {
+        if (!validate.integer(tx.ts, false, false)) {
             cb(false, 'invalid tx ts'); return
         }
         if (!tx.hash || typeof tx.hash !== 'string') {
@@ -109,10 +111,10 @@ transaction = {
     isValidTxData: (tx, ts, legitUser, cb) => {
         switch (tx.type) {
         case TransactionType.NEW_ACCOUNT:
-            if (!tx.data.name || typeof tx.data.name !== 'string' || tx.data.name.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.name, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.name'); return
             }
-            if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+            if (!validate.publicKey(tx.data.pub, config.accountMaxLength)) {
                 cb(false, 'invalid tx data.pub'); return
             }
 
@@ -149,7 +151,7 @@ transaction = {
             
 
         case TransactionType.APPROVE_NODE_OWNER:
-            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.target, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.target'); return
             }
 
@@ -174,7 +176,7 @@ transaction = {
             break
 
         case TransactionType.DISAPROVE_NODE_OWNER:
-            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.target, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.target'); return
             }
 
@@ -195,17 +197,14 @@ transaction = {
             break
 
         case TransactionType.TRANSFER:
-            if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.receiver, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.receiver'); return
             }
-            if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
+            if (!validate.integer(tx.data.amount, false, false)) {
                 cb(false, 'invalid tx data.amount'); return
             }
-            if (typeof tx.data.memo !== 'string' || tx.data.memo.length > config.memoMaxLength) {
+            if (!validate.string(tx.data.memo, config.memoMaxLength)) {
                 cb(false, 'invalid tx data.memo'); return
-            }
-            if (tx.data.amount !== Math.floor(tx.data.amount)) {
-                cb(false, 'invalid tx data.amount not an integer'); return
             }
             if (tx.data.receiver === tx.sender) {
                 cb(false, 'invalid tx cannot send to self'); return
@@ -226,26 +225,26 @@ transaction = {
 
         case TransactionType.COMMENT:
             // permlink
-            if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.link, config.accountMaxLength, config.accountMinLength)) {
                 cb(false, 'invalid tx data.link'); return
             }
             // parent author
-            if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pa !== 'string' || tx.data.pa.length > config.accountMaxLength)) {
+            if ((tx.data.pa || tx.data.pp) && !validate.string(tx.data.pa, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.pa'); return
             }
             // parent permlink
-            if ((tx.data.pa && tx.data.pp) && (typeof tx.data.pp !== 'string' || tx.data.pp.length > config.accountMaxLength)) {
+            if ((tx.data.pa || tx.data.pp) && !validate.string(tx.data.pp, config.accountMaxLength, config.accountMinLength)) {
                 cb(false, 'invalid tx data.pp'); return
             }
             // handle arbitrary json input
-            if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
+            if (!validate.json(tx.data.json, config.jsonMaxBytes)) {
                 cb(false, 'invalid tx data.json'); return
             }
             // users need to vote the content at the same time with vt and tag field
-            if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
+            if (!validate.integer(tx.data.vt, false, true)) {
                 cb(false, 'invalid tx data.vt'); return
             }
-            if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
+            if (!validate.string(tx.data.tag, config.tagMaxLength)) {
                 cb(false, 'invalid tx data.tag'); return
             }
             // checking if they have enough VTs
@@ -275,21 +274,20 @@ transaction = {
             else 
                 cb(true)
             
-
             break
 
         case TransactionType.VOTE:
-            if (!tx.data.author || typeof tx.data.author !== 'string' || tx.data.author.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.author, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 logr.debug('invalid tx data.author')
                 cb(false); return
             }
-            if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.link, config.accountMaxLength, config.accountMinLength)) {
                 cb(false, 'invalid tx data.link'); return
             }
-            if (!tx.data.vt || typeof tx.data.vt !== 'number' || tx.data.vt < Number.MIN_SAFE_INTEGER || tx.data.vt > Number.MAX_SAFE_INTEGER) {
+            if (!validate.integer(tx.data.vt, false, true)) {
                 cb(false, 'invalid tx data.vt'); return
             }
-            if (tx.data.tag && (typeof tx.data.tag !== 'string' || tx.data.tag.length > config.tagMaxLength)) {
+            if (!validate.string(tx.data.tag, config.tagMaxLength)) {
                 cb(false, 'invalid tx data.tag'); return
             }
             var vtBeforeVote = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
@@ -314,14 +312,14 @@ transaction = {
 
         case TransactionType.USER_JSON:
             // handle arbitrary json input
-            if (!tx.data.json || typeof tx.data.json !== 'object' || JSON.stringify(tx.data.json).length > config.jsonMaxBytes) {
+            if (!validate.json(tx.data.json, config.jsonMaxBytes)) {
                 cb(false, 'invalid tx data.json'); return
             }
             cb(true)
             break
 
         case TransactionType.FOLLOW:
-            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.target, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.target'); return
             }
 
@@ -346,7 +344,7 @@ transaction = {
             break
 
         case TransactionType.UNFOLLOW:
-            if (!tx.data.target || typeof tx.data.target !== 'string' || tx.data.target.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.target, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.target'); return
             }
 
@@ -367,13 +365,14 @@ transaction = {
             break
 
         case TransactionType.NEW_KEY:
-            if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
+            if (!validate.string(tx.data.id, config.keyIdMaxLength)) {
                 cb(false, 'invalid tx data.id'); return
             }
-            if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+
+            if (!validate.publicKey(tx.data.pub, config.accountMaxLength)) {
                 cb(false, 'invalid tx data.pub'); return
             }
-            if (!tx.data.types || !Array.isArray(tx.data.types) || tx.data.types.length < 1) {
+            if (!validate.array(tx.data.types)) {
                 cb(false, 'invalid tx data.types'); return
             }
             for (let i = 0; i < tx.data.types.length; i++) 
@@ -399,7 +398,7 @@ transaction = {
             break
 
         case TransactionType.REMOVE_KEY:
-            if (!tx.data.id || typeof tx.data.id !== 'string' || tx.data.id.length > config.keyIdMaxLength) {
+            if (!validate.string(tx.data.id, config.keyIdMaxLength)) {
                 cb(false, 'invalid tx data.id'); return
             }
             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
@@ -420,7 +419,7 @@ transaction = {
             break
             
         case TransactionType.CHANGE_PASSWORD:
-            if (!tx.data.pub || typeof tx.data.pub !== 'string' || tx.data.pub.length > config.accountMaxLength || !chain.isValidPubKey(tx.data.pub)) {
+            if (!validate.publicKey(tx.data.pub, config.accountMaxLength)) {
                 cb(false, 'invalid tx data.pub'); return
             }
             cb(true)
@@ -428,7 +427,7 @@ transaction = {
         
         case TransactionType.PROMOTED_COMMENT:
             // first verify that the user isn't editing an existing content
-            if (!tx.data.link || typeof tx.data.link !== 'string' || tx.data.link.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.link, config.accountMaxLength, config.accountMinLength)) {
                 cb(false, 'invalid tx data.link'); return
             }
             cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
@@ -462,10 +461,10 @@ transaction = {
             break
         
         case TransactionType.TRANSFER_VT:
-            if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.receiver, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.receiver'); return
             }
-            if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
+            if (!validate.integer(tx.data.amount, false, false)) {
                 cb(false, 'invalid tx data.amount'); return
             }
             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
@@ -483,10 +482,10 @@ transaction = {
             break
 
         case TransactionType.TRANSFER_BW:
-            if (!tx.data.receiver || typeof tx.data.receiver !== 'string' || tx.data.receiver.length > config.accountMaxLength) {
+            if (!validate.string(tx.data.receiver, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
                 cb(false, 'invalid tx data.receiver'); return
             }
-            if (!tx.data.amount || typeof tx.data.amount !== 'number' || tx.data.amount < 1 || tx.data.amount > Number.MAX_SAFE_INTEGER) {
+            if (!validate.integer(tx.data.amount, false, false)) {
                 cb(false, 'invalid tx data.amount'); return
             }
             cache.findOne('accounts', {name: tx.sender}, function(err, account) {
