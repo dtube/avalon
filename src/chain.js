@@ -166,6 +166,8 @@ chain = {
         clearTimeout(chain.worker)
         if (block.miner === process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%config.leaders].name === process.env.NODE_OWNER) {
             var mineInMs = config.blockTime
+            if (chain.schedule.shuffle.length === 0)
+                logr.fatal('All leaders gave up their stake. Chain is over')
             if (chain.schedule.shuffle[(block._id)%config.leaders].name !== process.env.NODE_OWNER)
                 mineInMs += config.blockTime
             chain.worker = setTimeout(function(){
