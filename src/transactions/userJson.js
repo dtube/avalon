@@ -8,6 +8,12 @@ module.exports = {
         cb(true)
     },
     execute: (tx, ts, cb) => {
-
+        cache.updateOne('accounts', {
+            name: tx.sender
+        },{ $set: {
+            json: tx.data.json
+        }}, function(){
+            cb(true)
+        })
     }
 }

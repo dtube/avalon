@@ -21,6 +21,12 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        cache.updateOne('accounts', {
+            name: tx.sender
+        },{ $pull: {
+            keys: tx.data
+        }},function(){
+            cb(true)
+        })
     }
 }

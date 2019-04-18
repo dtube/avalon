@@ -33,6 +33,12 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        cache.updateOne('accounts', {
+            name: tx.sender
+        },{ $push: {
+            keys: tx.data
+        }},function(){
+            cb(true)
+        })
     }
 }

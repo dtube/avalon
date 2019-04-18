@@ -36,6 +36,20 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        var vote = {
+            u: tx.sender,
+            ts: ts,
+            vt: tx.data.vt
+        }
+        if (tx.data.tag) vote.tag = tx.data.tag
+        cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$push: {
+            votes: vote
+        }}, function(){
+            eco.curation(tx.data.author, tx.data.link, function(distributed) {
+                if (!tx.data.pa && !tx.data.pp)
+                    http.updateRankings(tx.data.author, tx.data.link, vote, distributed)
+                cb(true, distributed)
+            })
+        })
     }
 }

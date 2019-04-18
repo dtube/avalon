@@ -37,6 +37,46 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        // almost same logic as comment
+        // except we are sure its a new content
+        var superVote = {
+            u: tx.sender,
+            ts: ts,
+            vt: tx.data.vt+(tx.data.burn * config.vtPerBurn) // we just add some extra VTs
+        }
+        if (tx.data.tag) superVote.tag = tx.data.tag
+        var newContent = {
+            _id: tx.sender+'/'+tx.data.link,
+            author: tx.sender,
+            link: tx.data.link,
+            pa: tx.data.pa,
+            pp: tx.data.pp,
+            json: tx.data.json,
+            child: [],
+            votes: [superVote],
+            ts: ts
+        }
+        // and burn some coins, update bw/vt and leader vote scores as usual
+        cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {
+            cache.findOne('accounts', {name: tx.sender}, function(err, sender) {
+                transaction.updateGrowInts(sender, ts, function() {
+                    transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
+                        // insert content+vote into db
+                        db.collection('contents').insertOne(newContent).then(function(){
+                            if (tx.data.pa && tx.data.pp) 
+                                cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                    child: [tx.sender, tx.data.link]
+                                }}, function() {})
+                            else 
+                                http.newRankingContent(newContent)
+                            
+                            // and report how much was burnt
+                            cb(true, null, tx.data.burn)
+                        })
+                    })
+                })
+            })
+            
+        })
     }
 }

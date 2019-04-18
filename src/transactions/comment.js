@@ -54,6 +54,48 @@ module.exports = {
             cb(true)
     },
     execute: (tx, ts, cb) => {
-
+        cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
+            if (err) throw err
+            if (content) 
+                // existing content being edited
+                cache.updateOne('contents', {_id: tx.sender+'/'+tx.data.link}, {
+                    $set: {json: tx.data.json}
+                }, function(){
+                    content.json = tx.data.json
+                    if (!tx.data.pa && !tx.data.pp)
+                        http.newRankingContent(content)
+                    cb(true)
+                })
+            else {
+                // new content
+                var vote = {
+                    u: tx.sender,
+                    ts: ts,
+                    vt: tx.data.vt
+                }
+                if (tx.data.tag) vote.tag = tx.data.tag
+                var newContent = {
+                    _id: tx.sender+'/'+tx.data.link,
+                    author: tx.sender,
+                    link: tx.data.link,
+                    pa: tx.data.pa,
+                    pp: tx.data.pp,
+                    json: tx.data.json,
+                    child: [],
+                    votes: [vote],
+                    ts: ts
+                }
+                db.collection('contents').insertOne(newContent).then(function(){
+                    if (tx.data.pa && tx.data.pp) 
+                        cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                            child: [tx.sender, tx.data.link]
+                        }}, function() {})
+                    else 
+                        http.newRankingContent(newContent)
+                    
+                    cb(true)
+                })
+            }
+        })
     }
 }

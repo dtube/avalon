@@ -27,6 +27,36 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        // remove funds from sender
+        cache.updateOne('accounts', 
+            {name: tx.sender},
+            {$inc: {balance: -tx.data.amount}},
+            function() {
+                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                    if (err) throw err
+                    // update his bandwidth
+                    acc.balance += tx.data.amount
+                    transaction.updateGrowInts(acc, ts, function() {
+                        transaction.adjustNodeAppr(acc, -tx.data.amount, function() {
+                            // add funds to receiver
+                            cache.updateOne('accounts', 
+                                {name: tx.data.receiver},
+                                {$inc: {balance: tx.data.amount}},
+                                function() {
+                                    cache.findOne('accounts', {name: tx.data.receiver}, function(err, acc) {
+                                        if (err) throw err
+                                        // update his bandwidth
+                                        acc.balance -= tx.data.amount
+                                        transaction.updateGrowInts(acc, ts, function() {
+                                            transaction.adjustNodeAppr(acc, tx.data.amount, function() {
+                                                cb(true)
+                                            })
+                                        })
+                                    })
+                                })
+                        })
+                    })
+                })
+            })
     }
 }

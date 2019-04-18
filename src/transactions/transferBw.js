@@ -23,6 +23,12 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
+            if (err) throw err
+            account.bw.v += tx.data.amount
+            cache.updateOne('accounts', {name: tx.data.receiver}, {$set: {vt: account.vt}}, function() {
+                cb(true)
+            })
+        })
     }
 }

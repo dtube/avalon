@@ -25,6 +25,16 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        cache.updateOne('accounts', 
+            {name: tx.sender},
+            {$push: {follows: tx.data.target}},
+            function() {
+                cache.updateOne('accounts', 
+                    {name: tx.data.target},
+                    {$push: {followers: tx.sender}},
+                    function() {
+                        cb(true)
+                    })
+            })
     }
 }

@@ -7,6 +7,8 @@ module.exports = {
         cb(true)
     },
     execute: (tx, ts, cb) => {
-
+        cache.updateOne('accounts', {name: tx.sender}, {$set: {pub: tx.data.pub}}, function() {
+            cb(true)
+        })
     }
 }

@@ -39,6 +39,48 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-
+        db.collection('accounts').insertOne({
+            name: tx.data.name.toLowerCase(),
+            pub: tx.data.pub,
+            balance: 0,
+            bw: {v:0,t:0},
+            vt: {v:0,t:0},
+            pr: {v:0,t:0},
+            uv: 0,
+            follows: [],
+            followers: [],
+            keys: []
+        }).then(function(){
+            if (tx.data.name !== tx.data.pub.toLowerCase()) 
+                if (tx.sender !== config.masterName || config.masterPaysForUsernames) {
+                    cache.updateOne('accounts', 
+                        {name: tx.sender},
+                        {$inc: {balance: -eco.accountPrice(tx.data.name)}}, function() {
+                            cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                                if (err) throw err
+                                // update his bandwidth
+                                acc.balance += eco.accountPrice(tx.data.name)
+                                transaction.updateGrowInts(acc, ts, function() {
+                                    if (!acc.approves) acc.approves = []
+                                    // and update his node_owners approvals values too
+                                    var node_appr_before = Math.floor(acc.balance/acc.approves.length)
+                                    acc.balance -= eco.accountPrice(tx.data.name)
+                                    var node_appr = Math.floor(acc.balance/acc.approves.length)
+                                    var node_owners = []
+                                    for (let i = 0; i < acc.approves.length; i++)
+                                        node_owners.push(acc.approves[i])
+                                    cache.updateMany('accounts', 
+                                        {name: {$in: node_owners}},
+                                        {$inc: {node_appr: node_appr-node_appr_before}},
+                                        function(err) {
+                                            if (err) throw err
+                                            cb(true, null, eco.accountPrice(tx.data.name))
+                                        })
+                                })
+                            })
+                        })
+                } else cb(true)
+            else cb(true)
+        })
     }
 }
