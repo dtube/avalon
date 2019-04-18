@@ -44,7 +44,7 @@ module.exports = {
     },
     execute: (tx, ts, cb) => {
         if (!transactions[tx.type]) {
-            cb(false, 'forbidden transaction type'); return
+            cb(false); return
         }
         transactions[tx.type].execute(tx, ts, cb)
     }

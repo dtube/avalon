@@ -158,8 +158,8 @@ transaction = {
     execute: (tx, ts, cb) => {
         transaction.collectGrowInts(tx, ts, function(success) {
             if (!success) throw 'Error collecting bandwidth'
-            Transaction.execute(tx, ts, function(err, res) {
-                cb(err, res)
+            Transaction.execute(tx, ts, function(executed, distributed, burned) {
+                cb(executed, distributed, burned)
             })
         })
     },
