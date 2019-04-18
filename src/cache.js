@@ -1,4 +1,5 @@
 const series = require('run-series')
+const cloneDeep = require('clone-deep')
 
 var cache = {
     accounts: {},
@@ -12,7 +13,8 @@ var cache = {
         var key = cache.keyByCollection(collection)
         // searching in cache
         if (cache[collection][query[key]]) {
-            cb(null, cache[collection][query[key]])
+            let res = cloneDeep(cache[collection][query[key]])
+            cb(null, res)
             return
         }
         
@@ -28,7 +30,7 @@ var cache = {
                 cache[collection][obj[key]] = obj
 
                 // cloning the object before sending it
-                var res = JSON.parse(JSON.stringify(obj))
+                let res = cloneDeep(obj)
                 cb(null, res)
             }
         })
