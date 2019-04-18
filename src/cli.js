@@ -1,5 +1,5 @@
 var config = require('./config.js').read(0)
-var TransactionType = require('./transactionType.js')
+var TransactionType = require('./transactions').Types
 var cmds = require('./clicmds.js')
 var program = require('commander')
 const { randomBytes } = require('crypto')

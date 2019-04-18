@@ -4,9 +4,8 @@ const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 const series = require('run-series')
 const transaction = require('./transaction.js')
-const eco = require('./economics.js')
 const notifications = require('./notifications.js')
-var GrowInt = require('./growInt.js')
+var GrowInt = require('growint')
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {

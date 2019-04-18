@@ -1,6 +1,6 @@
 const series = require('run-series')
 const one_day = 86400000
-var TransactionType = require('./transactionType.js')
+var TransactionType = require('./transactions').Types
 
 var eco = {
     currentBlock: {

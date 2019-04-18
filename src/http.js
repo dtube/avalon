@@ -9,7 +9,6 @@ const {extract} = require('oembed-parser')
 const ogs = require('open-graph-scraper')
 const series = require('run-series')
 const transaction = require('./transaction.js')
-const eco = require('./economics.js')
 
 var http = {
     rankings: {

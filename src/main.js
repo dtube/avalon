@@ -7,6 +7,8 @@ mongo = require('./mongo.js')
 chain = require('./chain.js')
 transaction = require('./transaction.js')
 cache = require('./cache.js')
+validate = require('./validate')
+eco = require('./economics.js')
 
 
 // init the database and load most recent blocks in memory directly

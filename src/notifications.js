@@ -1,4 +1,4 @@
-var TransactionType = require('./transactionType.js')
+var TransactionType = require('./transactions').Types
 
 notifications = {
     processBlock: (block) => {
