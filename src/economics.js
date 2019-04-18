@@ -94,7 +94,7 @@ var eco = {
                 else if (content.votes[i].ts === content.votes[i-1].ts)
                     content.votes[i].vpPerDayBefore = content.votes[i-1].vpPerDayBefore
                 else
-                    content.votes[i].vpPerDayBefore = sumVt/(content.votes[i].ts - content.votes[0].ts) / one_day
+                    content.votes[i].vpPerDayBefore = one_day*sumVt/(content.votes[i].ts - content.votes[0].ts)
             
                 sumVt += content.votes[i].vt
             }
