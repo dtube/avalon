@@ -213,16 +213,16 @@ program.command('sign <transaction>')
         writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
     })
 
-program.command('transfer <receiver> <amount>')
+program.command('transfer <receiver> <amount> <memo>')
     .alias('xfer')
     .description('transfer coins')
-    .action(function(receiver, amount) {
+    .action(function(receiver, amount, memo) {
         verifyKeyAndUser()
-        sendTx(cmds.transfer(program.key, program.me, receiver, amount))
+        sendTx(cmds.transfer(program.key, program.me, receiver, amount, memo))
     }).on('--help', function(){
         writeLine('')
         writeLine('Example:')
-        writeLine('  $ transfer bob 777 -F key.json -M alice')
+        writeLine('  $ transfer bob 777 "thank you" -F key.json -M alice')
     })
 
 program.command('transfer-bw <receiver> <amount>')
