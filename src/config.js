@@ -3,11 +3,12 @@ var config = {
         0: {
             // the account pricing options
             // see: https://www.wolframalpha.com/input/?i=plot+10%2B100*(1.1%5E(14-x))+from+x%3D1+to+x%3D40
-            accountPriceBase: 10,
+            accountPriceBase: 0,
             accountPriceCharMult: 1.1,
-            accountPriceChars: 14,
-            accountPriceMin: 1,
+            accountPriceChars: 1,
+            accountPriceMin: 0,
             accountMaxLength: 50,
+            accountMinLength: 1,
             // allowed username chars
             allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
             allowedUsernameCharsOnlyMiddle: '-.',
@@ -18,13 +19,13 @@ var config = {
             // the start time of the chain
             block0ts: 1554643902092,
             // the block time in ms
-            blockTime: 3000,
+            blockTime: 1000,
             // the number of ms needed for 1 DTC to generate 1 byte of bw
-            bwGrowth: 60000,
+            bwGrowth: 1,
             // the maximum bandwidth an account can have available
             bwMax: 1048576,
             // the number of blocks from the past taken into consideration for econonomics
-            ecoBlocks: 1200,
+            ecoBlocks: 60,
             // the maximum number of follows a single account can do
             followsMax: 2000,
             // the max size of a stringified json input (content / user profile)
@@ -33,8 +34,8 @@ var config = {
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
             leaderReward: 0,
-            leaderRewardVT: 1,
-            leaders: 4,
+            leaderRewardVT: 0,
+            leaders: 1,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
             // the maximum number of leaders an account can vote for
@@ -80,12 +81,11 @@ var config = {
             // key: transaction id (see transaction.js:TransactionType)
             // value: null/0 (default): enabled, 1: disabled, 2: master-only
             txLimits: {
-                3: 2,
                 14: 2,
                 15: 2
             },
             // the number of ms needed for 1 DTC to generate 1 vt
-            vtGrowth: 3600000, // +1 vt per hour per coin
+            vtGrowth: 1000, // +1 vt per hour per coin
             vtPerBurn: 168 // 24*7 (1 week worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']
         }

@@ -1,5 +1,5 @@
 module.exports = {
-    fields: ['receiver', 'amount'],
+    fields: ['receiver', 'amount', 'memo'],
     validate: (tx, ts, legitUser, cb) => {
         if (!validate.string(tx.data.receiver, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
             cb(false, 'invalid tx data.receiver'); return

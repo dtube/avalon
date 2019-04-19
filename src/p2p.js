@@ -324,7 +324,7 @@ var p2p = {
             const possBlock = p2p.possibleNextBlocks[i]
             if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id === chain.getLatestBlock()._id+1) {
                 p2p.processing = true
-                logr.trace('Consensus block approved')
+                logr.trace('Consensus block approved with '+possBlock.c.length+'/'+connectedWitnesses.length)
                 chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
                     p2p.processing = false
                     if (err)
