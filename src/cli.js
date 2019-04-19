@@ -213,11 +213,14 @@ program.command('sign <transaction>')
         writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
     })
 
-program.command('transfer <receiver> <amount> <memo>')
+program.command('transfer <receiver> <amount> [memo]')
     .alias('xfer')
+    .option('--memo [text]', 'add a short message to the transfer')    
     .description('transfer coins')
-    .action(function(receiver, amount, memo) {
+    .action(function(receiver, amount, options) {
         verifyKeyAndUser()
+        var memo = ''
+        if (options && options.memo) memo = options.memo
         sendTx(cmds.transfer(program.key, program.me, receiver, amount, memo))
     }).on('--help', function(){
         writeLine('')
