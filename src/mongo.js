@@ -14,7 +14,6 @@ var mongo = {
                 if (err) throw err
 
                 if (genesis) {
-                    console.log(genesis)
                     if (genesis.hash !== config.originHash) {
                         logr.fatal('Block #0 hash doesn\'t match config. Did you forget to db.dropDatabase() ?')
                         process.exit()
