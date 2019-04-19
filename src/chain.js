@@ -338,14 +338,37 @@ chain = {
             cb(false); return
         }
 
-        // finally, verify the signature of the miner
-        chain.isValidSignature(newBlock.miner, null, newBlock.hash, newBlock.signature, function(legitUser) {
-            if (!legitUser) {
-                logr.debug('invalid miner signature')
-                cb(false); return
-            }
+        // and that all the transactions are okay
+        var validations = []
+        for (let i = 0; i < newBlock.txs.length; i++) 
+            validations.push(function(callback) {
+                var tx = newBlock.txs[i]
+                transaction.isValid(tx, newBlock.timestamp, function(isValid) {
+                    if (isValid)
+                        callback(null, true)
+                    else {
+                        logr.error('Invalid transaction', tx)
+                        callback(null, false)
+                    }
+                })
+                i++
+            })
+        
+        series(validations, function(err, results) {
+            if (err) throw err
+            for (let i = 0; i < results.length; i++)
+                if (!results[i]) {
+                    cb(false); return
+                }
 
-            cb(true)
+            // finally, verify the signature of the miner
+            chain.isValidSignature(newBlock.miner, null, newBlock.hash, newBlock.signature, function(legitUser) {
+                if (!legitUser) {
+                    logr.debug('invalid miner signature')
+                    cb(false); return
+                }
+                cb(true)
+            })
         })
     },
     executeBlock: (block, cb) => {
@@ -353,13 +376,9 @@ chain = {
         for (let i = 0; i < block.txs.length; i++) 
             executions.push(function(callback) {
                 var tx = block.txs[i]
-                //var time = new Date().getTime()
                 transaction.isValid(tx, block.timestamp, function(isValid) {
-                    //logr.debug('Tx validated in '+(new Date().getTime()-time)+'ms')
-                    //time = new Date().getTime()
                     if (isValid) 
                         transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
-                            //logr.debug('Tx executed in '+(new Date().getTime()-time)+'ms')
                             if (!executed)
                                 logr.fatal('Tx execution failure', tx)
                             chain.recentTxs[tx.hash] = tx
@@ -379,7 +398,7 @@ chain = {
         
         var blockTimeBefore = new Date().getTime()
         series(executions, function(err, results) {
-            logr.debug('Block executed in '+(new Date().getTime()-blockTimeBefore)+'ms')
+            logr.trace('Block executed in '+(new Date().getTime()-blockTimeBefore)+'ms')
             if (err) throw err
             var executedSuccesfully = []
             var distributedInBlock = 0

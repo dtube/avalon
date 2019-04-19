@@ -96,7 +96,7 @@ var p2p = {
     messageHandler: (ws) => {
         ws.on('message', (data) => {
             var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
-            logr.trace('P2P:', user, data)
+            logr.trace('P2P-IN:', user, data)
             try {
                 var message = JSON.parse(data)
             } catch(e) {
@@ -108,9 +108,12 @@ var p2p = {
                 var d = {
                     origin_block: config.originHash,
                     head_block: chain.getLatestBlock()._id,
+                    head_block_hash: chain.getLatestBlock().hash,
+                    previous_block_hash: chain.getLatestBlock().phash,
                     owner: process.env.NODE_OWNER
                 }
-                p2p.sendJSON(ws, p2p.hashAndSignMessage({t: MessageType.NODE_STATUS, d:d}))
+                var signedMessage = p2p.hashAndSignMessage({t: MessageType.NODE_STATUS, d:d})
+                p2p.sendJSON(ws, signedMessage)
                 break
 
             case MessageType.NODE_STATUS:
@@ -152,6 +155,8 @@ var p2p = {
                 var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socket || !socket.node_status) return
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block_hash = block.hash
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.previous_block_hash = block.phash
                 break
             case MessageType.NEW_TX:
                 var tx = message.d
@@ -229,7 +234,10 @@ var p2p = {
     },
     sendJSON: (ws, d) => {
         try {
-            ws.send(JSON.stringify(d))
+            var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
+            var data = JSON.stringify(d)
+            logr.trace('P2P-OUT:', user, data)
+            ws.send(data)
         } catch (error) {
             logr.warn('Tried sending p2p message and failed')
         }
@@ -304,43 +312,46 @@ var p2p = {
         
     },
     consensusWorker: () => {
-        var activeWitnesses = []
+        var leaders = []
         for (let y = 0; y < chain.schedule.shuffle.length; y++)
-            if (activeWitnesses.indexOf(chain.schedule.shuffle[y].name) === -1)
-                activeWitnesses.push(chain.schedule.shuffle[y].name)
+            if (leaders.indexOf(chain.schedule.shuffle[y].name) === -1)
+                leaders.push(chain.schedule.shuffle[y].name)
             
         var connectedWitnesses = [process.env.NODE_OWNER]
         for (let i = 0; i < p2p.sockets.length; i++) {
             if (!p2p.sockets[i].node_status) continue
-            for (let y = 0; y < activeWitnesses.length; y++)
-                if (activeWitnesses[y] === p2p.sockets[i].node_status.owner
-                    && connectedWitnesses.indexOf(activeWitnesses[y]) === -1)
-                    connectedWitnesses.push(activeWitnesses[y])
+            for (let y = 0; y < leaders.length; y++)
+                if (connectedWitnesses.indexOf(leaders[y]) === -1
+                && p2p.sockets[i].node_status.owner === leaders[y]
+                && (p2p.sockets[i].node_status.head_block_hash === chain.getLatestBlock().hash
+                    || p2p.sockets[i].node_status.previous_block_hash === chain.getLatestBlock().hash
+                    || p2p.sockets[i].node_status.head_block_hash === chain.getLatestBlock().phash)
+                )
+                    connectedWitnesses.push(leaders[y])
         }
 
         const threshold = Math.ceil(connectedWitnesses.length*consensus_threshold)
-        logr.trace('CONSENSUS ',activeWitnesses,connectedWitnesses, threshold, p2p.possibleNextBlocks)
+        logr.debug('CONSENSUS ', connectedWitnesses, threshold)
         for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
             const possBlock = p2p.possibleNextBlocks[i]
             if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id === chain.getLatestBlock()._id+1) {
                 p2p.processing = true
-                logr.trace('Consensus block approved with '+possBlock.c.length+'/'+connectedWitnesses.length)
+                logr.debug('CONS: block '+possBlock.block.hash.substr(0,8)+' got '+possBlock.c.length+'/'+connectedWitnesses.length+' commitments')
                 chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
+                    // clean up possible blocks that are in the past
+                    var newPossBlocks = []
+                    for (let y = 0; y < p2p.possibleNextBlocks.length; y++) 
+                        if (possBlock.block._id < p2p.possibleNextBlocks[y].block._id)
+                            newPossBlocks.push(p2p.possibleNextBlocks[y])
+                    
+                    p2p.possibleNextBlocks = newPossBlocks
                     p2p.processing = false
                     if (err)
-                        logr.debug('Block went through consensus but couldnt get re-validated', newBlock)
+                        logr.debug('CONS: block '+possBlock.block.hash.substr(0,8)+' went through consensus but couldnt get re-validated', newBlock)
                 })
-                // clean up possible blocks that are in the past
-                var newPossBlocks = []
-                for (let y = 0; y < p2p.possibleNextBlocks.length; y++) 
-                    if (possBlock.block._id < p2p.possibleNextBlocks[y].block._id)
-                        newPossBlocks.push(p2p.possibleNextBlocks[y])
-                
-                p2p.possibleNextBlocks = newPossBlocks
             }
             else if (possBlock.pc.length >= threshold)
                 p2p.commit(possBlock.block)
-            
         }
     },
     addRecursive: (block) => {
