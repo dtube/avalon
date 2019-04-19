@@ -7,8 +7,6 @@ module.exports = (value, maxLength, minLength, allowedChars, allowedCharsMiddle)
         maxLength = Number.MAX_SAFE_INTEGER
     if (!minLength)
         minLength = 0
-    if (!value)
-        return false
     if (typeof value !== 'string')
         return false
     if (value.length > maxLength)
