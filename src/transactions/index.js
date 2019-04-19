@@ -37,9 +37,19 @@ module.exports = {
         TRANSFER_BW: 15
     },
     validate: (tx, ts, legitUser, cb) => {
+        // will make sure the transaction type exists (redondant ?)
         if (!transactions[tx.type]) {
+            logr.debug('error shouldnt happen but did:')
             cb(false, 'forbidden transaction type'); return
         }
+
+        // enforce there's no unknown field included in the transaction
+        for (let i = 0; i < Object.keys(tx.data).length; i++)
+            if (transactions[tx.type].fields.indexOf(Object.keys(tx.data)[i]) === -1) {
+                cb(false, 'unknown tx.data.'+Object.keys(tx.data)[i])
+                return
+            }
+
         transactions[tx.type].validate(tx, ts, legitUser, cb)
     },
     execute: (tx, ts, cb) => {
