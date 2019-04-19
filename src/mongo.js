@@ -9,18 +9,22 @@ var mongo = {
             this.db = client.db(db_name)
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
-            // init genesis account if no account
-            db.collection('accounts').findOne({}, function(err, acc) {
+            // init genesis block
+            db.collection('accounts').findOne({}, function(err, genesis) {
                 if (err) throw err
 
-                if (acc) {
+                if (genesis) {
+                    if (genesis.hash !== config.originHash) {
+                        logr.fatal('Block #0 hash doesn\'t match config. Did you forget to db.dropDatabase() ?')
+                        process.exit()
+                    }
                     cb()
                     return
                 }
 
                 logr.debug('NEW CHAIN !!')
                 
-                if (!acc) {
+                if (!genesis) {
                     db.collection('accounts').insertOne({
                         name: config.masterName,
                         pub: config.masterPub,
