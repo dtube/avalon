@@ -10,10 +10,11 @@ var mongo = {
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
             // init genesis block
-            db.collection('accounts').findOne({}, function(err, genesis) {
+            db.collection('blocks').findOne({_id: 0}, function(err, genesis) {
                 if (err) throw err
 
                 if (genesis) {
+                    console.log(genesis)
                     if (genesis.hash !== config.originHash) {
                         logr.fatal('Block #0 hash doesn\'t match config. Did you forget to db.dropDatabase() ?')
                         process.exit()
