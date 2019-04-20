@@ -6,6 +6,7 @@ const consensus_need = 2
 const consensus_total = 3
 const consensus_threshold = consensus_need/consensus_total
 var p2p_port = process.env.P2P_PORT || default_port
+var replay_pub = process.env.REPLAY_PUB
 var WebSocket = require('ws')
 var chain = require('./chain.js')
 var secp256k1 = require('secp256k1')
@@ -204,7 +205,7 @@ var p2p = {
         if (!p2p.sockets || p2p.sockets.length === 0) return
         if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > max_blocks_buffer) return
         if (!p2p.recovering) p2p.recovering = chain.getLatestBlock()._id
-
+        
         p2p.recovering++
         var peersAhead = []
         for (let i = 0; i < p2p.sockets.length; i++)
@@ -212,12 +213,12 @@ var p2p = {
             && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id
             && p2p.sockets[i].node_status.origin_block === config.originHash)
                 peersAhead.push(p2p.sockets[i])
-        
+
         if (peersAhead.length === 0) {
             p2p.recovering = false
             return
         }
-            
+
         var champion = peersAhead[Math.floor(Math.random()*peersAhead.length)]
         p2p.sendJSON(champion, {t: MessageType.QUERY_BLOCK, d:p2p.recovering})
         p2p.recoveringBlocks.push(p2p.recovering)
@@ -265,6 +266,13 @@ var p2p = {
         var hash = CryptoJS.SHA256(JSON.stringify(tmpMess)).toString()
         db.collection('accounts').findOne({name: name}, function(err, account) {
             if (err) throw err
+            if (!account && replay_pub && secp256k1.verify(
+                Buffer.from(hash, 'hex'),
+                bs58.decode(sign),
+                bs58.decode(replay_pub))) {
+                cb(true)
+                return
+            }
             if (account && secp256k1.verify(
                 Buffer.from(hash, 'hex'),
                 bs58.decode(sign),
