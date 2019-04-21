@@ -150,8 +150,9 @@ chain = {
                 transaction.removeFromPool(newBlock.txs)
 
                 chain.addBlock(newBlock, function() {
-                    // and broadcast to peers
-                    p2p.broadcastBlock(newBlock)
+                    // and broadcast to peers (if not replaying)
+                    if (!p2p.recovering)
+                        p2p.broadcastBlock(newBlock)
                     cb(null, newBlock)
                 })
             })
@@ -161,21 +162,34 @@ chain = {
     },
     minerWorker: (block) => {
         if (p2p.recovering) return
-        // if we are the next miner or backup miner, prepare to mine
         clearTimeout(chain.worker)
-        if (block.miner === process.env.NODE_OWNER || chain.schedule.shuffle[(block._id)%config.leaders].name === process.env.NODE_OWNER) {
-            var mineInMs = config.blockTime
-            if (chain.schedule.shuffle.length === 0)
-                logr.fatal('All leaders gave up their stake. Chain is over')
-            if (chain.schedule.shuffle[(block._id)%config.leaders].name !== process.env.NODE_OWNER)
-                mineInMs += config.blockTime
+
+        if (chain.schedule.shuffle.length === 0) {
+            logr.fatal('All leaders gave up their stake? Chain is over')
+            process.exit()
+        }
+
+        var mineInMs = null
+        // if we are the next scheduled witness, try to mine in time
+        if (chain.schedule.shuffle[(block._id)%config.leaders].name === process.env.NODE_OWNER)
+            mineInMs = config.blockTime
+        // else if the scheduled leaders miss blocks
+        // backups witnesses are available after each block time intervals
+        else for (let i = 1; i <= config.leaders; i++)
+            if (chain.recentBlocks[chain.recentBlocks.length - i].miner === process.env.NODE_OWNER) {
+                mineInMs = (i+1)*config.blockTime
+                break
+            }
+
+        logr.trace('Trying to mine in '+mineInMs+'ms')
+
+        if (mineInMs)
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
                     if (error)
                         logr.warn('miner worker trying to mine but couldnt', finalBlock)
                 })
             }, mineInMs)
-        }
     },
     addBlock: (block, cb) => {
         eco.nextBlock()
@@ -185,7 +199,10 @@ chain = {
             // push cached accounts and contents to mongodb
             cache.writeToDisk(function() {
                 chain.cleanMemoryTx()
+
+                // update the config if an update was scheduled
                 config = require('./config.js').read(block._id)
+                
                 // if block id is mult of 20, reschedule next 20 blocks
                 if (block._id % config.leaders === 0) 
                     chain.minerSchedule(block, function(minerSchedule) {
@@ -302,27 +319,28 @@ chain = {
             cb(false); return
         }
 
-        // check if new block isnt too early
-        if (newBlock.timestamp - previousBlock.timestamp < config.blockTime) {
-            logr.debug('block too early')
+        // check if miner is normal scheduleded one
+        var minerPriority = 0
+        if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name === newBlock.miner) 
+            minerPriority = 1
+        // allow miners of n blocks away
+        // to mine after (n+1)*blockTime as 'backups'
+        // so that the network can keep going even if 1,2,3...n node(s) have issues
+        else
+            for (let i = 1; i <= config.leaders; i++)
+                if (chain.recentBlocks[chain.recentBlocks.length - i].miner === newBlock.miner) {
+                    minerPriority = i+1
+                    break
+                }
+
+        if (minerPriority === 0) {
+            logr.debug('unauthorized miner')
             cb(false); return
         }
 
-        // check if miner is scheduled
-        var isMinerAuthorized = false
-        if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name === newBlock.miner) 
-            isMinerAuthorized = true
-        else if (newBlock.miner === previousBlock.miner) 
-            // allow the previous miner to mine again if current miner misses the block
-            if (newBlock.timestamp - previousBlock.timestamp < (config.blockTime+config.blockTime)) {
-                logr.debug('block too early for backup miner', newBlock.timestamp - previousBlock.timestamp)
-                cb(false); return
-            } else {
-                isMinerAuthorized = true
-            }
-        
-        if (!isMinerAuthorized) {
-            logr.debug('unauthorized miner')
+        // check if new block isnt too early
+        if (newBlock.timestamp - previousBlock.timestamp < minerPriority*config.blockTime) {
+            logr.debug('block too early for miner with priority #'+minerPriority)
             cb(false); return
         }
 
