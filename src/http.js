@@ -142,7 +142,7 @@ var http = {
             }
             transaction.isValid(tx, new Date().getTime(), function(isValid, errorMessage) {
                 if (!isValid) {
-                    logr.warn(errorMessage, tx)
+                    logr.trace('invalid http tx: ', errorMessage, tx)
                     res.status(500).send({error: errorMessage})
                 } else {
                     p2p.broadcast({t:5, d:tx})

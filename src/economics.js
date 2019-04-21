@@ -99,7 +99,6 @@ var eco = {
                 sumVt += content.votes[i].vt
             }
 
-            logr.debug('Votes:', content.votes)
             var currentVote = content.votes[content.votes.length-1]
 
             // second loop to filter winners
@@ -129,7 +128,7 @@ var eco = {
                 return b.share - a.share
             })
 
-            logr.debug(currentVote, winners.length+'/'+content.votes.length+' won')
+            //logr.debug(currentVote, winners.length+'/'+content.votes.length+' won')
 
             // forth loop to pay out
             var executions = []

@@ -339,12 +339,11 @@ var p2p = {
         }
 
         const threshold = Math.ceil(connectedWitnesses.length*consensus_threshold)
-        logr.debug('CONSENSUS ', connectedWitnesses, threshold)
         for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
             const possBlock = p2p.possibleNextBlocks[i]
             if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id === chain.getLatestBlock()._id+1) {
                 p2p.processing = true
-                logr.debug('CONS: block '+possBlock.block.hash.substr(0,8)+' got '+possBlock.c.length+'/'+connectedWitnesses.length+' commitments')
+                logr.trace('CONS: block '+possBlock.block.hash.substr(0,8)+' got '+possBlock.c.length+'/'+connectedWitnesses.length+' commitments')
                 chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
                     // clean up possible blocks that are in the past
                     var newPossBlocks = []

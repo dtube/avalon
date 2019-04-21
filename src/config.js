@@ -88,6 +88,9 @@ var config = {
             vtGrowth: 1000, // +1 vt per hour per coin
             vtPerBurn: 168 // 24*7 (1 week worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']
+        },
+        11111: {
+            leaders: 4
         }
     },
     read: (blockNum) => {

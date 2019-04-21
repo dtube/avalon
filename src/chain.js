@@ -91,7 +91,7 @@ chain = {
 
             // at this point transactions in the pool seem all validated
             // BUT with a different ts and without checking for double spend
-            // so we will execute transactions in order and revalidate
+            // so we will execute transactions in order and revalidate after each execution
             chain.executeBlock(newBlock, true, function(validTxs, distributed, burned) {
                 // and only add the successful txs to the new block
                 newBlock.txs = validTxs
@@ -109,6 +109,7 @@ chain = {
                 // hash and sign the block with our private key
                 newBlock = chain.hashAndSignBlock(newBlock)
                 
+                // TODO maybe only precommit to consensus here
                 // add it to our chain !
                 chain.addBlock(newBlock, function() {
                     // and broadcast to peers
@@ -131,9 +132,10 @@ chain = {
             }
             // straight execution
             chain.executeBlock(newBlock, false, function(validTxs, distributed, burned) {
-                // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
+                // if any transaction is wrong, thats a fatal error
+                // transactions should have been verified in isValidNewBlock
                 if (newBlock.txs.length !== validTxs.length) {
-                    logr.error('Invalid tx(s) in block')
+                    logr.fatal('Invalid tx(s) in block found after starting execution')
                     cb(true, newBlock); return
                 }
 
