@@ -89,8 +89,11 @@ chain = {
                 cb(true, newBlock); return
             }
 
-            chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
-                // only add the valid transactions into the block
+            // at this point transactions in the pool seem all validated
+            // BUT with a different ts and without checking for double spend
+            // so we will execute transactions in order and revalidate
+            chain.executeBlock(newBlock, true, function(validTxs, distributed, burned) {
+                // and only add the successful txs to the new block
                 newBlock.txs = validTxs
 
                 if (distributed) newBlock.distributed = distributed
@@ -126,8 +129,8 @@ chain = {
                 logr.error('Invalid block')
                 cb(true, newBlock); return
             }
-                
-            chain.executeBlock(newBlock, function(validTxs, distributed, burned) {
+            // straight execution
+            chain.executeBlock(newBlock, false, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats an error before this should be a legit block 100% of the time
                 if (newBlock.txs.length !== validTxs.length) {
                     logr.error('Invalid tx(s) in block')
@@ -389,28 +392,40 @@ chain = {
             })
         })
     },
-    executeBlock: (block, cb) => {
+    executeBlock: (block, revalidate, cb) => {
         var executions = []
         for (let i = 0; i < block.txs.length; i++) 
             executions.push(function(callback) {
                 var tx = block.txs[i]
-                transaction.isValid(tx, block.timestamp, function(isValid) {
-                    if (isValid) 
-                        transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
-                            if (!executed)
-                                logr.fatal('Tx execution failure', tx)
-                            chain.recentTxs[tx.hash] = tx
-                            callback(null, {
-                                executed: executed,
-                                distributed: distributed,
-                                burned: burned
+                if (revalidate)
+                    transaction.isValid(tx, block.timestamp, function(isValid) {
+                        if (isValid) 
+                            transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
+                                if (!executed)
+                                    logr.fatal('Tx execution failure', tx)
+                                chain.recentTxs[tx.hash] = tx
+                                callback(null, {
+                                    executed: executed,
+                                    distributed: distributed,
+                                    burned: burned
+                                })
                             })
+                        else {
+                            logr.error('Invalid transaction', tx)
+                            callback(null, false)
+                        }
+                    })
+                else
+                    transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
+                        if (!executed)
+                            logr.fatal('Tx execution failure', tx)
+                        chain.recentTxs[tx.hash] = tx
+                        callback(null, {
+                            executed: executed,
+                            distributed: distributed,
+                            burned: burned
                         })
-                    else {
-                        logr.error('Invalid transaction', tx)
-                        callback(null, false)
-                    }
-                })
+                    })
                 i++
             })
         
