@@ -2,9 +2,6 @@ const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
 const max_blocks_buffer = 100
-const consensus_need = 2
-const consensus_total = 3
-const consensus_threshold = consensus_need/consensus_total
 var p2p_port = process.env.P2P_PORT || default_port
 var replay_pub = process.env.REPLAY_PUB
 var WebSocket = require('ws')
@@ -12,6 +9,7 @@ var chain = require('./chain.js')
 var secp256k1 = require('secp256k1')
 var bs58 = require('base-x')(config.b58Alphabet)
 var CryptoJS = require('crypto-js')
+var consensus = require('./consensus.js')
 
 var MessageType = {
     QUERY_NODE_STATUS: 0,
@@ -20,13 +18,11 @@ var MessageType = {
     BLOCK: 3,
     NEW_BLOCK: 4,
     NEW_TX: 5,
-    BLOCK_PRECOMMIT: 6,
-    BLOCK_COMMIT: 7
+    BLOCK_CONF_ROUND: 6
 }
 
 var p2p = {
     sockets: [],
-    possibleNextBlocks: [],
     recoveringBlocks: [],
     recoveredBlocks: [],
     recovering: false,
@@ -151,10 +147,10 @@ var p2p = {
                 break
 
             case MessageType.NEW_BLOCK:
-                var block = message.d
-                p2p.precommit(block, function() {})
                 var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socket || !socket.node_status) return
+                var block = message.d
+                consensus.round(0, block)
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block_hash = block.hash
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.previous_block_hash = block.phash
@@ -162,41 +158,24 @@ var p2p = {
             case MessageType.NEW_TX:
                 var tx = message.d
                 transaction.isValid(tx, new Date().getTime(), function(isValid) {
-                    if (!isValid) 
-                        logr.warn('Invalid tx', tx)
-                    else 
-                    if (!transaction.isInPool(tx)) {
+                    if (isValid && !transaction.isInPool(tx)) {
                         transaction.addToPool([tx])
                         p2p.broadcast({t:5, d:tx})
                     } 
                     
                 })
                 break
-            case MessageType.BLOCK_PRECOMMIT:
-                var blockToPrecommit = message.d
-                p2p.precommit(blockToPrecommit, function() {})
-                var socketPc = p2p.sockets[p2p.sockets.indexOf(ws)]
-                if (!socketPc || !socketPc.node_status) return
-                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) 
-                    if (blockToPrecommit.hash === p2p.possibleNextBlocks[i].block.hash
-                        && p2p.possibleNextBlocks[i].pc.indexOf(socketPc.node_status.owner) === -1) {
-                        p2p.possibleNextBlocks[i].pc.push(socketPc.node_status.owner)
-                        p2p.consensusWorker()
-                    }
-                
-                break
-            case MessageType.BLOCK_COMMIT:
-                var blockToCommit = message.d
-                p2p.precommit(blockToCommit, function() {})
-                var socketC = p2p.sockets[p2p.sockets.indexOf(ws)]
-                if (!socketC || !socketC.node_status) return
-                for (let i = 0; i < p2p.possibleNextBlocks.length; i++) 
-                    if (blockToCommit.hash === p2p.possibleNextBlocks[i].block.hash
-                        && p2p.possibleNextBlocks[i].c.indexOf(socketC.node_status.owner) === -1) {
-                        p2p.possibleNextBlocks[i].c.push(socketC.node_status.owner)
-                        p2p.consensusWorker()
-                    }
-                
+
+            case MessageType.BLOCK_CONF_ROUND:
+                // we are receiving a consensus round confirmation
+                var leader = p2p.sockets[p2p.sockets.indexOf(ws)]
+                if (!leader || !leader.node_status) return
+
+                // always try to precommit in case its the first time we see it
+                consensus.round(0, message.d.b)
+
+                // process the message inside the consensus
+                consensus.messenger(leader, message.d.r, message.d.b)
                 break
             }
         })
@@ -281,85 +260,6 @@ var p2p = {
                 return
             }
         })
-    },
-    precommit: (block, cb) => {
-        if (block._id !== chain.getLatestBlock()._id+1)
-            return
-
-        for (let i = 0; i < p2p.possibleNextBlocks.length; i++)
-            if (p2p.possibleNextBlocks[i].block.hash === block.hash)
-                return
-
-        chain.isValidNewBlock(block, true, function(isValid) {
-            if (!isValid)
-                logr.error('Received invalid new block', block)
-            else {
-                var possBlock = {
-                    block:block,
-                    pc: [block.miner],
-                    c: [block.miner]
-                }
-                if (block.miner !== process.env.NODE_OWNER)
-                    possBlock.pc.push(process.env.NODE_OWNER)
-        
-                p2p.possibleNextBlocks.push(possBlock)
-                p2p.broadcast({t:6, d:block})
-                p2p.consensusWorker()
-                cb()
-            }
-        })
-    },
-    commit: (block) => {
-        for (let b = 0; b < p2p.possibleNextBlocks.length; b++) 
-            if (p2p.possibleNextBlocks[b].block.hash === block.hash
-            && p2p.possibleNextBlocks[b].c.indexOf(process.env.NODE_OWNER) === -1) {
-                p2p.possibleNextBlocks[b].c.push(process.env.NODE_OWNER)
-                p2p.broadcast({t:7, d:block})
-                p2p.consensusWorker()
-            }
-        
-    },
-    consensusWorker: () => {
-        var leaders = []
-        for (let y = 0; y < chain.schedule.shuffle.length; y++)
-            if (leaders.indexOf(chain.schedule.shuffle[y].name) === -1)
-                leaders.push(chain.schedule.shuffle[y].name)
-            
-        var connectedWitnesses = [process.env.NODE_OWNER]
-        for (let i = 0; i < p2p.sockets.length; i++) {
-            if (!p2p.sockets[i].node_status) continue
-            for (let y = 0; y < leaders.length; y++)
-                if (connectedWitnesses.indexOf(leaders[y]) === -1
-                && p2p.sockets[i].node_status.owner === leaders[y]
-                && (p2p.sockets[i].node_status.head_block_hash === chain.getLatestBlock().hash
-                    || p2p.sockets[i].node_status.previous_block_hash === chain.getLatestBlock().hash
-                    || p2p.sockets[i].node_status.head_block_hash === chain.getLatestBlock().phash)
-                )
-                    connectedWitnesses.push(leaders[y])
-        }
-
-        const threshold = Math.ceil(connectedWitnesses.length*consensus_threshold)
-        for (let i = 0; i < p2p.possibleNextBlocks.length; i++) {
-            const possBlock = p2p.possibleNextBlocks[i]
-            if (possBlock.c.length >= threshold && !p2p.processing && possBlock.block._id === chain.getLatestBlock()._id+1) {
-                p2p.processing = true
-                logr.trace('CONS: block '+possBlock.block.hash.substr(0,8)+' got '+possBlock.c.length+'/'+connectedWitnesses.length+' commitments')
-                chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
-                    // clean up possible blocks that are in the past
-                    var newPossBlocks = []
-                    for (let y = 0; y < p2p.possibleNextBlocks.length; y++) 
-                        if (possBlock.block._id < p2p.possibleNextBlocks[y].block._id)
-                            newPossBlocks.push(p2p.possibleNextBlocks[y])
-                    
-                    p2p.possibleNextBlocks = newPossBlocks
-                    p2p.processing = false
-                    if (err)
-                        logr.debug('CONS: block '+possBlock.block.hash.substr(0,8)+' went through consensus but couldnt get re-validated', newBlock)
-                })
-            }
-            else if (possBlock.pc.length >= threshold)
-                p2p.commit(possBlock.block)
-        }
     },
     addRecursive: (block) => {
         chain.validateAndAddBlock(block, function(err, newBlock) {

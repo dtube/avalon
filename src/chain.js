@@ -181,7 +181,8 @@ chain = {
         // else if the scheduled leaders miss blocks
         // backups witnesses are available after each block time intervals
         else for (let i = 1; i <= config.leaders; i++)
-            if (chain.recentBlocks[chain.recentBlocks.length - i].miner === process.env.NODE_OWNER) {
+            if (chain.recentBlocks[chain.recentBlocks.length - i]
+            && chain.recentBlocks[chain.recentBlocks.length - i].miner === process.env.NODE_OWNER) {
                 mineInMs = (i+1)*config.blockTime
                 break
             }
@@ -208,7 +209,7 @@ chain = {
                 // update the config if an update was scheduled
                 config = require('./config.js').read(block._id)
                 
-                // if block id is mult of 20, reschedule next 20 blocks
+                // if block id is mult of n leaders, reschedule next n blocks
                 if (block._id % config.leaders === 0) 
                     chain.minerSchedule(block, function(minerSchedule) {
                         chain.schedule = minerSchedule
@@ -370,7 +371,7 @@ chain = {
                     if (isValid)
                         callback(null, true)
                     else {
-                        logr.error('Invalid transaction', tx)
+                        logr.warn('Invalid transaction', tx)
                         callback(null, false)
                     }
                 })
@@ -413,7 +414,7 @@ chain = {
                                 })
                             })
                         else {
-                            logr.error('Invalid transaction', tx)
+                            //logr.warn('Invalid transaction', tx)
                             callback(null, false)
                         }
                     })

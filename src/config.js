@@ -19,11 +19,13 @@ var config = {
             // the start time of the chain
             block0ts: 1554643902092,
             // the block time in ms
-            blockTime: 1000,
+            blockTime: 3000,
             // the number of ms needed for 1 DTC to generate 1 byte of bw
             bwGrowth: 1,
             // the maximum bandwidth an account can have available
-            bwMax: 1048576,
+            bwMax: 102400,
+            // the number of rounds of consensus before block is valid (min 2)
+            consensusRounds: 2,
             // the number of blocks from the past taken into consideration for econonomics
             ecoBlocks: 60,
             // the maximum number of follows a single account can do
@@ -35,7 +37,7 @@ var config = {
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
             leaderReward: 0,
             leaderRewardVT: 0,
-            leaders: 10,
+            leaders: 20,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
             // the maximum number of leaders an account can vote for
@@ -69,8 +71,8 @@ var config = {
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 10,
-            // the multiplier for the reward pool,
-            rewardPoolMult: 1,
+            // the multiplier for the reward pool, modifying it is a bad practise
+            rewardPoolMult: 2,
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
             // the maximum length of tags (on votes)
@@ -84,13 +86,13 @@ var config = {
                 14: 2,
                 15: 2
             },
-            // the number of ms needed for 1 DTC to generate 1 vt
-            vtGrowth: 1000, // +1 vt per hour per coin
+            // the number of ms needed for 1 coin to generate 1 vt
+            vtGrowth: 3600000, // +1 vt per hour per coin
             vtPerBurn: 168 // 24*7 (1 week worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']
         },
-        11111: {
-            leaders: 4
+        403200: {
+            leaders: 7
         }
     },
     read: (blockNum) => {
