@@ -23,21 +23,22 @@ var config = {
             // the number of ms needed for 1 DTC to generate 1 byte of bw
             bwGrowth: 300000,
             // the maximum bandwidth an account can have available
-            bwMax: 102400,
+            bwMax: 256000,
             // the number of rounds of consensus before block is valid (min 2)
             consensusRounds: 2,
             // the number of blocks from the past taken into consideration for econonomics
-            ecoBlocks: 60,
+            ecoBlocks: 1200,
             // the maximum number of follows a single account can do
             followsMax: 2000,
             // the max size of a stringified json input (content / user profile)
+            // best if kept slightly lower than bwMax
             jsonMaxBytes: 250000,
             // the max length of a key identifier
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
             leaderReward: 0,
             leaderRewardVT: 0,
-            leaders: 20,
+            leaders: 7,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
             // the maximum number of leaders an account can vote for
@@ -45,13 +46,13 @@ var config = {
             // the "master" account starting stake (total starting supply)
             masterBalance: 1000000,
             // the number of tokens distributed before master gets 1 free token printed.
-            // masterFee = 2 => 33% fee
-            // masterFee = 4 => 20% fee
-            // masterFee = 9 => 10% fee
-            // masterFee = 19 => 5% fee
+            // masterFee = 2 => <33% fee
+            // masterFee = 4 => <20% fee
+            // masterFee = 9 => <10% fee
+            // masterFee = 19 => <5% fee
             masterFee: 9,
             // the init account username
-            masterName: 'master',
+            masterName: 'dtube',
             // if false master can create accounts with usernames without burning tokens
             masterPaysForUsernames: false,
             // the master account public original key
@@ -67,7 +68,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000024',
+            originHash: '0000000000000000000000000000000000000000000000000000000000000025',
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 10,
@@ -92,9 +93,17 @@ var config = {
             vtPerBurn: 168 // 24*7 (1 week worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']
         },
-        403200: {
-            leaders: 7
-        }
+        // example hardfork on block #1000000
+        // increasing to 10 leaders earning 1 VT / block
+        // and opening NEW_ACCOUNT transaction to everyone
+        // 1000000: {
+        //     leaders: 10,
+        //     leaderRewardVT: 1,
+        //     txLimits: {
+        //       14: 2,
+        //       15: 2
+        //     }
+        // }
     },
     read: (blockNum) => {
         var finalConfig = {}
