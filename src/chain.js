@@ -486,7 +486,7 @@ chain = {
     },
     generateLeaders: (cb) => {
         db.collection('accounts').find({node_appr: {$gt: 0}}, {
-            sort: {node_appr: -1},
+            sort: {node_appr: -1, name: -1},
             limit: config.leaders
         }).toArray(function(err, accounts) {
             if (err) throw err
