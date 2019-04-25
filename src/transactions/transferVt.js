@@ -12,7 +12,7 @@ module.exports = {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             if (err) throw err
             var vtBefore = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-            if (vtBefore.v < Math.abs(tx.data.vt)) {
+            if (vtBefore.v < tx.data.amount) {
                 cb(false, 'invalid tx not enough vt'); return
             }
             cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {

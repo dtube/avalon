@@ -11,9 +11,9 @@ module.exports = {
         }
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             if (err) throw err
-            var bwBefore = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-            if (bwBefore.v < Math.abs(tx.data.vt)) {
-                cb(false, 'invalid tx not enough vt'); return
+            var bwBefore = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth)}).grow(ts)
+            if (bwBefore.v < tx.data.amount) {
+                cb(false, 'invalid tx not enough bw'); return
             }
             cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
                 if (err) throw err
@@ -26,7 +26,7 @@ module.exports = {
         cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
             if (err) throw err
             account.bw.v += tx.data.amount
-            cache.updateOne('accounts', {name: tx.data.receiver}, {$set: {vt: account.vt}}, function() {
+            cache.updateOne('accounts', {name: tx.data.receiver}, {$set: {bw: account.bw}}, function() {
                 cb(true)
             })
         })
