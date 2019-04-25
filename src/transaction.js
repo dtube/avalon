@@ -70,7 +70,7 @@ transaction = {
         }
         if (config.txLimits[tx.type] && config.txLimits[tx.type] === 2
             && tx.sender !== config.masterName) {
-            cb(false, 'transaction type is master-only'); return
+            cb(false, 'only "'+config.masterName+'" can execute this transaction type'); return
         }
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
