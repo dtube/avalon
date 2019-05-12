@@ -1,18 +1,27 @@
 var javalon = require('javalon')
-javalon.init({api: 'http://localhost:3001'})
+javalon.init({api: 'http://35.240.225.163'})
 var Chance = require('chance')
 var chance = new Chance()
+var MongoClient = require('mongodb').MongoClient
 
-var start_account = 33
+var start_account = 50
 var starting_dtc = 333
-var tpups = 0.05
+var tpups = 0.15
 var wait = 3000
-var master_pub = 'yLuiXbuU1Pw8SbzJ3BYhcXdCQ81jFPsYwryKEibGWRNo'
-var master_wif = 'DE2WEkbpFo2hec255b1XasotVa3ZqefPETsGQuSzrnMp'
+var master_pub = 'x'
+var master_wif = 'x'
 var master_name = 'master'
 var accounts = []
 var contents = []
 var beggars = []
+
+// MongoClient.connect('mongodb://localhost:27017', { useNewUrlParser: true }, function(err, client) {
+//     this.db = client.db('avalon')
+//     db.collection('accounts').find({name: {'$ne': 'master'}, pub: master_pub, balance: {'$gt': 0}}).project({name: 1, _id: 0}).toArray(function(err, dbAccs) {
+//         accounts = dbAccs.map(o => o.name)
+//         foreverDo()
+//     })
+// })
 
 // wait a bit
 setTimeout(function() {
@@ -23,15 +32,16 @@ setTimeout(function() {
         // send them money
         depositMoney(starting_dtc)
         foreverDo()
-        function foreverDo() {
-            var time = 1000/(tpups*accounts.length)
-            setTimeout(function() {
-                genericActivity()
-                foreverDo()
-            }, time)
-        }
     }, wait)
 }, wait)
+
+function foreverDo() {
+    var time = 1000/(tpups*accounts.length)
+    setTimeout(function() {
+        genericActivity()
+        foreverDo()
+    }, time)
+}
 
 function createMassAccs(nAcc) {
     // generate random usernames
@@ -81,8 +91,8 @@ function depositMoney(amount) {
 function genericActivity() {
     var txType = chance.pickone([
         javalon.TransactionType.NEW_ACCOUNT,
-        javalon.TransactionType.APPROVE_NODE_OWNER,
-        javalon.TransactionType.DISAPROVE_NODE_OWNER,
+        // javalon.TransactionType.APPROVE_NODE_OWNER,
+        // javalon.TransactionType.DISAPROVE_NODE_OWNER,
         javalon.TransactionType.TRANSFER,
         javalon.TransactionType.TRANSFER,
         javalon.TransactionType.TRANSFER,
@@ -151,7 +161,7 @@ function genericActivity() {
             tx.data.pp = null
         } else {
             var parent = chance.pickone(contents)
-            tx.data.pa = parent.author
+            tx.data.pa = parent.json.author
             tx.data.pp = parent.link
         }
 
@@ -188,7 +198,7 @@ function genericActivity() {
         var target = chance.weighted(contents, contents.map(x=>x.json.quality))
         tx.data.author = target.json.author
         tx.data.link = target.link
-        tx.data.vt = Math.pow(2, chance.integer({min:0, max:10}))
+        tx.data.vt = Math.pow(2, chance.integer({min:0, max:15}))
         tx.data.tag = chance.word()
         break
 
