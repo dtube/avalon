@@ -1,6 +1,6 @@
 # AVALON
 
-## Quick start
+## Installing an observer node
 * Install MongoDB and run it on your machine
 * `npm install`
 * Get your own keys with `node src/cli.js keypair`
@@ -9,7 +9,13 @@
 * `chmod +x start.sh`
 * `./start.sh`
 
-## GET API
+## Using the CLI
+You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> -- help` for a full help.
+
+## Using Javalon
+There is also a [Javascript module](https://www.npmjs.com/package/javalon) available and working on both browser and nodejs.
+
+## HTTP GET API (incomplete)
 
 #### Get block
 ```
@@ -58,16 +64,16 @@ Necessary for all transactions:
 * *key*: your private key
 * *user*: your username
 
-#### Approve a node owner
+#### Vote for a leader
 * *target*: the node owner to approve
 ```
-node src/cli.js approveNode <key> <user> <target>
+node src/cli.js vote-leader <key> <user> <target>
 ```
 
-#### Disapprove a node owner
+#### Unvote a leader
 * *target*: the node owner to approve
 ```
-node src/cli.js disapproveNode <key> <user> <target>
+node src/cli.js unvote-leader <key> <user> <target>
 ```
 
 #### Transfer tokens
@@ -78,18 +84,13 @@ node src/cli.js disapproveNode <key> <user> <target>
 node src/cli.js transfer <key> <user> <receiver> <amount> <memo>
 ```
 
-#### Add a post
-* *link*: a short string to be used as the index of the content
-* *json*: arbitrary json input. example: `{"string":"aye", array:[1,2,3]}`
-```
-node src/cli.js post <key> <user> <link> <json>
-```
-
-#### Comment on a post
+#### Add a post / Commenting
 * *link*: a short string to be used as the index of the content
 * *parent_author*: the username of the author of the parent post
 * *parent_link*: the link of the parent post
 * *json*: arbitrary json input. example: `{"string":"aye", array:[1,2,3]}`
+* *tag*: arbitrary short text content
+* *weight* : the number of vote tokens to spend on this vote
 ```
 node src/cli.js comment <key> <user> <link> <parent_author> <parent_link> <json>
 ```
