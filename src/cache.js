@@ -134,6 +134,9 @@ var cache = {
     },
     insertOne: function(collection, document, cb) {
         var key = cache.keyByCollection(collection)
+        if (cache[collection][document[key]]) {
+            cb(null, false); return
+        }
         cache[collection][document[key]] = document
 
         cache.inserts.push({
@@ -149,7 +152,6 @@ var cache = {
     },
     writeToDisk: function(cb) {
         var executions = []
-
         // executing the inserts (new comment / new account)
         for (let i = 0; i < cache.inserts.length; i++)
             executions.push(function(callback) {
