@@ -151,9 +151,7 @@ var cache = {
         if (cache[collection][document[key]]) {
             cb(null, false); return
         }
-        console.log(cache[collection][document[key]])
         cache[collection][document[key]] = document
-        console.log(cache[collection][document[key]])
         cache.inserts.push({
             collection: collection,
             document: document
