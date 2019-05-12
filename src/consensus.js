@@ -105,7 +105,7 @@ var consensus = {
             consensus.possBlocks.push(possBlock)
 
             // now we verify the block is valid
-            chain.isValidNewBlock(block, true, function(isValid) {
+            chain.isValidNewBlock(block, true, true, function(isValid) {
                 consensus.validating.splice(consensus.validating.indexOf(possBlock.block.hash), 1)                
                 if (!isValid) {
                     // todo add punishment (close socket?)

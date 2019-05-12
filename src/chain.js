@@ -75,7 +75,8 @@ chain = {
         var newBlock = chain.prepareBlock()
         // run the transactions and validation
         // pre-validate our own block (not the hash and signature as we dont have them yet)
-        chain.isValidNewBlock(newBlock, false, function(isValid) {
+        // nor transactions because we will filter them on execution later
+        chain.isValidNewBlock(newBlock, false, false, function(isValid) {
             if (!isValid) {
                 cb(true, newBlock); return
             }
@@ -92,8 +93,8 @@ chain = {
             // at this point transactions in the pool seem all validated
             // BUT with a different ts and without checking for double spend
             // so we will execute transactions in order and revalidate after each execution
-            chain.executeBlock(newBlock, true, function(validTxs, distributed, burned) {
-                // and only add the successful txs to the new block
+            chain.executeBlockTransactions(newBlock, true, true, function(validTxs, distributed, burned) {
+                // and only add the valid txs to the new block
                 newBlock.txs = validTxs
 
                 if (distributed) newBlock.distributed = distributed
@@ -125,13 +126,13 @@ chain = {
     validateAndAddBlock: (newBlock, cb) => {
         // when we receive an outside block and check whether we should add it to our chain or not
         if (chain.shuttingDown) return
-        chain.isValidNewBlock(newBlock, true, function(isValid) {
+        chain.isValidNewBlock(newBlock, true, true, function(isValid) {
             if (!isValid) {
                 logr.error('Invalid block')
                 cb(true, newBlock); return
             }
             // straight execution
-            chain.executeBlock(newBlock, false, function(validTxs, distributed, burned) {
+            chain.executeBlockTransactions(newBlock, false, true, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats a fatal error
                 // transactions should have been verified in isValidNewBlock
                 if (newBlock.txs.length !== validTxs.length) {
@@ -272,7 +273,35 @@ chain = {
             cb(false)
         })
     },
-    isValidNewBlock: (newBlock, verifyHashAndSignature, cb) => {
+    isValidHashAndSignature: (newBlock, cb) => {
+        // and that the hash is correct
+        var theoreticalHash = chain.calculateHashForBlock(newBlock)
+        if (theoreticalHash !== newBlock.hash) {
+            logr.debug(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
+            logr.debug('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
+            cb(false); return
+        }
+
+        // finally, verify the signature of the miner
+        chain.isValidSignature(newBlock.miner, null, newBlock.hash, newBlock.signature, function(legitUser) {
+            if (!legitUser) {
+                logr.debug('invalid miner signature')
+                cb(false); return
+            }
+            cb(true)
+        })
+    },
+    isValidBlockTxs: (newBlock, cb) => {
+        cache.backup()
+        chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
+            cache.rollback()
+            if (validTxs.length !== newBlock.txs.length) {
+                cb(false); return
+            }
+            cb(true)
+        })
+    },
+    isValidNewBlock: (newBlock, verifyHashAndSignature, verifyTxValidity, cb) => {
         // verify all block fields one by one
         if (!newBlock._id || typeof newBlock._id !== 'number') {
             logr.debug('invalid block _id')
@@ -325,7 +354,7 @@ chain = {
             cb(false); return
         }
 
-        // check if miner is normal scheduleded one
+        // check if miner is normal scheduled one
         var minerPriority = 0
         if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name === newBlock.miner) 
             minerPriority = 1
@@ -350,52 +379,35 @@ chain = {
             cb(false); return
         }
 
-        if (!verifyHashAndSignature) {
-            cb(true); return
-        }
-
-        // and that the hash is correct
-        var theoreticalHash = chain.calculateHashForBlock(newBlock)
-        if (theoreticalHash !== newBlock.hash) {
-            logr.debug(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
-            logr.debug('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
-            cb(false); return
-        }
-
-        // and that all the transactions are okay
-        var validations = []
-        for (let i = 0; i < newBlock.txs.length; i++) 
-            validations.push(function(callback) {
-                var tx = newBlock.txs[i]
-                transaction.isValid(tx, newBlock.timestamp, function(isValid) {
-                    if (isValid)
-                        callback(null, true)
-                    else {
-                        logr.warn('Invalid transaction', tx)
-                        callback(null, false)
-                    }
-                })
-                i++
-            })
-        
-        series(validations, function(err, results) {
-            if (err) throw err
-            for (let i = 0; i < results.length; i++)
-                if (!results[i]) {
-                    cb(false); return
-                }
-
-            // finally, verify the signature of the miner
-            chain.isValidSignature(newBlock.miner, null, newBlock.hash, newBlock.signature, function(legitUser) {
-                if (!legitUser) {
-                    logr.debug('invalid miner signature')
+        if (!verifyTxValidity) {
+            if (!verifyHashAndSignature) {
+                cb(true); return
+            }
+            chain.isValidHashAndSignature(newBlock, function(isValid) {
+                if (!isValid) {
                     cb(false); return
                 }
                 cb(true)
             })
-        })
+        } else
+            chain.isValidBlockTxs(newBlock, function(isValid) {
+                if (!isValid) {
+                    cb(false); return
+                }
+                if (!verifyHashAndSignature) {
+                    cb(true); return
+                }
+                chain.isValidHashAndSignature(newBlock, function(isValid) {
+                    if (!isValid) {
+                        cb(false); return
+                    }
+                    cb(true)
+                })
+            })
     },
-    executeBlock: (block, revalidate, cb) => {
+    executeBlockTransactions: (block, revalidate, isFinal, cb) => {
+        // revalidating transactions in orders if revalidate = true
+        // adding transaction to recent transactions (to prevent tx re-use) if isFinal = true
         var executions = []
         for (let i = 0; i < block.txs.length; i++) 
             executions.push(function(callback) {
@@ -404,25 +416,27 @@ chain = {
                     transaction.isValid(tx, block.timestamp, function(isValid) {
                         if (isValid) 
                             transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
-                                if (!executed)
+                                if (!executed) {
                                     logr.fatal('Tx execution failure', tx)
-                                chain.recentTxs[tx.hash] = tx
+                                    process.exit()
+                                }
+                                if (isFinal)
+                                    chain.recentTxs[tx.hash] = tx
                                 callback(null, {
                                     executed: executed,
                                     distributed: distributed,
                                     burned: burned
                                 })
                             })
-                        else {
-                            //logr.warn('Invalid transaction', tx)
+                        else
                             callback(null, false)
-                        }
                     })
                 else
                     transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                         if (!executed)
                             logr.fatal('Tx execution failure', tx)
-                        chain.recentTxs[tx.hash] = tx
+                        if (isFinal)
+                            chain.recentTxs[tx.hash] = tx
                         callback(null, {
                             executed: executed,
                             distributed: distributed,
