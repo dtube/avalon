@@ -296,6 +296,7 @@ chain = {
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
             if (validTxs.length !== newBlock.txs.length) {
+                logr.debug('invalid block transaction')
                 cb(false); return
             }
             cb(true)
@@ -413,7 +414,7 @@ chain = {
             executions.push(function(callback) {
                 var tx = block.txs[i]
                 if (revalidate)
-                    transaction.isValid(tx, block.timestamp, function(isValid) {
+                    transaction.isValid(tx, block.timestamp, function(isValid, error) {
                         if (isValid) 
                             transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                                 if (!executed) {
@@ -428,8 +429,10 @@ chain = {
                                     burned: burned
                                 })
                             })
-                        else
+                        else {
+                            logr.debug(error, tx)
                             callback(null, false)
+                        }
                     })
                 else
                     transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {

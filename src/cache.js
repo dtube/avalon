@@ -4,21 +4,35 @@ const cloneDeep = require('clone-deep')
 var cache = {
     copy: {
         accounts: {},
-        contents: {}
+        contents: {},
+        changes: [],
+        inserts: []
     },
     accounts: {},
     contents: {},
     changes: [],
     inserts: [],
     backup: function() {
-        cache.copy.accounts = cache.accounts
-        cache.copy.contents = cache.contents
+        cache.copy = {
+            accounts: {},
+            contents: {},
+            changes: [],
+            inserts: []
+        }
+        cache.copy.accounts = cloneDeep(cache.accounts)
+        cache.copy.contents = cloneDeep(cache.contents)
+        cache.copy.contents = cloneDeep(cache.changes)
+        cache.copy.contents = cloneDeep(cache.inserts)
     },
     rollback: function() {
-        cache.accounts = cache.copy.accounts
-        cache.contents = cache.copy.contents
+        cache.accounts = cloneDeep(cache.copy.accounts)
+        cache.contents = cloneDeep(cache.copy.contents)
+        cache.changes = cloneDeep(cache.copy.changes)
+        cache.inserts = cloneDeep(cache.copy.inserts)
         cache.copy.accounts = {}
         cache.copy.contents = {}
+        cache.copy.changes = []
+        cache.copy.inserts = []
     },
     findOne: function(collection, query, cb) {
         if (['accounts','blocks','contents'].indexOf(collection) === -1) {
@@ -137,8 +151,9 @@ var cache = {
         if (cache[collection][document[key]]) {
             cb(null, false); return
         }
+        console.log(cache[collection][document[key]])
         cache[collection][document[key]] = document
-
+        console.log(cache[collection][document[key]])
         cache.inserts.push({
             collection: collection,
             document: document
@@ -174,6 +189,7 @@ var cache = {
             var key = change.query[cache.keyByCollection(collection)]
             docsToUpdate[collection][key] = cache[collection][key]
         }
+
         for (const col in docsToUpdate) 
             for (const i in docsToUpdate[col]) 
                 executions.push(function(callback) {
