@@ -96,14 +96,14 @@ var config = {
         // example hardfork on block #1000000
         // increasing to 10 leaders earning 1 VT / block
         // and opening NEW_ACCOUNT transaction to everyone
-        // 1000000: {
-        //     leaders: 10,
-        //     leaderRewardVT: 1,
-        //     txLimits: {
-        //       14: 2,
-        //       15: 2
-        //     }
-        // }
+        2100: {
+            leaders: 10,
+            leaderRewardVT: 1,
+            txLimits: {
+                14: 2,
+                15: 2
+            }
+        }
     },
     read: (blockNum) => {
         var finalConfig = {}
