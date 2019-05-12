@@ -9,6 +9,7 @@ var cache = {
     accounts: {},
     contents: {},
     changes: [],
+    inserts: [],
     backup: function() {
         cache.copy.accounts = cache.accounts
         cache.copy.contents = cache.contents
@@ -131,13 +132,35 @@ var cache = {
             cb(err, results)
         })
     },
+    insertOne: function(collection, document, cb) {
+        var key = cache.keyByCollection(collection)
+        cache[collection][document[key]] = document
+
+        cache.inserts.push({
+            collection: collection,
+            document: document
+        })
+
+        cb(null, true)
+    },
     clear: function() {
         cache.accounts = {}
         cache.contents = {}
     },
     writeToDisk: function(cb) {
         var executions = []
-        // simple operation compression
+
+        // executing the inserts (new comment / new account)
+        for (let i = 0; i < cache.inserts.length; i++)
+            executions.push(function(callback) {
+                var insert = cache.inserts[i]
+                db.collection(insert.collection).insertOne(insert.document, function(err) {
+                    if (err) throw err
+                    callback()
+                })
+            })
+
+        // then the update with simple operation compression
         // 1 update per document concerned (even if no real change)
         var docsToUpdate = {
             accounts: {},
@@ -161,8 +184,6 @@ var cache = {
                         callback()
                     })
                 })
-            
-        
 
         // no operation compression (dumb and slow)
         // for (let i = 0; i < cache.changes.length; i++) {
@@ -173,12 +194,13 @@ var cache = {
         //         })
         //     })
         // }
-
+        
         //var timeBefore = new Date().getTime()
         series(executions, function(err, results) {
             //logr.debug(executions.length+' mongo update executed in '+(new Date().getTime()-timeBefore)+'ms')
             cb(err, results)
             cache.changes = []
+            cache.inserts = []
         })
     },
     keyByCollection: function(collection) {

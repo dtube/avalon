@@ -39,7 +39,7 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-        db.collection('accounts').insertOne({
+        cache.insertOne('accounts', {
             name: tx.data.name.toLowerCase(),
             pub: tx.data.pub,
             balance: 0,
@@ -50,7 +50,7 @@ module.exports = {
             follows: [],
             followers: [],
             keys: []
-        }).then(function(){
+        }, function(){
             if (tx.data.name !== tx.data.pub.toLowerCase()) 
                 if (tx.sender !== config.masterName || config.masterPaysForUsernames) {
                     cache.updateOne('accounts', 

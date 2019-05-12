@@ -62,7 +62,7 @@ module.exports = {
                 transaction.updateGrowInts(sender, ts, function() {
                     transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
                         // insert content+vote into db
-                        db.collection('contents').insertOne(newContent).then(function(){
+                        cache.insertOne('contents', newContent, function(){
                             if (tx.data.pa && tx.data.pp) 
                                 cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                                     child: [tx.sender, tx.data.link]
