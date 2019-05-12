@@ -2,9 +2,23 @@ const series = require('run-series')
 const cloneDeep = require('clone-deep')
 
 var cache = {
+    copy: {
+        accounts: {},
+        contents: {}
+    },
     accounts: {},
     contents: {},
     changes: [],
+    backup: function() {
+        cache.copy.accounts = cache.accounts
+        cache.copy.contents = cache.contents
+    },
+    rollback: function() {
+        cache.accounts = cache.copy.accounts
+        cache.contents = cache.copy.contents
+        cache.copy.accounts = {}
+        cache.copy.contents = {}
+    },
     findOne: function(collection, query, cb) {
         if (['accounts','blocks','contents'].indexOf(collection) === -1) {
             cb(true)
