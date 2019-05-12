@@ -20,7 +20,7 @@ var mongo = {
                     cb()
                     return
                 } else {
-                    logr.info('Creating Genesis Block #0 with hash ')
+                    logr.info('Creating Genesis Block #0 with hash '+config.originHash)
                     db.collection('accounts').insertOne({
                         name: config.masterName,
                         pub: config.masterPub,
