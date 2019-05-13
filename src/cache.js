@@ -33,6 +33,7 @@ var cache = {
         cache.copy.contents = {}
         cache.copy.changes = []
         cache.copy.inserts = []
+        eco.nextBlock()
     },
     findOne: function(collection, query, cb) {
         if (['accounts','blocks','contents'].indexOf(collection) === -1) {
