@@ -51,7 +51,7 @@ var consensus = {
                 // block becomes valid, we can move forward !
                 consensus.finalizing = true
                 logr.debug('CON block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
-                chain.validateAndAddBlock(possBlock.block, function(err, newBlock) {
+                chain.validateAndAddBlock(possBlock.block, false, function(err, newBlock) {
                     // clean up old possible blocks
                     var newPossBlocks = []
                     for (let y = 0; y < consensus.possBlocks.length; y++) 

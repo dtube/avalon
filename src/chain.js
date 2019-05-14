@@ -123,10 +123,10 @@ chain = {
             })
         })
     },
-    validateAndAddBlock: (newBlock, cb) => {
+    validateAndAddBlock: (newBlock, revalidate, cb) => {
         // when we receive an outside block and check whether we should add it to our chain or not
         if (chain.shuttingDown) return
-        chain.isValidNewBlock(newBlock, true, true, function(isValid) {
+        chain.isValidNewBlock(newBlock, revalidate, revalidate, function(isValid) {
             if (!isValid) {
                 logr.error('Invalid block')
                 cb(true, newBlock); return

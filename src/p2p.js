@@ -262,7 +262,7 @@ var p2p = {
         })
     },
     addRecursive: (block) => {
-        chain.validateAndAddBlock(block, function(err, newBlock) {
+        chain.validateAndAddBlock(block, true, function(err, newBlock) {
             if (err)
                 logr.error('Error Replay', newBlock)
             else {

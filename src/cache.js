@@ -13,6 +13,7 @@ var cache = {
     changes: [],
     inserts: [],
     backup: function() {
+        
         cache.copy = {
             accounts: {},
             contents: {},
@@ -23,6 +24,7 @@ var cache = {
         cache.copy.contents = cloneDeep(cache.contents)
         cache.copy.contents = cloneDeep(cache.changes)
         cache.copy.contents = cloneDeep(cache.inserts)
+        logr.debug('Cache backup\'d')
     },
     rollback: function() {
         cache.accounts = cloneDeep(cache.copy.accounts)
@@ -34,6 +36,7 @@ var cache = {
         cache.copy.changes = []
         cache.copy.inserts = []
         eco.nextBlock()
+        logr.debug('Cache rollback\'d')
     },
     findOne: function(collection, query, cb) {
         if (['accounts','blocks','contents'].indexOf(collection) === -1) {
