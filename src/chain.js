@@ -188,15 +188,16 @@ chain = {
                 break
             }
 
-        logr.trace('Trying to mine in '+mineInMs+'ms')
-
-        if (mineInMs)
+        if (mineInMs) {
+            logr.trace('Trying to mine in '+mineInMs+'ms')
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
                     if (error)
                         logr.warn('miner worker trying to mine but couldnt', finalBlock)
                 })
             }, mineInMs)
+        }
+            
     },
     addBlock: (block, cb) => {
         eco.nextBlock()
