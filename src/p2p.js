@@ -93,7 +93,7 @@ var p2p = {
     messageHandler: (ws) => {
         ws.on('message', (data) => {
             var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
-            logr.trace('P2P-IN:', user, data)
+            //logr.trace('P2P-IN:', user, data)
             try {
                 var message = JSON.parse(data)
             } catch(e) {
@@ -216,7 +216,7 @@ var p2p = {
         try {
             var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
             var data = JSON.stringify(d)
-            logr.trace('P2P-OUT:', user, data)
+            //logr.trace('P2P-OUT:', user, data)
             ws.send(data)
         } catch (error) {
             logr.warn('Tried sending p2p message and failed')
