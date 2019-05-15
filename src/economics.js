@@ -128,7 +128,7 @@ var eco = {
                 return b.share - a.share
             })
 
-            //logr.debug(currentVote, winners.length+'/'+content.votes.length+' won')
+            logr.trace(currentVote, winners.length+'/'+content.votes.length+' won')
 
             // forth loop to pay out
             var executions = []
@@ -189,6 +189,8 @@ var eco = {
             cache.findOne('accounts', {name: name}, function(err, account) {
                 if (err) throw err
                 if (!account.uv) account.uv = 0
+
+                logr.trace('DIST:', name, vt, ts, account.uv, stats)
 
                 var thNewCoins = 0
                 if (stats.votes === 0)

@@ -22,8 +22,8 @@ var cache = {
         }
         cache.copy.accounts = cloneDeep(cache.accounts)
         cache.copy.contents = cloneDeep(cache.contents)
-        cache.copy.contents = cloneDeep(cache.changes)
-        cache.copy.contents = cloneDeep(cache.inserts)
+        cache.copy.changes = cloneDeep(cache.changes)
+        cache.copy.inserts = cloneDeep(cache.inserts)
         logr.trace('Cache backup\'d')
     },
     rollback: function() {

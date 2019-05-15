@@ -452,7 +452,9 @@ chain = {
         
         var blockTimeBefore = new Date().getTime()
         series(executions, function(err, results) {
-            logr.trace('Block executed in '+(new Date().getTime()-blockTimeBefore)+'ms')
+            var string = 'executed'
+            if(revalidate) string = 'validated & '+string
+            logr.trace('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
             if (err) throw err
             var executedSuccesfully = []
             var distributedInBlock = 0
