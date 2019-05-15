@@ -103,6 +103,9 @@ var config = {
                 14: 2,
                 15: 2
             }
+        },
+        22500: {
+            rewardPoolMult: 200
         }
     },
     read: (blockNum) => {
