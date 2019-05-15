@@ -23,4 +23,4 @@ export NODE_OWNER=observer-node
 export NODE_OWNER_PUB=dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz
 export NODE_OWNER_PRIV=34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5
 
-npm start
+node --stack-size=65500 src/main

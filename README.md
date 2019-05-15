@@ -5,9 +5,9 @@
 * `npm install`
 * Get your own keys with `node src/cli.js keypair`
 * Save your keys
-* Add your keys to `start.sh`
-* `chmod +x start.sh`
-* `./start.sh`
+* Add your keys to `scripts/start.sh`
+* `chmod +x scripts/start.sh`
+* `./scripts/start.sh`
 
 ## Using the CLI
 You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> -- help` for a full help.
