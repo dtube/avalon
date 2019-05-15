@@ -10,6 +10,15 @@ cache = require('./cache.js')
 validate = require('./validate')
 eco = require('./economics.js')
 
+// verify node version
+const nodeV = 10
+const versionRegex = new RegExp(`^${nodeV}\\..*`)
+const versionCorrect = process.versions.node.match(versionRegex)
+if (!versionCorrect) {
+    logr.fatal('Wrong NodeJS version. v10 is required.')
+    process.exit()
+} else logr.info('Correctly using NodeJS v'+process.versions.node)
+
 
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {
