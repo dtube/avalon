@@ -159,6 +159,9 @@ chain = {
                     // and broadcast to peers (if not replaying)
                     if (!p2p.recovering)
                         p2p.broadcastBlock(newBlock)
+
+                    // process notifications (non blocking)
+                    notifications.processBlock(newBlock)
                     cb(null, newBlock)
                 })
             })
