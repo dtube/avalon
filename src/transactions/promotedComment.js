@@ -1,5 +1,3 @@
-var TransactionType = require('../transactions').Types
-
 module.exports = {
     fields: ['link', 'pa', 'pp', 'json', 'vt', 'tag', 'burn'],
     validate: (tx, ts, legitUser, cb) => {
@@ -14,7 +12,7 @@ module.exports = {
             }
             // then verify that the same comment without promotion would be ok
             var comment = {
-                type: TransactionType.COMMENT,
+                type: 4,
                 data: Object.assign({}, tx.data)
             }
             delete comment.data.burn
