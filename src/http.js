@@ -11,82 +11,6 @@ const series = require('run-series')
 const transaction = require('./transaction.js')
 
 var http = {
-    rankings: {
-        hot: []
-    },
-    generateHot: function(cb) {
-        db.collection('contents').find({pa: null}, {sort: {ts: -1}}).toArray(function(err, contents) {
-            for (let i = 0; i < contents.length; i++) {
-                contents[i].score = 0
-                contents[i].ups = 0
-                contents[i].downs = 0
-                if (!contents[i].votes) 
-                    continue
-                
-                for (let y = 0; y < contents[i].votes.length; y++) {
-                    if (contents[i].votes[y].vt > 0)
-                        contents[i].ups += Math.abs(contents[i].votes[y].vt)
-                    if (contents[i].votes[y].vt < 0)
-                        contents[i].downs += Math.abs(contents[i].votes[y].vt)
-                    if (!contents[i].dist) contents[i].dist = 0
-                }
-                contents[i].score = hotScore(contents[i].ups, contents[i].downs, new Date(contents[i].ts))
-            }
-            contents = contents.sort(function(a,b) {
-                return b.score - a.score
-            })
-            http.rankings.hot = contents
-            cb()
-        })
-    },
-    newRankingContent: function(content) {
-        var alreadyAdded = false
-        for (let i = 0; i < http.rankings.hot.length; i++) 
-            if (content.author === http.rankings.hot[i].author && content.link === http.rankings.hot[i].link) {
-                alreadyAdded = true
-                http.rankings.hot[i].json = content.json
-                break
-            }
-        
-
-        if (!alreadyAdded) {
-            content._id = content.author+'/'+content.link
-            content.score = 0
-            content.ups = 0
-            content.downs = 0
-            content.dist = 0
-            if (content.votes[0].vt > 0)
-                content.ups += Math.abs(content.votes[0].vt)
-            if (content.votes[0].vt < 0)
-                content.downs += Math.abs(content.votes[0].vt)
-            http.rankings.hot.push(content)
-        }
-    },
-    updateRankings: function(author, link, vote, dist) {
-        newRankings = []
-        for (let i = 0; i < http.rankings.hot.length; i++) {
-            var ts = http.rankings.hot[i].ts
-            if (http.rankings.hot[i].author === author && http.rankings.hot[i].link === link) {
-                if (vote.vt > 0)
-                    http.rankings.hot[i].ups += Math.abs(vote.vt)
-                if (vote.vt < 0)
-                    http.rankings.hot[i].downs += Math.abs(vote.vt)
-                if (dist)
-                    http.rankings.hot[i].dist += dist
-                if (!http.rankings.hot[i].votes)
-                    http.rankings.hot[i].votes = [vote]
-                else
-                    http.rankings.hot[i].votes.push(vote)
-                    
-                http.rankings.hot[i].score = hotScore(http.rankings.hot[i].ups, http.rankings.hot[i].downs, new Date(ts))
-            }
-            if (ts > new Date().getTime() - 7*24*60*60*1000)
-                newRankings.push(http.rankings.hot[i])
-        }
-        http.rankings.hot = newRankings.sort(function(a,b) {
-            return b.score - a.score
-        })
-    },
     init: () => {
         var app = express()
         app.use(cors())
@@ -204,26 +128,41 @@ var http = {
 
         // get hot
         app.get('/hot', (req, res) => {
-            if (!http.rankings.hot || http.rankings.hot.length < 1) 
-                http.generateHot(function() {
-                    res.send(http.rankings.hot.slice(0,50))
-                })
-            else 
-                res.send(http.rankings.hot.slice(0,50))
-            
+            res.send(rankings.contents.hot.slice(0,50))
         })
         app.get('/hot/:author/:link', (req, res) => {
             var filteredContents = []
             var isPastRelativeContent = false
             var added = 0
-            for (let i = 0; i < http.rankings.hot.length; i++) {
+            for (let i = 0; i < rankings.contents.hot.length; i++) {
                 if (isPastRelativeContent) {
-                    filteredContents.push(http.rankings.hot[i])
+                    filteredContents.push(rankings.contents.hot[i])
                     added++
                 }
                 if (added >= 50) break
-                if (http.rankings.hot[i].author === req.params.author
-                && http.rankings.hot[i].link === req.params.link)
+                if (rankings.contents.hot[i].author === req.params.author
+                && rankings.contents.hot[i].link === req.params.link)
+                    isPastRelativeContent = true
+            }
+            res.send(filteredContents)
+        })
+
+        // get trending
+        app.get('/trending', (req, res) => {
+            res.send(rankings.contents.trending.slice(0,50))
+        })
+        app.get('/trending/:author/:link', (req, res) => {
+            var filteredContents = []
+            var isPastRelativeContent = false
+            var added = 0
+            for (let i = 0; i < rankings.contents.trending.length; i++) {
+                if (isPastRelativeContent) {
+                    filteredContents.push(rankings.contents.trending[i])
+                    added++
+                }
+                if (added >= 50) break
+                if (rankings.contents.trending[i].author === req.params.author
+                && rankings.contents.trending[i].link === req.params.link)
                     isPastRelativeContent = true
             }
             res.send(filteredContents)

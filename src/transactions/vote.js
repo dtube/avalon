@@ -47,7 +47,7 @@ module.exports = {
         }}, function(){
             eco.curation(tx.data.author, tx.data.link, function(distributed) {
                 if (!tx.data.pa && !tx.data.pp)
-                    http.updateRankings(tx.data.author, tx.data.link, vote, distributed)
+                    rankings.update(tx.data.author, tx.data.link, vote, distributed)
                 cb(true, distributed)
             })
         })

@@ -68,7 +68,7 @@ module.exports = {
                                     child: [tx.sender, tx.data.link]
                                 }}, function() {})
                             else 
-                                http.newRankingContent(newContent)
+                                rankings.new(newContent)
                             
                             // and report how much was burnt
                             cb(true, null, tx.data.burn)

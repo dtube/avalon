@@ -9,6 +9,7 @@ transaction = require('./transaction.js')
 cache = require('./cache.js')
 validate = require('./validate')
 eco = require('./economics.js')
+rankings = require('./rankings.js')
 
 // verify node version
 const nodeV = 10
@@ -33,6 +34,9 @@ mongo.init(function() {
                 chain.schedule = minerSchedule
             })
         })
+
+        // init hot/trending
+        rankings.init()
 
         // start the http server
         http.init()

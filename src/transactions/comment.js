@@ -63,7 +63,7 @@ module.exports = {
                 }, function(){
                     content.json = tx.data.json
                     if (!tx.data.pa && !tx.data.pp)
-                        http.newRankingContent(content)
+                        rankings.new(content)
                     cb(true)
                 })
             else {
@@ -91,7 +91,7 @@ module.exports = {
                             child: [tx.sender, tx.data.link]
                         }}, function() {})
                     else 
-                        http.newRankingContent(newContent)
+                        rankings.new(newContent)
                     
                     cb(true)
                 })
