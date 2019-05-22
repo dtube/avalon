@@ -77,9 +77,11 @@ var rankings = {
     },
     update: function(author, link, vote, dist) {
         for (const key in rankings.types) {
-            newRankings = []
             for (let i = 0; i < rankings.contents[key].length; i++) {
                 var ts = rankings.contents[key][i].ts
+                if (ts < new Date().getTime() - rankings.types[key].halfTime*expireFactor)
+                    continue
+
                 if (rankings.contents[key][i].author === author && rankings.contents[key][i].link === link) {
                     if (vote.vt > 0)
                         rankings.contents[key][i].ups += Math.abs(vote.vt)
@@ -94,10 +96,8 @@ var rankings = {
                         
                     rankings.contents[key][i].score = rankings.types[key].score(rankings.contents[key][i].ups, rankings.contents[key][i].downs, new Date(ts))
                 }
-                if (ts > new Date().getTime() - rankings.types[key].halfTime*expireFactor)
-                    newRankings.push(rankings.contents[key][i])
             }
-            rankings.contents[key] = newRankings.sort(function(a,b) {
+            rankings.contents[key] = rankings.contents[key].sort(function(a,b) {
                 return b.score - a.score
             })
         }
