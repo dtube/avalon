@@ -2,8 +2,6 @@ var http_port = process.env.HTTP_PORT || 3001
 var express = require('express')
 var cors = require('cors')
 var bodyParser = require('body-parser')
-var decay = require('decay')
-var hotScore = decay.redditHot()
 var fetchVideoInfo = require('youtube-info')
 const {extract} = require('oembed-parser')
 const ogs = require('open-graph-scraper')
@@ -470,7 +468,7 @@ var http = {
                 res.sendStatus(500)
                 return
             }
-            ogs({url: req.params.url}, function (error, results) {
+            ogs({url: req.params.url, headers: {'user-agent': 'facebookexternalhit/1.1 (+https://d.tube)'}}, function (error, results) {
                 if (error) res.sendStatus(404)
                 else res.send(results)
             })
