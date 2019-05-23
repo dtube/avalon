@@ -32,23 +32,23 @@ module.exports = {
             {name: tx.sender},
             {$inc: {balance: -tx.data.amount}},
             function() {
-                cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                cache.findOne('accounts', {name: tx.sender}, function(err, accSender) {
                     if (err) throw err
                     // update his bandwidth
-                    acc.balance += tx.data.amount
-                    transaction.updateGrowInts(acc, ts, function() {
-                        transaction.adjustNodeAppr(acc, -tx.data.amount, function() {
+                    accSender.balance += tx.data.amount
+                    transaction.updateGrowInts(accSender, ts, function() {
+                        transaction.adjustNodeAppr(accSender, -tx.data.amount, function() {
                             // add funds to receiver
                             cache.updateOne('accounts', 
                                 {name: tx.data.receiver},
                                 {$inc: {balance: tx.data.amount}},
                                 function() {
-                                    cache.findOne('accounts', {name: tx.data.receiver}, function(err, acc) {
+                                    cache.findOne('accounts', {name: tx.data.receiver}, function(err, accReceiver) {
                                         if (err) throw err
                                         // update his bandwidth
-                                        acc.balance -= tx.data.amount
-                                        transaction.updateGrowInts(acc, ts, function() {
-                                            transaction.adjustNodeAppr(acc, tx.data.amount, function() {
+                                        accReceiver.balance -= tx.data.amount
+                                        transaction.updateGrowInts(accReceiver, ts, function() {
+                                            transaction.adjustNodeAppr(accReceiver, tx.data.amount, function() {
                                                 cb(true)
                                             })
                                         })
