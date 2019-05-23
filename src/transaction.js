@@ -146,6 +146,7 @@ transaction = {
             // update both at the same time !
             var changes = {bw: bw}
             if (vt) changes.vt = vt
+            logr.debug('GrowInt Collect', account.name, changes)
             cache.updateOne('accounts', 
                 {name: account.name},
                 {$set: changes},
@@ -165,6 +166,7 @@ transaction = {
     },
     updateGrowInts: (account, ts, cb) => {
         // updates the bandwidth and vote tokens when the balance changes (transfer, monetary distribution)
+        // account.balance is the one before the change (!)
         if (!account.bw || !account.vt) 
             logr.debug('error loading grow int', account)
         
@@ -174,6 +176,7 @@ transaction = {
             logr.fatal('error growing grow int', account, ts)
             return
         }
+        logr.debug('GrowInt Update', account.name, bw, vt)
         cache.updateOne('accounts', 
             {name: account.name},
             {$set: {
@@ -186,8 +189,13 @@ transaction = {
             })
     },
     adjustNodeAppr: (acc, newCoins, cb) => {
-        // updates the node_appr values for the node owners the account approves
-        if (!acc.approves) acc.approves = []
+        // updates the node_appr values for the node owners the account approves (when balance changes)
+        // account.balance is the one before the change (!)
+        if (!acc.approves || acc.approves.length === 0 || !newCoins) {
+            cb(true)
+            return
+        }
+
         var node_appr_before = Math.floor(acc.balance/acc.approves.length)
         acc.balance += newCoins
         var node_appr = Math.floor(acc.balance/acc.approves.length)
@@ -196,6 +204,7 @@ transaction = {
         for (let i = 0; i < acc.approves.length; i++)
             node_owners.push(acc.approves[i])
         
+        logr.debug('NodeAppr Update', acc.name, newCoins, node_appr-node_appr_before, node_owners.length)
         cache.updateMany('accounts', 
             {name: {$in: node_owners}},
             {$inc: {node_appr: node_appr-node_appr_before}}
