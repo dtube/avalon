@@ -61,21 +61,9 @@ module.exports = {
                                 // update his bandwidth
                                 acc.balance += eco.accountPrice(tx.data.name)
                                 transaction.updateGrowInts(acc, ts, function() {
-                                    if (!acc.approves) acc.approves = []
-                                    // and update his node_owners approvals values too
-                                    var node_appr_before = Math.floor(acc.balance/acc.approves.length)
-                                    acc.balance -= eco.accountPrice(tx.data.name)
-                                    var node_appr = Math.floor(acc.balance/acc.approves.length)
-                                    var node_owners = []
-                                    for (let i = 0; i < acc.approves.length; i++)
-                                        node_owners.push(acc.approves[i])
-                                    cache.updateMany('accounts', 
-                                        {name: {$in: node_owners}},
-                                        {$inc: {node_appr: node_appr-node_appr_before}},
-                                        function(err) {
-                                            if (err) throw err
-                                            cb(true, null, eco.accountPrice(tx.data.name))
-                                        })
+                                    transaction.adjustNodeAppr(acc, -eco.accountPrice(tx.data.name), function() {
+                                        cb(true, null, eco.accountPrice(tx.data.name))
+                                    })
                                 })
                             })
                         })

@@ -57,6 +57,7 @@ module.exports = {
         // and burn some coins, update bw/vt and leader vote scores as usual
         cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {
             cache.findOne('accounts', {name: tx.sender}, function(err, sender) {
+                sender.balance += tx.data.burn
                 transaction.updateGrowInts(sender, ts, function() {
                     transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
                         // insert content+vote into db

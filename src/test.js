@@ -1,18 +1,11 @@
-// const bs58 = require('base-x')('D123456789ABCEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
+const secp256k1 = require('secp256k1')
+const priv = 'GCCURCQonXq9hujm8EDoRjBq83NAbkVj1nrAS1WXG5Z6'
+const rawPriv = bs58.decode(priv)
+const rawPub = secp256k1.publicKeyCreate(rawPriv)
+const pub = bs58.encode(rawPub)
 
-// const now = (unit) => {
-// 	  const hrTime = process.hrtime()
-// 	  switch (unit) {
-//     case 'milli':
-// 		  return hrTime[0] * 1000 + hrTime[1] / 1000000
-//     case 'micro':
-// 		  return hrTime[0] * 1000000 + hrTime[1] / 1000
-//     case 'nano':
-// 		  return hrTime[0] * 1000000000 + hrTime[1]
-//     default:
-// 		  return hrTime[0] * 1000000000 + hrTime[1]
-// 	  }
-// }
-
-// const string = 'qemgpoqjmoqjkqqpfmjpoqmjefpomjp'
-// const raw = bs58.decode(string)
+console.log(priv)
+console.log(rawPriv)
+console.log(rawPub)
+console.log(pub)

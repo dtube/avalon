@@ -535,7 +535,6 @@ chain = {
                     }},
                     function(err) {
                         if (err) throw err
-                        account.balance = newBalance
                         transaction.updateGrowInts(account, ts, function() {
                             transaction.adjustNodeAppr(account, config.leaderReward, function() {
                                 cb(config.leaderReward)

@@ -23,7 +23,7 @@
     "oembed-parser": "^1.2.2",
     "open-graph-scraper": "^3.6.1",
     "run-series": "^1.1.8",
-    "secp256k1": "^3.6.2",
+    "secp256k1": "^3.7.0",
     "signale": "^1.4.0",
     "ws": "^1.1.0",
     "youtube-info": "^1.3.2"

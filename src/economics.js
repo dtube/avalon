@@ -128,7 +128,7 @@ var eco = {
                 return b.share - a.share
             })
 
-            logr.trace(currentVote, winners.length+'/'+content.votes.length+' won')
+            //logr.trace(currentVote, winners.length+'/'+content.votes.length+' won')
 
             // forth loop to pay out
             var executions = []
@@ -170,6 +170,7 @@ var eco = {
                                 }, function(err) {
                                     if (err) throw err
                                     cache.findOne('accounts', {name: config.masterName}, function(err, masterAccount) {
+                                        masterAccount.balance -= benefReward
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
                                             transaction.adjustNodeAppr(masterAccount, benefReward, function() {
                                                 cb(newCoins)
@@ -190,7 +191,7 @@ var eco = {
                 if (err) throw err
                 if (!account.uv) account.uv = 0
 
-                logr.trace('DIST:', name, vt, ts, account.uv, stats)
+                //logr.trace('DIST:', name, vt, ts, account.uv, stats)
 
                 var thNewCoins = 0
                 if (stats.votes === 0)
@@ -235,8 +236,7 @@ var eco = {
                 }
                 
                 cache.updateOne('accounts', {name: name}, {$set: changes}, function(){
-                    if (newCoins > 0) {
-                        account.balance -= newCoins
+                    if (newCoins > 0)
                         db.collection('distributed').insertOne({
                             name: name,
                             dist: newCoins,
@@ -249,8 +249,7 @@ var eco = {
                                 })
                             })
                         })
-                        
-                    } else cb(newCoins)
+                    else cb(newCoins)
                 })
             })
         })

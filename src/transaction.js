@@ -146,7 +146,7 @@ transaction = {
             // update both at the same time !
             var changes = {bw: bw}
             if (vt) changes.vt = vt
-            logr.debug('GrowInt Collect', account.name, changes)
+            logr.trace('GrowInt Collect', account.name, changes)
             cache.updateOne('accounts', 
                 {name: account.name},
                 {$set: changes},
@@ -176,7 +176,7 @@ transaction = {
             logr.fatal('error growing grow int', account, ts)
             return
         }
-        logr.debug('GrowInt Update', account.name, bw, vt)
+        logr.trace('GrowInt Update', account.name, bw, vt)
         cache.updateOne('accounts', 
             {name: account.name},
             {$set: {
@@ -204,7 +204,7 @@ transaction = {
         for (let i = 0; i < acc.approves.length; i++)
             node_owners.push(acc.approves[i])
         
-        logr.debug('NodeAppr Update', acc.name, newCoins, node_appr-node_appr_before, node_owners.length)
+        logr.trace('NodeAppr Update', acc.name, newCoins, node_appr-node_appr_before, node_owners.length)
         cache.updateMany('accounts', 
             {name: {$in: node_owners}},
             {$inc: {node_appr: node_appr-node_appr_before}}

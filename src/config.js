@@ -68,7 +68,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000032',
+            originHash: '0000000000000000000000000000000000000000000000000000000000000033',
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 10,
