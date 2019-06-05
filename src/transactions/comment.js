@@ -87,8 +87,8 @@ module.exports = {
                 }
                 if (tx.data.tag)  {
                     if (tx.data.tag) vote.tag = tx.data.tag
-                    newContent.tags = []
-                    newContent.tags.push({tag: tx.data.tag, vt: tx.data.vt})
+                    newContent.tags = {}
+                    newContent.tags[tx.data.tag] = vote.vt
                 }
                 cache.insertOne('contents', newContent, function(){
                     if (tx.data.pa && tx.data.pp) 

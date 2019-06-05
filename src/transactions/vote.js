@@ -63,8 +63,11 @@ module.exports = {
                     return b.vt - a.vt
                 })
                 topTags = topTags.slice(0, config.tagMaxPerContent)
+                var tags = {}
+                for (let i = 0; i < topTags.length; i++)
+                    tags[topTags[i].tag] = topTags[i].vt
                 cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$set: {
-                    tags: topTags
+                    tags: tags
                 }}, function(){
                     // monetary distribution (curation rewards)
                     eco.curation(tx.data.author, tx.data.link, function(distributed) {
