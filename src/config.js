@@ -20,8 +20,8 @@ var config = {
             block0ts: 1554643902092,
             // the block time in ms
             blockTime: 3000,
-            // the number of ms needed for 1 DTC to generate 1 byte of bw
-            bwGrowth: 300000,
+            // the number of ms needed for 0.01 DTC to generate 1 byte of bw
+            bwGrowth: 1000,
             // the maximum bandwidth an account can have available
             bwMax: 256000,
             // the number of rounds of consensus before block is valid (min 2)
@@ -78,6 +78,7 @@ var config = {
             rewardPoolMaxShare: 0.1,
             // the maximum length of tags (on votes)
             tagMaxLength: 25,
+            tagMaxPerContent: 5,
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
             // limit which transactions are available
@@ -88,7 +89,7 @@ var config = {
                 14: 2,
                 15: 2
             },
-            // the number of ms needed for 1 coin to generate 1 vt
+            // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 3600000, // +1 vt per hour per coin
             vtPerBurn: 168 // 24*7 (1 week worth of generation)
             // freezeAccounts: ['hacker1', 'hacker2']

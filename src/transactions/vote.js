@@ -48,21 +48,23 @@ module.exports = {
             cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
                 // update top tags
                 var topTags = []
-                for (let i = 0; i < content.votes.length; i++)
+                for (let i = 0; i < content.votes.length; i++) {
                     var exists = false
-                    for (let y = 0; y < topTags.length; y++) {
-                        if (topTags[y].tag == content.votes[i].tag) {
+                    for (let y = 0; y < topTags.length; y++)
+                        if (topTags[y].tag === content.votes[i].tag) {
                             exists = true
-                            topTags[y].vt += tx.data.vt
+                            topTags[y].vt += content.votes[i].vt
                         }
                     if (!exists)
-                        topTags.push({tag: tx.data.tag, vt: tx.data.vt})
+                        topTags.push({tag: content.votes[i].tag, vt: content.votes[i].vt})
+                }
 
                 topTags = topTags.sort(function(a,b) {
                     return b.vt - a.vt
                 })
+                topTags = topTags.slice(0, config.tagMaxPerContent)
                 cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$set: {
-                    topTags: topTags
+                    tags: topTags
                 }}, function(){
                     // monetary distribution (curation rewards)
                     eco.curation(tx.data.author, tx.data.link, function(distributed) {
