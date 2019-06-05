@@ -42,7 +42,6 @@ module.exports = {
             ts: ts,
             vt: tx.data.vt+(tx.data.burn * config.vtPerBurn) // we just add some extra VTs
         }
-        if (tx.data.tag) superVote.tag = tx.data.tag
         var newContent = {
             _id: tx.sender+'/'+tx.data.link,
             author: tx.sender,
@@ -53,6 +52,11 @@ module.exports = {
             child: [],
             votes: [superVote],
             ts: ts
+        }
+        if (tx.data.tag)  {
+            if (tx.data.tag) superVote.tag = tx.data.tag
+            newContent.tags = {}
+            newContent.tags[tx.data.tag] = superVote.vt
         }
         // and burn some coins, update bw/vt and leader vote scores as usual
         cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {

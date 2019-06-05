@@ -45,10 +45,32 @@ module.exports = {
         cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$push: {
             votes: vote
         }}, function(){
-            eco.curation(tx.data.author, tx.data.link, function(distributed) {
-                if (!tx.data.pa && !tx.data.pp)
-                    rankings.update(tx.data.author, tx.data.link, vote, distributed)
-                cb(true, distributed)
+            cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
+                // update top tags
+                var topTags = []
+                for (let i = 0; i < content.votes.length; i++)
+                    var exists = false
+                    for (let y = 0; y < topTags.length; y++) {
+                        if (topTags[y].tag == content.votes[i].tag) {
+                            exists = true
+                            topTags[y].vt += tx.data.vt
+                        }
+                    if (!exists)
+                        topTags.push({tag: tx.data.tag, vt: tx.data.vt})
+
+                topTags = topTags.sort(function(a,b) {
+                    return b.vt - a.vt
+                })
+                cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$set: {
+                    topTags: topTags
+                }}, function(){
+                    // monetary distribution (curation rewards)
+                    eco.curation(tx.data.author, tx.data.link, function(distributed) {
+                        if (!tx.data.pa && !tx.data.pp)
+                            rankings.update(tx.data.author, tx.data.link, vote, distributed)
+                        cb(true, distributed)
+                    })
+                })
             })
         })
     }
