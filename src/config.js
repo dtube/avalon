@@ -3,7 +3,7 @@ var config = {
         0: {
             // the account pricing options
             // see: https://www.wolframalpha.com/input/?i=plot+10%2B100*(1.1%5E(14-x))+from+x%3D1+to+x%3D40
-            accountPriceBase: 100,
+            accountPriceBase: 10000,
             accountPriceCharMult: 1.3,
             accountPriceChars: 8,
             accountPriceMin: 1,
@@ -21,7 +21,7 @@ var config = {
             // the block time in ms
             blockTime: 3000,
             // the number of ms needed for 0.01 DTC to generate 1 byte of bw
-            bwGrowth: 1000,
+            bwGrowth: 10000000,
             // the maximum bandwidth an account can have available
             bwMax: 256000,
             // the number of rounds of consensus before block is valid (min 2)
@@ -44,7 +44,7 @@ var config = {
             // the maximum number of leaders an account can vote for
             leaderMaxVotes: 5,
             // the "master" account starting stake (total starting supply)
-            masterBalance: 1000000,
+            masterBalance: 10000000000,
             // the number of tokens distributed before master gets 1 free token printed.
             // masterFee = 2 => <33% fee
             // masterFee = 4 => <20% fee
@@ -71,9 +71,9 @@ var config = {
             originHash: '0000000000000000000000000000000000000000000000000000000000000033',
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
-            rewardPoolMin: 10,
+            rewardPoolMin: 1,
             // the multiplier for the reward pool, modifying it is a bad practise
-            rewardPoolMult: 2,
+            rewardPoolMult: 200,
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
             // the maximum length of tags (on votes)
@@ -90,24 +90,21 @@ var config = {
                 15: 2
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
-            vtGrowth: 3600000, // +1 vt per hour per coin
-            vtPerBurn: 168 // 24*7 (1 week worth of generation)
-            // freezeAccounts: ['hacker1', 'hacker2']
+            vtGrowth: 360000000, // +1 vt per hour per DTC
+            vtPerBurn: 10 // can be updated in the future to modify incentives
         },
-        // example hardfork on block #1000000
-        // increasing to 10 leaders earning 1 VT / block
-        // and opening NEW_ACCOUNT transaction to everyone
-        2100: {
-            leaders: 10,
-            leaderRewardVT: 1,
-            txLimits: {
-                14: 2,
-                15: 2
-            }
-        },
-        22500: {
-            rewardPoolMult: 200
-        }
+        // example hardforks
+        // 2100: {
+        //     leaders: 10,
+        //     leaderRewardVT: 1,
+        //     txLimits: {
+        //         14: 2,
+        //         15: 2
+        //     }
+        // },
+        // 22500: {
+        //     rewardPoolMult: 200
+        // }
     },
     read: (blockNum) => {
         var finalConfig = {}
