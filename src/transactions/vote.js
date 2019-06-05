@@ -71,7 +71,7 @@ module.exports = {
                 }}, function(){
                     // monetary distribution (curation rewards)
                     eco.curation(tx.data.author, tx.data.link, function(distributed) {
-                        if (!tx.data.pa && !tx.data.pp)
+                        if (!content.pa && !content.pp)
                             rankings.update(tx.data.author, tx.data.link, vote, distributed)
                         cb(true, distributed)
                     })

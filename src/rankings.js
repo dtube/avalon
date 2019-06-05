@@ -72,7 +72,7 @@ var rankings = {
                 content.ups += Math.abs(content.votes[0].vt)
             if (content.votes[0].vt < 0)
                 content.downs += Math.abs(content.votes[0].vt)
-            rankings.contents[key].push(content)
+            rankings.contents[key].push(JSON.parse(JSON.stringify(content)))
         }
     },
     update: function(author, link, vote, dist) {
