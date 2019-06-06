@@ -55,7 +55,7 @@ module.exports = {
                             exists = true
                             topTags[y].vt += content.votes[i].vt
                         }
-                    if (!exists)
+                    if (!exists && content.votes[i].tag)
                         topTags.push({tag: content.votes[i].tag, vt: content.votes[i].vt})
                 }
 
