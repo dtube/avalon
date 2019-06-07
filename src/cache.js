@@ -5,23 +5,26 @@ var cache = {
     copy: {
         accounts: {},
         contents: {},
+        distributed: {},
         changes: [],
         inserts: []
     },
     accounts: {},
     contents: {},
+    distributed: {},
     changes: [],
     inserts: [],
     backup: function() {
-        
         cache.copy = {
             accounts: {},
             contents: {},
+            distributed: {},
             changes: [],
             inserts: []
         }
         cache.copy.accounts = cloneDeep(cache.accounts)
         cache.copy.contents = cloneDeep(cache.contents)
+        cache.copy.distributed = cloneDeep(cache.distributed)
         cache.copy.changes = cloneDeep(cache.changes)
         cache.copy.inserts = cloneDeep(cache.inserts)
         //logr.trace('Cache backup\'d')
@@ -29,10 +32,12 @@ var cache = {
     rollback: function() {
         cache.accounts = cloneDeep(cache.copy.accounts)
         cache.contents = cloneDeep(cache.copy.contents)
+        cache.distributed = cloneDeep(cache.copy.distributed)
         cache.changes = cloneDeep(cache.copy.changes)
         cache.inserts = cloneDeep(cache.copy.inserts)
         cache.copy.accounts = {}
         cache.copy.contents = {}
+        cache.copy.distributed = {}
         cache.copy.changes = []
         cache.copy.inserts = []
         eco.nextBlock()
@@ -166,6 +171,7 @@ var cache = {
     clear: function() {
         cache.accounts = {}
         cache.contents = {}
+        cache.distributed = {}
     },
     writeToDisk: function(cb) {
         var executions = []
@@ -183,7 +189,8 @@ var cache = {
         // 1 update per document concerned (even if no real change)
         var docsToUpdate = {
             accounts: {},
-            contents: {}
+            contents: {},
+            distributed: {}
         }
         for (let i = 0; i < cache.changes.length; i++) {
             var change = cache.changes[i]

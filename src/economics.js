@@ -163,12 +163,11 @@ var eco = {
                         var benefReward = Math.floor(distAfter/config.masterFee) - Math.floor(distBefore/config.masterFee)
                         if (benefReward > 0) 
                             cache.updateOne('accounts', {name: config.masterName}, {$inc: {balance: benefReward}}, function() {
-                                db.collection('distributed').insertOne({
+                                cache.insertOne('distributed', {
                                     name: config.masterName,
                                     dist: benefReward,
                                     ts: currentVote.ts
-                                }, function(err) {
-                                    if (err) throw err
+                                }, function() {
                                     cache.findOne('accounts', {name: config.masterName}, function(err, masterAccount) {
                                         masterAccount.balance -= benefReward
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
@@ -237,12 +236,11 @@ var eco = {
                 
                 cache.updateOne('accounts', {name: name}, {$set: changes}, function(){
                     if (newCoins > 0)
-                        db.collection('distributed').insertOne({
+                        cache.insertOne('distributed', {
                             name: name,
                             dist: newCoins,
                             ts: ts
-                        }, function(err) {
-                            if (err) throw err
+                        }, function() {
                             transaction.updateGrowInts(account, ts, function() {
                                 transaction.adjustNodeAppr(account, newCoins, function() {
                                     cb(newCoins)
