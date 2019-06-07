@@ -142,7 +142,8 @@ var eco = {
                         callback(null, 0)
                         return
                     }
-                    eco.distribute(winners[i].u, payout, currentVote.ts, function(dist) {
+                    var memo = content.author+'/'+content.link+'/'+currentVote.u
+                    eco.distribute(winners[i].u, payout, currentVote.ts, memo, function(dist) {
                         eco.currentBlock.dist += dist
                         eco.currentBlock.votes += payout
                         callback(null, dist)
@@ -159,6 +160,7 @@ var eco = {
                 }, function() {
                     if (config.masterFee > 0 && newCoins > 0) {
                         var distBefore = content.dist
+                        if (!distBefore) distBefore = 0
                         var distAfter = distBefore + newCoins
                         var benefReward = Math.floor(distAfter/config.masterFee) - Math.floor(distBefore/config.masterFee)
                         if (benefReward > 0) 
@@ -166,13 +168,14 @@ var eco = {
                                 cache.insertOne('distributed', {
                                     name: config.masterName,
                                     dist: benefReward,
-                                    ts: currentVote.ts
+                                    ts: currentVote.ts,
+                                    _id: content.author+'/'+content.link+'/'+currentVote.u+'/'+config.masterName
                                 }, function() {
                                     cache.findOne('accounts', {name: config.masterName}, function(err, masterAccount) {
                                         masterAccount.balance -= benefReward
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
                                             transaction.adjustNodeAppr(masterAccount, benefReward, function() {
-                                                cb(newCoins)
+                                                cb(newCoins+benefReward)
                                             })
                                         })
                                     })
@@ -184,7 +187,7 @@ var eco = {
             })
         })
     },
-    distribute: (name, vt, ts, cb) => {
+    distribute: (name, vt, ts, memo, cb) => {
         eco.rewardPool(function(stats) {
             cache.findOne('accounts', {name: name}, function(err, account) {
                 if (err) throw err
@@ -239,7 +242,8 @@ var eco = {
                         cache.insertOne('distributed', {
                             name: name,
                             dist: newCoins,
-                            ts: ts
+                            ts: ts,
+                            _id: memo+'/'+name
                         }, function() {
                             transaction.updateGrowInts(account, ts, function() {
                                 transaction.adjustNodeAppr(account, newCoins, function() {
