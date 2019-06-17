@@ -17,7 +17,7 @@ const versionRegex = new RegExp(`^${nodeV}\\..*`)
 const versionCorrect = process.versions.node.match(versionRegex)
 if (!versionCorrect) {
     logr.fatal('Wrong NodeJS version. v10 is required.')
-    process.exit()
+    process.exit(1)
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
 

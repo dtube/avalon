@@ -175,7 +175,7 @@ chain = {
 
         if (chain.schedule.shuffle.length === 0) {
             logr.fatal('All leaders gave up their stake? Chain is over')
-            process.exit()
+            process.exit(1)
         }
 
         var mineInMs = null
@@ -423,7 +423,7 @@ chain = {
                             transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                                 if (!executed) {
                                     logr.fatal('Tx execution failure', tx)
-                                    process.exit()
+                                    process.exit(1)
                                 }
                                 if (isFinal)
                                     chain.recentTxs[tx.hash] = tx

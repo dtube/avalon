@@ -371,10 +371,10 @@ function verifyKeyAndUser() {
     }
     if (!program.key) {
         writeLine('no key?')
-        process.exit()
+        process.exit(1)
     }
     if (!program.me) {
         writeLine('no user?')
-        process.exit()
+        process.exit(1)
     }
 }

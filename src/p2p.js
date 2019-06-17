@@ -264,7 +264,7 @@ var p2p = {
     addRecursive: (block) => {
         chain.validateAndAddBlock(block, true, function(err, newBlock) {
             // if (newBlock._id == 6465) {
-            //     process.exit()
+            //     process.exit(0)
             // }
             if (err)
                 logr.error('Error Replay', newBlock)
