@@ -175,7 +175,7 @@ var eco = {
                                         masterAccount.balance -= benefReward
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
                                             transaction.adjustNodeAppr(masterAccount, benefReward, function() {
-                                                cb(newCoins+benefReward)
+                                                cb(newCoins, benefReward)
                                             })
                                         })
                                     })

@@ -70,10 +70,10 @@ module.exports = {
                     tags: tags
                 }}, function(){
                     // monetary distribution (curation rewards)
-                    eco.curation(tx.data.author, tx.data.link, function(distributed) {
+                    eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster) {
                         if (!content.pa && !content.pp)
-                            rankings.update(tx.data.author, tx.data.link, vote, distributed)
-                        cb(true, distributed)
+                            rankings.update(tx.data.author, tx.data.link, vote, distCurators)
+                        cb(true, distCurators+distMaster)
                     })
                 })
             })
