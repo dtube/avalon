@@ -56,7 +56,7 @@ var config = {
             // if false master can create accounts with usernames without burning tokens
             masterPaysForUsernames: false,
             // the master account public original key
-            masterPub: 'ngruo84YEunp8JjJv2xqA2GBCRPuF7nqWkccJ27X6je8',
+            masterPub: 'uxJ25PC95cb3xjqacMrhmiv5ChKHJnVHzkwBnQFEXs6i',
             // the maximum time drift in ms before a transaction is invalid
             maxDrift: 200,
             // the max length of a transfer memo
