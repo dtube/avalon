@@ -68,7 +68,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000034',
+            originHash: '0000000000000000000000000000000000000000000000000000000000000035',
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 1,
@@ -91,7 +91,7 @@ var config = {
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 360000000, // +1 vt per hour per DTC
-            vtPerBurn: 10 // can be updated in the future to modify incentives
+            vtPerBurn: 6 // can be updated in the future to modify incentives
         },
         // example hardforks
         // 2100: {
