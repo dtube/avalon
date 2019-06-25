@@ -67,13 +67,13 @@ Necessary for all transactions:
 #### Vote for a leader
 * *target*: the node owner to approve
 ```
-node src/cli.js vote-leader <key> <user> <target>
+node src/cli.js vote-leader -K <key> -M <user> <target>
 ```
 
 #### Unvote a leader
 * *target*: the node owner to approve
 ```
-node src/cli.js unvote-leader <key> <user> <target>
+node src/cli.js unvote-leader -K <key> -M <user> <target>
 ```
 
 #### Transfer tokens
@@ -81,7 +81,7 @@ node src/cli.js unvote-leader <key> <user> <target>
 * *amount*: number of tokens to transfer to the receiver
 * *memo*: arbitrary short text content
 ```
-node src/cli.js transfer <key> <user> <receiver> <amount> <memo>
+node src/cli.js transfer -K <key> -M <user> <receiver> <amount> <memo>
 ```
 
 #### Add a post / Commenting
@@ -92,7 +92,7 @@ node src/cli.js transfer <key> <user> <receiver> <amount> <memo>
 * *tag*: arbitrary short text content
 * *weight* : the number of vote tokens to spend on this vote
 ```
-node src/cli.js comment <key> <user> <link> <parent_author> <parent_link> <json>
+node src/cli.js comment -K <key> -M <user> <link> <parent_author> <parent_link> <json>
 ```
 
 #### Vote a post
@@ -101,25 +101,25 @@ node src/cli.js comment <key> <user> <link> <parent_author> <parent_link> <json>
 * *weight*: the number of vote tokens to spend on this vote
 * *tag*: arbitrary short text content
 ```
-node src/cli.js vote <key> <user> <link> <author> <weight> <tag>
+node src/cli.js vote -K <key> -M <user> <link> <author> <weight> <tag>
 ```
 
 #### Edit your user json object
 * *json*: arbitrary json input. example: `{"string":"aye", array:[1,2,3]}`
 ```
-node src/cli.js profile <key> <user> <json>
+node src/cli.js profile -K <key> -M <user> <json>
 ```
 
 #### Follow a user
 * *target*: the user to follow
 ```
-node src/cli.js follow <key> <user> <target>
+node src/cli.js follow -K <key> -M <user> <target>
 ```
 
 #### Unfollow a user
 * *target*: the user to unfollow
 ```
-node src/cli.js unfollow <key> <user> <target>
+node src/cli.js unfollow -K <key> -M <user> <target>
 ```
 
 #### Signing a raw transaction
@@ -130,7 +130,7 @@ node src/cli.js sign <priv_key> <user> <tx> > tmptx.json
 ```
 For example to approve a node owner and publishing it only 5 seconds later:
 ```
-node src/cli.js sign 4L1C3553KRETK3Y alice '{"type":1,"data":{"target":"miner1"}}' > tmptx.json
+node src/cli.js sign -K 4L1C3553KRETK3Y -M alice '{"type":1,"data":{"target":"miner1"}}' > tmptx.json
 sleep 5
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
@@ -160,7 +160,7 @@ db.blocks.findOne({_id: 0})
 Shut everything down, then `db.dropDatabase()` in mongo, and restart
 
 ## Being a good node owner
-If you are in the top 20 node owners, please set your profile as so:
+If you are in the top 20 node owners, please add a `node.ws` field to your profile as so:
 ```
-node src/cli.js profile <key> <user> '{"node":{"ws":"ws://yourip:yourport"}}'
+node src/cli.js profile -K <key> -M <user> '{"node":{"ws":"ws://yourip:yourport"}}'
 ```
