@@ -1,6 +1,6 @@
 # AVALON
 
-## Installing an observer node
+## Get a node running
 * Install MongoDB and run it on your machine
 * `npm install`
 * Get your own keys with `node src/cli.js keypair`
@@ -8,6 +8,9 @@
 * Add your keys to `scripts/start.sh`
 * `chmod +x scripts/start.sh`
 * `./scripts/start.sh`
+
+## Get helped
+We have a discord channel dedicated to node owners (aka leaders), where you can get support to get set up. Join [discorg.gg/dtube](https://discord.gg/dtube) and go to `DTube Chain -> #leader-candidates`
 
 ## Using the CLI
 You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> -- help` for a full help.
