@@ -126,7 +126,7 @@ transaction = {
             if (tx.type === TransactionType.TRANSFER_BW)
                 bw.v -= tx.data.amount
 
-            // collect voting tokens when needed
+            // collect voting power when needed
             var vt = null
             switch (tx.type) {
             case TransactionType.COMMENT:

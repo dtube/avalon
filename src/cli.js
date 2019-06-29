@@ -240,16 +240,16 @@ program.command('transfer-bw <receiver> <amount>')
         writeLine('  $ xfer-bw dan 777 -F key.json -M alice')
     })
 
-program.command('transfer-vt <receiver> <amount>')
-    .alias('xfer-vt')
-    .description('transfer voting tokens')
+program.command('transfer-vp <receiver> <amount>')
+    .alias('xfer-vp')
+    .description('transfer voting power')
     .action(function(receiver, amount) {
         verifyKeyAndUser()
         sendTx(cmds.transferVt(program.key, program.me, receiver, amount))
     }).on('--help', function(){
         writeLine('')
         writeLine('Example:')
-        writeLine('  $ xfer-vt charlotte 777 -F key.json -M alice')
+        writeLine('  $ xfer-vp charlotte 777 -F key.json -M alice')
     })
 
 program.command('unfollow <target>')
