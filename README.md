@@ -13,7 +13,7 @@
 We have a discord channel dedicated to node owners (aka leaders), where you can get support to get set up. Join [discorg.gg/dtube](https://discord.gg/dtube) and go to `DTube Chain -> #leader-candidates`
 
 ## Using the CLI
-You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> -- help` for a full help.
+You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> --help` for a full help.
 
 ## Using Javalon
 There is also a [Javascript module](https://www.npmjs.com/package/javalon) available and working on both browser and nodejs.
