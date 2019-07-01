@@ -92,13 +92,14 @@ var p2p = {
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
-            var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
+            //var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
             //logr.trace('P2P-IN:', user, data)
             try {
                 var message = JSON.parse(data)
             } catch(e) {
                 logr.warn('Received non-JSON, doing nothing ;)')
             }
+            if (!message || !message.t) return
             
             switch (message.t) {
             case MessageType.QUERY_NODE_STATUS:
