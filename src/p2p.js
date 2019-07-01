@@ -99,7 +99,7 @@ var p2p = {
             } catch(e) {
                 logr.warn('Received non-JSON, doing nothing ;)')
             }
-            if (!message || !message.t) return
+            if (!message || typeof message.t === 'undefined') return
             
             switch (message.t) {
             case MessageType.QUERY_NODE_STATUS:
