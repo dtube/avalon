@@ -1,6 +1,6 @@
 # AVALON
 
-## Installing an observer node
+## Get a node running
 * Install MongoDB and run it on your machine
 * `npm install`
 * Get your own keys with `node src/cli.js keypair`
@@ -9,8 +9,11 @@
 * `chmod +x scripts/start.sh`
 * `./scripts/start.sh`
 
+## Get helped
+We have a discord channel dedicated to node owners (aka leaders), where you can get support to get set up. Join [discorg.gg/dtube](https://discord.gg/dtube) and go to `DTube Chain -> #leader-candidates`
+
 ## Using the CLI
-You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> -- help` for a full help.
+You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> --help` for a full help.
 
 ## Using Javalon
 There is also a [Javascript module](https://www.npmjs.com/package/javalon) available and working on both browser and nodejs.
@@ -57,11 +60,17 @@ curl http://localhost:3001/allminers
 curl http://localhost:3001/count
 ```
 
+#### Full list of API endpoints
+And the recommended security practises if you want to open the API to the world
+[https://docs.google.com/spreadsheets/d/1ORoHjrdq5V5OkTChijTUOEYRzTujVXTzCyNYt-ysVhw/edit?usp=drive_web&ouid=109732502499946497195](https://docs.google.com/spreadsheets/d/1ORoHjrdq5V5OkTChijTUOEYRzTujVXTzCyNYt-ysVhw/edit?usp=drive_web&ouid=109732502499946497195)
+
 ## Transacting
-Once you have an account and balance, your account will start generating bandwidth and vote tokens which you can consume by transacting.
+Once you have an account and balance, your account will start generating bandwidth and voting power which you can consume by transacting.
 
 Necessary for all transactions:
 * *key*: your private key
+* * Use -K MyKeyHere to use a plain-text key
+* * Use -F file.json to use a key inside a file to sign
 * *user*: your username
 
 #### Vote for a leader
@@ -138,22 +147,33 @@ curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001
 ## POST Calls
 
 #### Mine Block
-Will force the node to try to produce a block even if it's unscheduled. Useful for block #1.
+Will force the node to try to produce a block even if it's unscheduled. Useful for block #1 and working on development
 ```
 curl  http://localhost:3001/mineBlock
 ``` 
 
 #### Add peer
-Manually force connection to a peer
+Manually force connection to a peer without having to restart the node
 ```
 curl -H "Content-type:application/json" --data '{"peer" : "ws://localhost:6001"}' http://localhost:3001/addPeer
 ```
 
-## Using MongoDB to grab any data
+## MongoDB Storage
+Avalon saves the state of the chain into mongodb after each block. You can easily query mongodb directly to get any data you want, that wouldn't be provided by the API itself.
 ```
 mongo <db_name>
 db.accounts.findOne({name:'master'})
 db.blocks.findOne({_id: 0})
+```
+
+## Elastic Search Storage
+Avalon can also copy the accounts and contents into an elastic search database with [monstache](https://github.com/rwynn/monstache). A configuration file for monstache is provided in the root of this repository. Once running you can query it like so : 
+
+```
+# search contents
+curl http://localhost:9200/avalon.contents/_search?q=football
+# search accounts
+curl http://localhost:9200/avalon.accounts/_search?q=satoshi
 ```
 
 ## Resetting and replaying the chain
