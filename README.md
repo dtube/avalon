@@ -177,7 +177,18 @@ curl http://localhost:9200/avalon.accounts/_search?q=satoshi
 ```
 
 ## Resetting and replaying the chain
-Shut everything down, then `db.dropDatabase()` in mongo, and restart
+Shut everything down, then `db.dropDatabase()` in mongo, and restart. This will do a complete replay and verification of the chain. Depending on your CPU/RAM it might be extremely slow and take a long time on a long chain with many transactions.
+
+#### Replaying from a dump
+An alternative way to resync your node faster is to use one of the backups provided by backup.d.tube. Example:
+
+```
+wget https://backup.d.tube/16.tar.gz
+tar xfvz ./16.tar.gz
+mongorestore -d avalon .
+```
+
+Will download and restore your avalon node up to 16:00 UTC.
 
 ## Being a good node owner
 If you are in the top 20 node owners, please add a `node.ws` field to your profile as so:
