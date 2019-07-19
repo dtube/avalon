@@ -93,18 +93,12 @@ var config = {
             vtGrowth: 360000000, // +1 vt per hour per DTC
             vtPerBurn: 6 // can be updated in the future to modify incentives
         },
-        // example hardforks
-        // 2100: {
-        //     leaders: 10,
-        //     leaderRewardVT: 1,
-        //     txLimits: {
-        //         14: 2,
-        //         15: 2
-        //     }
-        // },
-        // 22500: {
-        //     rewardPoolMult: 200
-        // }
+        // testnet hardfork 1
+        1000020: {
+            ecoBlocks: 4800,
+            leaders: 10,
+            leaderRewardVT: 10
+        }
     },
     read: (blockNum) => {
         var finalConfig = {}
