@@ -1,8 +1,13 @@
 # AVALON
 
 ## Get a node running
-* Install MongoDB and run it on your machine
-* `npm install`
+
+#### Dependencies
+* [MongoDB](https://mongodb.com)
+* [NodeJS](https://nodejs.org/en/download/) **v10** (LTS)
+
+#### Install
+* `npm install` to install nodejs dependencies
 * Get your own keys with `node src/cli.js keypair`
 * Save your keys
 * Add your keys to `scripts/start.sh`
