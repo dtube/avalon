@@ -182,6 +182,10 @@ var http = {
                     {author: req.params.author}, 
                     {link: req.params.link}
                 ]}, function(err, content) {
+                if (!content) {
+                    res.sendStatus(404)
+                    return
+                }
                 db.collection('contents').find({
                     $and: [
                         {pa: null},
