@@ -98,7 +98,7 @@ var config = {
         1000020: {
             capUnpaidVotes: true,
             ecoBlocks: 2400,
-            leaders: 7,
+            leaders: 10,
             leaderRewardVT: 10,
             rewardPoolMult: 300
         },
