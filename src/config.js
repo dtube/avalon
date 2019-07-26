@@ -24,6 +24,8 @@ var config = {
             bwGrowth: 10000000,
             // the maximum bandwidth an account can have available
             bwMax: 256000,
+            // controls if unpaid votes should be capped to the amount needed to generate 1 token
+            capUnpaidVotes: false,
             // the number of rounds of consensus before block is valid (min 2)
             consensusRounds: 2,
             // the number of blocks from the past taken into consideration for econonomics
@@ -93,6 +95,16 @@ var config = {
             vtGrowth: 360000000, // +1 vt per hour per DTC
             vtPerBurn: 6 // can be updated in the future to modify incentives
         },
+        1000020: {
+            capUnpaidVotes: true,
+            ecoBlocks: 2400,
+            leaders: 7,
+            leaderRewardVT: 10,
+            rewardPoolMult: 300
+        },
+        1002420: {
+            rewardPoolMult: 200
+        }
         // example hardforks
         // 2100: {
         //     leaders: 10,
@@ -109,8 +121,11 @@ var config = {
     read: (blockNum) => {
         var finalConfig = {}
         for (const key in config.history) 
-            if (blockNum >= key)
+            if (blockNum >= key) {
+                if (blockNum === parseInt(key) && blockNum !== 0)
+                    logr.info('Hard Fork #'+key)
                 Object.assign(finalConfig, config.history[key])
+            }
             else break
         
         return finalConfig
