@@ -95,14 +95,14 @@ var config = {
             vtGrowth: 360000000, // +1 vt per hour per DTC
             vtPerBurn: 6 // can be updated in the future to modify incentives
         },
-        1000020: {
+        1200010: {
             capUnpaidVotes: true,
             ecoBlocks: 2400,
             leaders: 10,
             leaderRewardVT: 10,
             rewardPoolMult: 300
         },
-        1002420: {
+        1002410: {
             rewardPoolMult: 200
         }
         // example hardforks
