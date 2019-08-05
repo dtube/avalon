@@ -102,7 +102,7 @@ var config = {
             leaderRewardVT: 10,
             rewardPoolMult: 300
         },
-        1002410: {
+        1202410: {
             rewardPoolMult: 200
         }
         // example hardforks
