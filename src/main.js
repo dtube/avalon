@@ -1,6 +1,6 @@
 // starting sub modules
-config = require('./config.js').read(0)
 logr = require('./logger.js')
+config = require('./config.js').read(0)
 http = require('./http.js')
 p2p = require('./p2p.js')
 mongo = require('./mongo.js')

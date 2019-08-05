@@ -56,7 +56,8 @@ var mongo = {
     fillInMemoryBlocks: (cb) => {
         db.collection('blocks').find({}, {
             sort: {_id: -1},
-            limit: config.ecoBlocks
+            limit: config.ecoBlocks*2
+            // TODO: remove the *2 after HF1
         }).toArray(function(err, blocks) {
             if (err) throw err
             chain.recentBlocks = blocks.reverse()

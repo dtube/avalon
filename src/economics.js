@@ -193,6 +193,11 @@ var eco = {
                 if (err) throw err
                 if (!account.uv) account.uv = 0
 
+                if (stats.avail === 0) {
+                    cb(0)
+                    return
+                }
+
                 //logr.trace('DIST:', name, vt, ts, account.uv, stats)
 
                 var thNewCoins = 0
@@ -216,6 +221,11 @@ var eco = {
                 unpaidVotes *= stats.votes
                 if (vt<0) unpaidVotes = Math.ceil(unpaidVotes)
                 else unpaidVotes = Math.floor(unpaidVotes)
+
+                // unpaid votes is meant for minnows who struggle to print 1 unit
+                // not the big whales where votes exceed the rewardPoolMaxShare
+                if (config.capUnpaidVotes && unpaidVotes > Math.floor(stats.votes/stats.avail))
+                    unpaidVotes = Math.floor(stats.votes/stats.avail)
 
                 //console.log(newCoins, unpaidVotes)
                 var changes = {
