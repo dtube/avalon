@@ -5,7 +5,7 @@
 #### Dependencies
 * [MongoDB](https://mongodb.com)
 * [NodeJS](https://nodejs.org/en/download/) **v10** (LTS)
-* [ntpd](https://linux.die.net/man/8/ntpd) or any NTP alternative for your system. ntpd is comes pre-installed on most linux distributions
+* [ntpd](https://linux.die.net/man/8/ntpd) or any NTP alternative for your system. ntpd comes pre-installed on most linux distributions
 
 #### Install
 * `npm install` to install nodejs dependencies
