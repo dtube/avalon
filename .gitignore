@@ -5,3 +5,5 @@ npm-debug.log
 keys
 logs/*
 tmptx.json
+bin
+dump

@@ -1,6 +1,5 @@
 const series = require('run-series')
 const cloneDeep = require('clone-deep')
-
 var cache = {
     copy: {
         accounts: {},
@@ -14,27 +13,17 @@ var cache = {
     distributed: {},
     changes: [],
     inserts: [],
-    backup: function() {
-        cache.copy = {
-            accounts: {},
-            contents: {},
-            distributed: {},
-            changes: [],
-            inserts: []
-        }
-        cache.copy.accounts = cloneDeep(cache.accounts)
-        cache.copy.contents = cloneDeep(cache.contents)
-        cache.copy.distributed = cloneDeep(cache.distributed)
-        cache.copy.changes = cloneDeep(cache.changes)
-        cache.copy.inserts = cloneDeep(cache.inserts)
-        //logr.trace('Cache backup\'d')
-    },
     rollback: function() {
-        cache.accounts = cloneDeep(cache.copy.accounts)
-        cache.contents = cloneDeep(cache.copy.contents)
-        cache.distributed = cloneDeep(cache.copy.distributed)
-        cache.changes = cloneDeep(cache.copy.changes)
-        cache.inserts = cloneDeep(cache.copy.inserts)
+        for (const key in cache.copy.accounts)
+            cache.accounts[key] = cloneDeep(cache.copy.accounts[key])
+        for (const key in cache.copy.contents)
+            cache.contents[key] = cloneDeep(cache.copy.contents[key])
+        for (const key in cache.copy.distributed)
+            cache.distributed[key] = cloneDeep(cache.copy.distributed[key])
+        for (const key in cache.copy.changes)
+            cache.changes[key] = cloneDeep(cache.copy.changes[key])
+        for (const key in cache.copy.inserts)
+            cache.inserts[key] = cloneDeep(cache.copy.inserts[key])
         cache.copy.accounts = {}
         cache.copy.contents = {}
         cache.copy.distributed = {}
@@ -80,6 +69,10 @@ var cache = {
                 cb(null, false); return
             }
             var key = cache.keyByCollection(collection)
+
+            if (!cache.copy[collection][obj[key]])
+                cache.copy[collection][obj[key]] = cloneDeep(cache[collection][obj[key]])
+            
             for (var c in changes) 
                 switch (c) {
                 case '$inc':
@@ -228,6 +221,11 @@ var cache = {
             cb(err, results)
             cache.changes = []
             cache.inserts = []
+            cache.copy.accounts = {}
+            cache.copy.contents = {}
+            cache.copy.distributed = {}
+            cache.copy.changes = []
+            cache.copy.inserts = []
         })
     },
     keyByCollection: function(collection) {

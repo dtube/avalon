@@ -5,7 +5,10 @@
   "scripts": {
     "start": "node src/main.js",
     "cli": "node src/cli.js",
-    "lint": "eslint 'src/*.js'"
+    "lint": "eslint 'src/*.js'",
+    "compile_cli": "pkg src/cli.js --out-path bin --targets node10-linux-x64,node10-linux-x86,node10-macos-x64,node10-macos-x86",
+    "compile_daemon": "pkg src/main.js --options stack-size=65500 --out-path bin --targets node10-linux-x64,node10-linux-x86,node10-macos-x64,node10-macos-x86"
+    
   },
   "dependencies": {
     "base-x": "^3.0.5",

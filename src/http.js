@@ -122,6 +122,7 @@ var http = {
 
         // get in-memory data (intensive)
         app.get('/cache', (req,res) => {
+            //res.send(Object.keys(cache.accounts).length+' '+Object.keys(cache.contents).length)
             res.send(cache)
         })
         app.get('/cacheb', (req,res) => {

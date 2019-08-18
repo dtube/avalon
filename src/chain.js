@@ -6,6 +6,8 @@ const series = require('run-series')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
 var GrowInt = require('growint')
+var default_replay_output = 100
+var replay_output = process.env.REPLAY_OUTPUT || default_replay_output
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
@@ -233,14 +235,32 @@ chain = {
         })
     },
     output: (block) => {
-        var output = 'block #'+block._id+': '+block.txs.length+' tx(s) mined by '+block.miner
-        if (block.missedBy)
-            output += ' missed by '+block.missedBy
+        chain.nextOutput.txs += block.txs.length
         if (block.dist)
-            output += ' dist: '+block.dist
+            chain.nextOutput.dist += block.dist
         if (block.burn)
-            output += ' burn: '+block.burn
-        logr.info(output)
+            chain.nextOutput.burn += block.burn
+
+        if (!p2p.recovering || block._id%replay_output === 0) {
+            var output = 'block #'+block._id+': '+chain.nextOutput.txs+' tx(s) mined by '+block.miner
+            if (block.missedBy)
+                output += ' missed by '+block.missedBy
+
+            output += ' dist: '+chain.nextOutput.dist
+            output += ' burn: '+chain.nextOutput.burn
+            logr.info(output)
+            chain.nextOutput = {
+                txs: 0,
+                dist: 0,
+                burn: 0
+            }
+        }
+            
+    },
+    nextOutput: {
+        txs: 0,
+        dist: 0,
+        burn: 0
     },
     isValidPubKey: (key) => {
         try {
@@ -296,7 +316,6 @@ chain = {
         })
     },
     isValidBlockTxs: (newBlock, cb) => {
-        cache.backup()
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
             if (validTxs.length !== newBlock.txs.length) {
@@ -481,7 +500,8 @@ chain = {
     minerSchedule: (block, cb) => {
         var hash = block.hash
         var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
-        logr.info('Generating schedule... NRNG: ' + rand)
+        if (!p2p.recovering)
+            logr.info('Generating schedule... NRNG: ' + rand)
         chain.generateLeaders(function(miners) {
             miners = miners.sort(function(a,b) {
                 if(a.name < b.name) return -1
