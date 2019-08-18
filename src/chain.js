@@ -209,7 +209,7 @@ chain = {
             if (err) throw err
             // push cached accounts and contents to mongodb
             cache.writeToDisk(function() {
-                chain.cleanMemoryTx()
+                chain.cleanMemory()
 
                 // update the config if an update was scheduled
                 config = require('./config.js').read(block._id)
@@ -560,6 +560,22 @@ chain = {
     },    
     getFirstMemoryBlock: () => {
         return chain.recentBlocks[0]
+    },
+    cleanMemory: () => {
+        chain.cleanMemoryBlocks()
+        chain.cleanMemoryTx()
+    },
+    cleanMemoryBlocks: () => {
+        if (config.ecoBlocksIncreasesSoon) {
+            logr.trace('Keeping old blocks in memory because ecoBlocks is changing soon')
+            return
+        }
+            
+        var extraBlocks = chain.recentBlocks.length - config.ecoBlocks
+        while (extraBlocks > 0) {
+            chain.recentBlocks.splice(0,1)
+            extraBlocks--
+        }
     },
     cleanMemoryTx: () => {
         for (const hash in chain.recentTxs) 
