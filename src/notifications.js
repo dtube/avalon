@@ -1,7 +1,10 @@
 var TransactionType = require('./transactions').Types
+var disabled = process.env.NO_NOTIFICATION || true
 
 notifications = {
     processBlock: (block) => {
+        if (disabled) return
+
         if (block._id % config.notifPurge)
             notifications.purgeOld(block)
 
