@@ -12,8 +12,11 @@
 #export OFFLINE=1
 #export NO_DISCOVERY=1
 
-# trace / debug / info / warn /
-export LOG_LEVEL=info
+# Disabling notifications
+#export NOTIFICATIONS=1
+
+# trace / debug / info / warn
+export LOG_LEVEL=debug
 
 # groups blocks during replay output to lower screen spam
 export REPLAY_OUTPUT=100
