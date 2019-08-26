@@ -105,18 +105,6 @@ var config = {
         1202410: {
             rewardPoolMult: 200
         }
-        // example hardforks
-        // 2100: {
-        //     leaders: 10,
-        //     leaderRewardVT: 1,
-        //     txLimits: {
-        //         14: 2,
-        //         15: 2
-        //     }
-        // },
-        // 22500: {
-        //     rewardPoolMult: 200
-        // }
     },
     read: (blockNum) => {
         var finalConfig = {}
@@ -126,7 +114,14 @@ var config = {
                     logr.info('Hard Fork #'+key)
                 Object.assign(finalConfig, config.history[key])
             }
-            else break
+            else {
+                if (config.history[key].ecoBlocks > finalConfig.ecoBlocks
+                && config.history[key].ecoBlocks - finalConfig.ecoBlocks >= key-blockNum)
+                    finalConfig.ecoBlocksIncreasesSoon = config.history[key].ecoBlocks
+                
+                break
+            }
+            
         
         return finalConfig
     }

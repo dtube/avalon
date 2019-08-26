@@ -13,12 +13,15 @@ module.exports = {
         'config': 'writable',
         'http': 'writable',
         'p2p': 'writable',
+        'eco': 'writable',
+        'validate': 'writable',
         'mongo': 'writable',
         'chain': 'writable',
         'transaction': 'writable',
         'cache': 'writable',
         'notifications': 'writable',
         'closing': 'writable',
+        'rankings': 'writable',
         'newRankings': 'writable'
     },
     'parserOptions': {
