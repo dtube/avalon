@@ -19,9 +19,11 @@
 The `start.sh` shows the list of available environment variables you can set to make avalon behave slightly differently from the default install.
 
 ### Resetting and replaying the chain
-Shut everything down, then `db.dropDatabase()` in mongo, and restart. This will do a complete replay and verification of the chain. Depending on your CPU/RAM it might be extremely slow and take a long time on a long chain with many transactions.
 
-### Replaying from a dump
+#### Full resync from peer to peer
+Shut everything down, then `db.dropDatabase()` in mongo, and start the node. This will do a complete replay and verification of the chain. Depending on your CPU/RAM it might be extremely slow and take a long time on a long chain with many transactions.
+
+#### Replaying from a dump
 An alternative way to resync your node faster is to use one of the backups provided by backup.d.tube. Example:
 
 ```
@@ -31,6 +33,12 @@ mongorestore -d avalon .
 ```
 
 Will download and restore your avalon node up to 16:00 UTC.
+
+#### Creating your own dumps
+Alternatively, if you do not want to have to trust our backups, feel free to create your own as such:
+```
+mongodump -d avalon -o ~/avalon-backup/
+```
 
 #### Declaring your public node in your account profile
 It is strongly recommended for all leaders to add a `node.ws` field to your profile as so:
