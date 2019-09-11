@@ -7,7 +7,7 @@
 * [NodeJS](https://nodejs.org/en/download/) **v10** (LTS)
 * [ntpd](https://linux.die.net/man/8/ntpd) or any NTP alternative for your system. ntpd comes pre-installed on most linux distributions
 
-#### Install
+#### Install a node
 * `npm install` to install nodejs dependencies
 * Get your own keys with `node src/cli.js keypair`
 * Save your keys
@@ -15,88 +15,90 @@
 * `chmod +x scripts/start.sh`
 * `./scripts/start.sh`
 
+## Resetting and replaying the chain
+Shut everything down, then `db.dropDatabase()` in mongo, and restart. This will do a complete replay and verification of the chain. Depending on your CPU/RAM it might be extremely slow and take a long time on a long chain with many transactions.
+
+#### Replaying from a dump
+An alternative way to resync your node faster is to use one of the backups provided by backup.d.tube. Example:
+
+```
+wget https://backup.d.tube/16.tar.gz
+tar xfvz ./16.tar.gz
+mongorestore -d avalon .
+```
+
+Will download and restore your avalon node up to 16:00 UTC.
+
+## Declaring your public node in your account profile
+It is strongly recommended for all leaders to add a `node.ws` field to your profile as so:
+```
+node src/cli.js profile -K <key> -M <user> '{"node":{"ws":"ws://yourip:yourport"}}'
+```
+
 ## Get helped
 We have a discord channel dedicated to node owners (aka leaders), where you can get support to get set up. Join [discorg.gg/dtube](https://discord.gg/dtube) and go to `DTube Chain -> #leader-candidates`
 
-## Using the CLI
+## Communicating with the node
+
+## With CLI
 You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> --help` for a full help.
 
 ## Using Javalon
-There is also a [Javascript module](https://www.npmjs.com/package/javalon) available and working on both browser and nodejs.
+[Javalon](https://www.npmjs.com/package/javalon) is the javascript wrapper for avalon's API. Working on both browser and nodejs.
 
-## HTTP GET API (incomplete)
+## HTTP API
 
-#### Get block
-```
-curl http://localhost:3001/block/<block_num>
-```
+Avalon's API uses 100% JSON. The GET calls will allow you to fetch the public information which is already available through the d.tube UI.
 
-#### Get a new random key pair
-```
-curl http://localhost:3001/newKeyPair
-```
-
-#### Get new contents
-```
-curl http://localhost:3001/new
-```
-
-#### Get an account
-```
-curl http://localhost:3001/account/<name>
-```
-
-#### Get connected peers
-```
-curl http://localhost:3001/peers
-```
-
-#### Get miner schedule
-```
-curl http://localhost:3001/schedule
-```
-
-#### Get full list of miners sorted by rank
-```
-curl http://localhost:3001/allminers
-```
-
-#### Get block count
-```
-curl http://localhost:3001/count
-```
+Examples:
+* Account data: /account/:username, i.e https://avalon.d.tube/account/rt-international
+* Video data: /content/:username/:link i.e. https://avalon.d.tube/content/rongibsonchannel/QmdjVMdeTtTEy1CJTDbtjuaiRKMP6H364Dv4n7FsWGpnPH
 
 #### Full list of API endpoints
-And the recommended security practises if you want to open the API to the world
 [https://docs.google.com/spreadsheets/d/1ORoHjrdq5V5OkTChijTUOEYRzTujVXTzCyNYt-ysVhw/edit?usp=drive_web&ouid=109732502499946497195](https://docs.google.com/spreadsheets/d/1ORoHjrdq5V5OkTChijTUOEYRzTujVXTzCyNYt-ysVhw/edit?usp=drive_web&ouid=109732502499946497195)
 
-## Transacting
-Once you have an account and balance, your account will start generating bandwidth and voting power which you can consume by transacting.
+This lists all the available API endpoints for Avalon. We also have recommended security practises if you want to open your node's API to the world. You can do it easily with nginx and [avalon-nginx-config](https://github.com/dtube/avalon-nginx-config)
+
+## Transacting (POST /transact)
+Once you have an account and balance, your account will start generating bandwidth and voting power (respectively the bw and vt fields in your account data). You can consume those ressources by transacting.
+
+Every transactions will have a bandwidth cost, calculated based on the number of bytes required for the storage of fyour transaction in a block.
+Certain transaction types will require you to spend voting power, such as publishing a content, voting or tagging a content.
+
+To transact, you need to use the /transact POST call of the Avalon API.
 
 Necessary for all transactions:
 * *key*: your private key
 * * Use -K MyKeyHere to use a plain-text key
-* * Use -F file.json to use a key inside a file to sign
+* * Or use -F file.json to use a key inside a file to sign (this will prevent your key from showing on the screen too much)
 * *user*: your username
 
 #### Vote for a leader
 * *target*: the node owner to approve
 ```
 node src/cli.js vote-leader -K <key> -M <user> <target>
+
+// alice votes for bob as a leader
+node src/cli.js vote-leader -K 5DPwDJqTvMuykHimmZxThfKttPSNLzJjpbNtkGNnjPAf -M alice bob
 ```
 
 #### Unvote a leader
 * *target*: the node owner to approve
 ```
-node src/cli.js unvote-leader -K <key> -M <user> <target>
+node src/cli.js vote-leader -K <key> -M <user> <target>
+
+// charlie does not want to vote for daniel as a leader anymore
+node src/cli.js unvote-leader -F charlie_key.txt -M charlie daniel
 ```
 
 #### Transfer tokens
 * *receiver*: username of the receiver of the transfer
-* *amount*: number of tokens to transfer to the receiver
+* *amount*: number of tokens to transfer to the receiver. Warning! 1 DTC in UI = 100 tokens
 * *memo*: arbitrary short text content
 ```
-node src/cli.js transfer -K <key> -M <user> <receiver> <amount> <memo>
+node src/cli.js transfer -K <bob_key> -M <user> <receiver> <amount> <memo>
+// bob sends 50 DTC to charles
+node src/cli.js transfer -K HkUbQ5YpejWVSPt8Qgz8pkPGwkDrMn3XECd4Asn3ANB3 -M bob charles 50 'thank you'
 ```
 
 #### Add a post / Commenting
@@ -150,7 +152,7 @@ sleep 5
 curl -H "Content-type:application/json" --data @tmptx.json http://localhost:3001/transact
 ```
 
-## POST Calls
+## Other POST Calls
 
 #### Mine Block
 Will force the node to try to produce a block even if it's unscheduled. Useful for block #1 and working on development
@@ -164,16 +166,19 @@ Manually force connection to a peer without having to restart the node
 curl -H "Content-type:application/json" --data '{"peer" : "ws://localhost:6001"}' http://localhost:3001/addPeer
 ```
 
-## MongoDB Storage
+## More ways to use Avalon
+
+### MongoDB Storage
 Avalon saves the state of the chain into mongodb after each block. You can easily query mongodb directly to get any data you want, that wouldn't be provided by the API itself.
 ```
 mongo <db_name>
 db.accounts.findOne({name:'master'})
 db.blocks.findOne({_id: 0})
 ```
+However be sure not to write to any collection used by avalon in this database (namely the accounts, blocks and contents). If you do, your node will irremediably fork sooner or later.
 
-## Elastic Search Storage
-Avalon can also copy the accounts and contents into an elastic search database with [monstache](https://github.com/rwynn/monstache). A configuration file for monstache is provided in the root of this repository. Once running you can query it like so : 
+### Elastic Search Storage
+Avalon can also copy the accounts and contents into an elastic search database with [monstache](https://github.com/rwynn/monstache). A configuration file for monstache is provided in the root of this repository. Once running you can do text queries on accounts or contents like so: 
 
 ```
 # search contents
@@ -181,23 +186,6 @@ curl http://localhost:9200/avalon.contents/_search?q=football
 # search accounts
 curl http://localhost:9200/avalon.accounts/_search?q=satoshi
 ```
+Please refer to Elastic Search documentation for more complex queries.
 
-## Resetting and replaying the chain
-Shut everything down, then `db.dropDatabase()` in mongo, and restart. This will do a complete replay and verification of the chain. Depending on your CPU/RAM it might be extremely slow and take a long time on a long chain with many transactions.
-
-#### Replaying from a dump
-An alternative way to resync your node faster is to use one of the backups provided by backup.d.tube. Example:
-
-```
-wget https://backup.d.tube/16.tar.gz
-tar xfvz ./16.tar.gz
-mongorestore -d avalon .
-```
-
-Will download and restore your avalon node up to 16:00 UTC.
-
-## Being a good node owner
-If you are in the top 20 node owners, please add a `node.ws` field to your profile as so:
-```
-node src/cli.js profile -K <key> -M <user> '{"node":{"ws":"ws://yourip:yourport"}}'
-```
+D.Tube runs a public Elastic Search mirror of the current testnet on https://search.d.tube
