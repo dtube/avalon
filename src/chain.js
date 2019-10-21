@@ -546,7 +546,7 @@ chain = {
             
             newVt.v += config.leaderRewardVT
 
-            if (config.leaderReward > 0 && config.leaderRewardVT > 0)
+            if (config.leaderReward > 0 || config.leaderRewardVT > 0)
                 cache.updateOne('accounts', 
                     {name: account.name},
                     {$set: {
@@ -555,10 +555,8 @@ chain = {
                     }},
                     function(err) {
                         if (err) throw err
-                        transaction.updateGrowInts(account, ts, function() {
-                            transaction.adjustNodeAppr(account, config.leaderReward, function() {
-                                cb(config.leaderReward)
-                            })
+                        transaction.adjustNodeAppr(account, config.leaderReward, function() {
+                            cb(config.leaderReward)
                         })
                     })
             else cb(0)
