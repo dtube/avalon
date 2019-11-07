@@ -228,6 +228,18 @@ program.command('transfer <receiver> <amount> [memo]')
         writeLine('  $ transfer bob 777 "thank you" -F key.json -M alice')
     })
 
+program.command('transfer-asset <receiver> <amount> <asset> [memo]')
+    .alias('xfer-asset')
+    .description('transfer asset')
+    .action(function(receiver, amount, asset, memo) {
+        verifyKeyAndUser()
+        sendTx(cmds.transferAsset(program.key, program.me, receiver, amount, asset, memo))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ xfer-asset bob 777 XBTC -F key.json -M alice')
+    })
+
 program.command('transfer-bw <receiver> <amount>')
     .alias('xfer-bw')
     .description('transfer bandwidth')

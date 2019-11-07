@@ -1,4 +1,6 @@
 var GrowInt = require('growint')
+var CryptoJS = require('crypto-js')
+const cloneDeep = require('clone-deep')
 
 var Transaction = require('./transactions')
 var TransactionType = Transaction.Types
@@ -64,6 +66,14 @@ transaction = {
         if (!tx.signature || typeof tx.signature !== 'string') {
             cb(false, 'invalid tx signature'); return
         }
+        // verify hash
+        var newTx = cloneDeep(tx)
+        delete newTx.signature
+        delete newTx.hash
+        if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
+            cb(false, 'invalid tx hash does not match'); return
+        }
+
         // enforce transaction limits
         if (config.txLimits[tx.type] && config.txLimits[tx.type] === 1) {
             cb(false, 'transaction type is disabled'); return

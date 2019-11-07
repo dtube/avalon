@@ -133,6 +133,14 @@ let cmds = {
 			parseInt(amount)+'}}'
         return sign(privKey, sender, tx)
     },
+
+    transferAsset: (privKey, sender, receiver, amount, asset, memo) => {
+        if (!memo) memo=''
+        var tx = '{"type":16,"data":{"receiver":"'+
+			receiver+'", "amount":'+
+			parseInt(amount)+', "asset":"'+asset+'", "memo":"'+memo+'"}}'
+        return sign(privKey, sender, tx)
+    },
 }
 
 module.exports = cmds
