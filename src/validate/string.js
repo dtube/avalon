@@ -18,8 +18,12 @@ module.exports = (value, maxLength, minLength, allowedChars, allowedCharsMiddle)
             if (allowedChars.indexOf(value[i]) === -1)
                 if (i === 0 || i === value.length-1)
                     return false
-                else if (allowedCharsMiddle && allowedCharsMiddle.indexOf(value[i]) === -1)
-                    return false
+                else {
+                    if (!allowedCharsMiddle)
+                        return false
+                    if (allowedCharsMiddle.indexOf(value[i]) === -1)
+                        return false
+                }
                     
     return true
 }

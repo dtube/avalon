@@ -10,7 +10,7 @@ module.exports = {
         if (!validate.string(tx.data.memo, config.memoMaxLength)) {
             cb(false, 'invalid tx data.memo'); return
         }
-        if (!validate.string(tx.data.asset, config.assetMaxLength)) {
+        if (!validate.string(tx.data.asset, config.assetMaxLength, config.assetMinLength, config.assetAlphabet, '')) {
             cb(false, 'invalid tx data.asset'); return
         }
         if (tx.data.receiver === tx.sender) {

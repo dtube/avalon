@@ -9,6 +9,9 @@ var config = {
             accountPriceMin: 1,
             accountMaxLength: 50,
             accountMinLength: 1,
+            assetMinLength: 3,
+            assetMaxLength: 5,
+            assetAlphabet: 'ABCDEFGHJKLMNPQRSTUVWXYZ',
             // allowed username chars
             allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
             allowedUsernameCharsOnlyMiddle: '-.',
@@ -25,7 +28,7 @@ var config = {
             // the maximum bandwidth an account can have available
             bwMax: 256000,
             // controls if unpaid votes should be capped to the amount needed to generate 1 token
-            capUnpaidVotes: false,
+            capUnpaidVotes: true,
             // the number of rounds of consensus before block is valid (min 2)
             consensusRounds: 2,
             // the number of blocks from the past taken into consideration for econonomics
@@ -54,11 +57,11 @@ var config = {
             // masterFee = 19 => <5% fee
             masterFee: 9,
             // the init account username
-            masterName: 'dtube',
+            masterName: 'master',
             // if false master can create accounts with usernames without burning tokens
             masterPaysForUsernames: false,
             // the master account public original key
-            masterPub: 'uxJ25PC95cb3xjqacMrhmiv5ChKHJnVHzkwBnQFEXs6i',
+            masterPub: 'j7upSXTgbDQZLEhRQZkXxzEnwyJvXctNvLCRBLkutUaD',
             // the maximum time drift in ms before a transaction is invalid
             maxDrift: 200,
             // the max length of a transfer memo
@@ -94,16 +97,6 @@ var config = {
             // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 360000000, // +1 vt per hour per DTC
             vtPerBurn: 6 // can be updated in the future to modify incentives
-        },
-        1200010: {
-            capUnpaidVotes: true,
-            ecoBlocks: 2400,
-            leaders: 10,
-            leaderRewardVT: 10,
-            rewardPoolMult: 300
-        },
-        1202410: {
-            rewardPoolMult: 200
         }
     },
     read: (blockNum) => {
