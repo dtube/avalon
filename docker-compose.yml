@@ -4,7 +4,10 @@ services:
   avalon:
     build: .
     environment:
-      DB_URL: mongodb://mongo:27017
+      DB_URL: mongodb://mongodb:27017
+      NODE_OWNER_PUB: ${NODE_OWNER_PUB}
+      NODE_OWNER_PRIV: ${NODE_OWNER_PRIV}
+      NODE_OWNER: ${NODE_OWNER}
     volumes:
       - .:/app
       - /app/node_modules
@@ -12,10 +15,14 @@ services:
       - 3001:3001
       - 6001:6001
     restart: unless-stopped
-    command: npm start
+    command: npm run start:docker
+    depends_on:
+      - mongodb
 
-  mongo:
+  mongodb:
     image: mongo:4.2
-    # environment:
-    #   MONGO_INITDB_ROOT_USERNAME: root
-    #   MONGO_INITDB_ROOT_PASSWORD: example
+    volumes:
+      - ./scripts/restore_from_backup.sh:/docker-entrypoint-initdb.d/restore_from_backup.sh
+      - ./dump:/dump
+    restart: unless-stopped
+

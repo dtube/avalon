@@ -7,3 +7,4 @@ logs/*
 tmptx.json
 bin
 dump
+.env

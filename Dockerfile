@@ -11,7 +11,7 @@ LABEL "project.home"="https://github.com/dtube/avalon"
 
 WORKDIR /app
 
-COPY package*.json .
+COPY package*.json ./
 RUN npm install
 
 COPY . .
