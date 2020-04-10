@@ -101,8 +101,8 @@ module.exports = {
                             cb(true)
                         })
                     else {
-                        rankings.new(newContent)
                         cb(true)
+                        rankings.new(newContent)
                     }
                 })
             }
