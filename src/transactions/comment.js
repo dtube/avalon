@@ -97,11 +97,13 @@ module.exports = {
                     if (tx.data.pa && tx.data.pp) 
                         cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                             child: [tx.sender, tx.data.link]
-                        }}, function() {})
-                    else 
+                        }}, function() {
+                            cb(true)
+                        })
+                    else {
                         rankings.new(newContent)
-                    
-                    cb(true)
+                        cb(true)
+                    }
                 })
             }
         })
