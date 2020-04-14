@@ -170,7 +170,7 @@ var cache = {
         cache.distributed = {}
     },
     writeToDisk: function(cb) {
-        logr.debug(cache.inserts.length+' Inserts')
+        if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
         var executions = []
         // executing the inserts (new comment / new account)
         for (let i = 0; i < cache.inserts.length; i++)
@@ -196,7 +196,7 @@ var cache = {
             docsToUpdate[collection][key] = cache[collection][key]
         }
 
-        logr.debug(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
+        if (cache.changes.length) logr.debug(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
 
         for (const col in docsToUpdate) 
             for (const i in docsToUpdate[col]) 
