@@ -46,12 +46,13 @@ module.exports = {
                         // user is editing an existing comment
                         if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
                             cb(false, 'invalid tx parent comment cannot be edited'); return
-                        } else
-                            cb(true)
-                    else 
+                        } else {
+                            // TODO Next hardfork
+                            // cb(true)
+                        }
+                    else
                         // it is a new comment
                         cb(true)
-                    
                 })
             })
         else 
