@@ -51,7 +51,7 @@ var consensus = {
             && possBlock[0] && possBlock[0].indexOf(process.env.NODE_OWNER) !== -1) {
                 // block becomes valid, we can move forward !
                 consensus.finalizing = true
-                logr.debug('CON block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
+                logr.trace('CON block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
                 chain.validateAndAddBlock(possBlock.block, false, function(err) {
                     if (err) throw err
 
@@ -106,7 +106,7 @@ var consensus = {
             consensus.possBlocks.push(possBlock)
 
             // now we verify the block is valid
-            logr.debug('CON/ New poss block '+block._id+'#'+block.hash.substr(0,4))
+            logr.trace('CON/ New poss block '+block._id+'#'+block.hash.substr(0,4))
             chain.isValidNewBlock(block, true, true, function(isValid) {
                 consensus.validating.splice(consensus.validating.indexOf(possBlock.block.hash), 1)                
                 if (!isValid) {
@@ -114,7 +114,7 @@ var consensus = {
                     logr.error('Received invalid new block', block.hash)
 
                 } else {
-                    logr.debug('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
+                    logr.trace('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
 
                     // precommitting ourselves
                     for (let i = 0; i < consensus.possBlocks.length; i++) 

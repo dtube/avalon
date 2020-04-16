@@ -42,15 +42,17 @@ module.exports = {
                     cb(false, 'invalid tx parent comment does not exist'); return
                 }
                 cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
-                    if (content) {
+                    if (content)
                         // user is editing an existing comment
                         if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
                             cb(false, 'invalid tx parent comment cannot be edited'); return
+                        } else {
+                            // TODO Next hardfork
+                            // cb(true)
                         }
-                    } else 
+                    else
                         // it is a new comment
                         cb(true)
-                    
                 })
             })
         else 
@@ -59,7 +61,7 @@ module.exports = {
     execute: (tx, ts, cb) => {
         cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
             if (err) throw err
-            if (content) 
+            if (content)
                 // existing content being edited
                 cache.updateOne('contents', {_id: tx.sender+'/'+tx.data.link}, {
                     $set: {json: tx.data.json}
@@ -97,11 +99,13 @@ module.exports = {
                     if (tx.data.pa && tx.data.pp) 
                         cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                             child: [tx.sender, tx.data.link]
-                        }}, function() {})
-                    else 
+                        }}, function() {
+                            cb(true)
+                        })
+                    else {
+                        cb(true)
                         rankings.new(newContent)
-                    
-                    cb(true)
+                    }
                 })
             }
         })

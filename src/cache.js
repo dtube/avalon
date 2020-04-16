@@ -4,9 +4,7 @@ var cache = {
     copy: {
         accounts: {},
         contents: {},
-        distributed: {},
-        changes: [],
-        inserts: []
+        distributed: {}
     },
     accounts: {},
     contents: {},
@@ -14,23 +12,28 @@ var cache = {
     changes: [],
     inserts: [],
     rollback: function() {
+        // rolling back changes from copied documents
         for (const key in cache.copy.accounts)
             cache.accounts[key] = cloneDeep(cache.copy.accounts[key])
         for (const key in cache.copy.contents)
             cache.contents[key] = cloneDeep(cache.copy.contents[key])
         for (const key in cache.copy.distributed)
             cache.distributed[key] = cloneDeep(cache.copy.distributed[key])
-        for (const key in cache.copy.changes)
-            cache.changes[key] = cloneDeep(cache.copy.changes[key])
-        for (const key in cache.copy.inserts)
-            cache.inserts[key] = cloneDeep(cache.copy.inserts[key])
         cache.copy.accounts = {}
         cache.copy.contents = {}
         cache.copy.distributed = {}
-        cache.copy.changes = []
-        cache.copy.inserts = []
+        cache.changes = []
+
+        // and discarding new inserts
+        for (let i = 0; i < cache.inserts.length; i++) {
+            var toRemove = cache.inserts[i]
+            var key = cache.keyByCollection(toRemove.collection)
+            delete cache[toRemove.collection][toRemove.document[key]]
+        }
+        cache.inserts = []
+
+        // and reset the econ data for nextBlock
         eco.nextBlock()
-        //logr.trace('Cache rollback\'d')
     },
     findOne: function(collection, query, cb) {
         if (['accounts','blocks','contents'].indexOf(collection) === -1) {
@@ -167,6 +170,7 @@ var cache = {
         cache.distributed = {}
     },
     writeToDisk: function(cb) {
+        if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
         var executions = []
         // executing the inserts (new comment / new account)
         for (let i = 0; i < cache.inserts.length; i++)
@@ -191,6 +195,8 @@ var cache = {
             var key = change.query[cache.keyByCollection(collection)]
             docsToUpdate[collection][key] = cache[collection][key]
         }
+
+        if (cache.changes.length) logr.debug(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
 
         for (const col in docsToUpdate) 
             for (const i in docsToUpdate[col]) 
@@ -224,8 +230,6 @@ var cache = {
             cache.copy.accounts = {}
             cache.copy.contents = {}
             cache.copy.distributed = {}
-            cache.copy.changes = []
-            cache.copy.inserts = []
         })
     },
     keyByCollection: function(collection) {

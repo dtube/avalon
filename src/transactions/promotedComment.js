@@ -69,12 +69,14 @@ module.exports = {
                             if (tx.data.pa && tx.data.pp) 
                                 cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                                     child: [tx.sender, tx.data.link]
-                                }}, function() {})
-                            else 
+                                }}, function() {
+                                    cb(true, null, tx.data.burn)
+                                })
+                            else {
+                                // and report how much was burnt
+                                cb(true, null, tx.data.burn)
                                 rankings.new(newContent)
-                            
-                            // and report how much was burnt
-                            cb(true, null, tx.data.burn)
+                            }
                         })
                     })
                 })
