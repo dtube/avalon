@@ -14,7 +14,8 @@ var transactions = [
     require('./changePassword.js'),
     require('./promotedComment.js'),
     require('./transferVt.js'),
-    require('./transferBw.js')
+    require('./transferBw.js'),
+    require('./limitVt.js')
 ]
 
 module.exports = {
@@ -34,7 +35,8 @@ module.exports = {
         CHANGE_PASSWORD: 12,
         PROMOTED_COMMENT: 13,
         TRANSFER_VT: 14,
-        TRANSFER_BW: 15
+        TRANSFER_BW: 15,
+        LIMIT_VT: 16
     },
     validate: (tx, ts, legitUser, cb) => {
         // will make sure the transaction type exists (redondant ?)
