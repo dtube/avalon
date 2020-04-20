@@ -544,9 +544,12 @@ chain = {
             if (!newVt) 
                 logr.debug('error growing grow int', account, ts)
             
-            newVt.v += config.leaderRewardVT
+            if (config.leaderRewardVT) {
+                newVt.v += config.leaderRewardVT
+                account.vt = newVt
+            }
 
-            if (config.leaderReward > 0 && config.leaderRewardVT > 0)
+            if (config.leaderReward > 0 || config.leaderRewardVT > 0)
                 cache.updateOne('accounts', 
                     {name: account.name},
                     {$set: {
@@ -555,12 +558,16 @@ chain = {
                     }},
                     function(err) {
                         if (err) throw err
-                        transaction.updateGrowInts(account, ts, function() {
-                            transaction.adjustNodeAppr(account, config.leaderReward, function() {
-                                cb(config.leaderReward)
+                        if (config.leaderReward > 0)
+                            transaction.updateGrowInts(account, ts, function() {
+                                transaction.adjustNodeAppr(account, config.leaderReward, function() {
+                                    cb(config.leaderReward)
+                                })
                             })
-                        })
-                    })
+                        else
+                            cb(0)
+                    }
+                )
             else cb(0)
         })
     },
