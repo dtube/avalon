@@ -303,22 +303,7 @@ program.command('vote-leader <leader>')
         writeLine('  $ vote-leader bob -F key.json -M alice')
     })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // error on unknown commands
+// error on unknown commands
 program.on('command:*', function () {
     writeLine('Unknown command: '+program.args[0])
     writeLine('See --help for a list of available commands.')
@@ -377,4 +362,18 @@ function verifyKeyAndUser() {
         writeLine('no user?')
         process.exit(1)
     }
+
+    // Check if account exists for username
+    let port = process.env.API_PORT || defaultPort
+    let ip = process.env.API_IP || '[::1]'
+    let protocol = process.env.API_PROTOCOL || 'http'
+    let getAccUrl = protocol + '://' + ip + ':' + port + '/accounts/' + program.me
+    fetch(getAccUrl)
+        .then((res) => {return res.json()})
+        .then((json) => {
+            if (json.length === 0) {
+                writeLine('Username doesn\'t exist. Is your node fully replayed?')
+                process.exit(1)
+            }
+        })
 }
