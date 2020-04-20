@@ -47,7 +47,9 @@ module.exports = {
                         if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
                             cb(false, 'invalid tx parent comment cannot be edited'); return
                         } else {
-                            cb(true)
+                            // TODO: remove config.enableSubCommentEdit for main-net
+                            if (config.enableSubCommentEdit)
+                                cb(true)
                         }
                     else
                         // it is a new comment
