@@ -133,6 +133,12 @@ let cmds = {
 			parseInt(amount)+'}}'
         return sign(privKey, sender, tx)
     },
+
+    limitVt: (privKey, sender, amount) => {
+        var tx = '{"type":16,"data":{"amount":'+
+			parseInt(amount)+'}}'
+        return sign(privKey, sender, tx)
+    },
 }
 
 module.exports = cmds

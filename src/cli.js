@@ -123,6 +123,23 @@ program.command('license')
         writeLine('THE SOFTWARE.')
     })
 
+program.command('limit-vt')
+    .description('limit your account maximum VT')
+    .action(function(amount) {
+        verifyKeyAndUser()
+        sendTx(cmds.limitVt(program.key, program.me, amount))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <amount>: the new maximum VT. If -1, then the maxVt will be unset')
+        writeLine('')
+        writeLine('Warning: Limit VT is only useful for corporate accounts that want to prove they will not be involved in content voting.')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ limit-vt 1000 -F key.json -M alice')
+        writeLine('  $ limit-vt 0 -F key.json -M alice')
+    })
+
 program.command('new-key <id> <pub> <allowed_txs>')
     .description('add new key with custom perms')
     .action(function(id, pub, allowedTxs) {
