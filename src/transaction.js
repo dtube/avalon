@@ -139,16 +139,24 @@ transaction = {
 
             // collect voting power when needed
             var vt = null
+            var vtGrowConfig = {
+                growth: account.balance / config.vtGrowth,
+                max: account.maxVt
+            }
+
             switch (tx.type) {
             case TransactionType.COMMENT:
             case TransactionType.VOTE:
             case TransactionType.PROMOTED_COMMENT:
-                vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 vt.v -= Math.abs(tx.data.vt)
                 break
             case TransactionType.TRANSFER_VT:
-                vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 vt.v -= tx.data.amount
+                break
+            case TransactionType.LIMIT_VT:
+                vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 break
             default:
                 break
