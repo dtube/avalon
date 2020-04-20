@@ -135,8 +135,10 @@ let cmds = {
     },
 
     limitVt: (privKey, sender, amount) => {
+        amount = parseInt(amount)
+        if (amount === -1) amount = null
         var tx = '{"type":16,"data":{"amount":'+
-			parseInt(amount)+'}}'
+			amount+'}}'
         return sign(privKey, sender, tx)
     },
 }
