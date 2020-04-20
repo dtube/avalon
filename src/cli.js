@@ -137,7 +137,7 @@ program.command('limit-vt')
         writeLine('')
         writeLine('Examples:')
         writeLine('  $ limit-vt 1000 -F key.json -M alice')
-        writeLine('  $ limit-vt 0 -F key.json -M alice')
+        writeLine('  $ limit-vt -1 -F key.json -M alice')
     })
 
 program.command('new-key <id> <pub> <allowed_txs>')
