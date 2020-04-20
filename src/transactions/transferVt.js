@@ -1,5 +1,3 @@
-var GrowInt = require('growint')
-
 module.exports = {
     fields: ['receiver', 'amount'],
     validate: (tx, ts, legitUser, cb) => {
