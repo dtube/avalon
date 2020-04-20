@@ -1,5 +1,3 @@
-var GrowInt = require('growint')
-
 module.exports = {
     fields: ['link', 'author', 'vt', 'tag'],
     validate: (tx, ts, legitUser, cb) => {
@@ -16,8 +14,7 @@ module.exports = {
         if (!validate.string(tx.data.tag, config.tagMaxLength)) {
             cb(false, 'invalid tx data.tag'); return
         }
-        var vtBeforeVote = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
-        if (vtBeforeVote.v < Math.abs(tx.data.vt)) {
+        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser)) {
             cb(false, 'invalid tx not enough vt'); return
         }
         // checking if content exists
