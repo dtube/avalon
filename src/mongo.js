@@ -34,7 +34,11 @@ var mongo = {
                         node_appr: config.masterBalance,
                         follows: [],
                         followers: [],
-                        keys: []
+                        keys: [],
+                        created: {
+                            by: '',
+                            ts: config.block0ts
+                        }
                     })
                     // then init genesis block if no block
                     db.collection('blocks').findOne({}, function(err, block) {

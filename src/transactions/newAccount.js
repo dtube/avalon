@@ -49,7 +49,11 @@ module.exports = {
             uv: 0,
             follows: [],
             followers: [],
-            keys: []
+            keys: [],
+            created: {
+                by: tx.sender,
+                ts: ts
+            }
         }, function(){
             if (tx.data.name !== tx.data.pub.toLowerCase()) 
                 if (tx.sender !== config.masterName || config.masterPaysForUsernames) {
