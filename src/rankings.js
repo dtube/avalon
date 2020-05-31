@@ -1,4 +1,5 @@
 var decay = require('decay')
+const cloneDeep = require('clone-deep')
 const hotHalfTime = 45000
 const trendingHalfTime = 201600
 const expireFactor = 5000
@@ -52,6 +53,7 @@ var rankings = {
         
     },
     new: function(content) {
+        content = cloneDeep(content)
         for (const key in rankings.types) {
             var alreadyAdded = false
             for (let i = 0; i < rankings.contents[key].length; i++) 

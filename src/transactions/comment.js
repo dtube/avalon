@@ -93,16 +93,20 @@ module.exports = {
                     newContent.tags[tx.data.tag] = vote.vt
                 }
                 cache.insertOne('contents', newContent, function(){
-                    if (tx.data.pa && tx.data.pp) 
-                        cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
-                            child: [tx.sender, tx.data.link]
-                        }}, function() {
-                            cb(true)
-                        })
-                    else {
-                        cb(true)
-                        rankings.new(newContent)
-                    }
+                    // monetary distribution (curation rewards)
+                    eco.curation(tx.sender, tx.data.link, function(distCurators, distMaster) {
+                        if (tx.data.pa && tx.data.pp) 
+                            cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                child: [tx.sender, tx.data.link]
+                            }}, function() {
+                                cb(true, distCurators+distMaster, tx.data.burn)
+                            })
+                        else {
+                            // and report how much was burnt
+                            cb(true, distCurators+distMaster, tx.data.burn)
+                            rankings.new(newContent)
+                        }
+                    })                    
                 })
             }
         })

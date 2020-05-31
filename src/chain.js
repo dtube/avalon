@@ -493,6 +493,7 @@ chain = {
             // add rewards for the leader who mined this block
             chain.leaderRewards(block.miner, block.timestamp, function(dist) {
                 distributedInBlock += dist
+                distributedInBlock = Math.round(distributedInBlock*1000) / 1000
                 cb(executedSuccesfully, distributedInBlock, burnedInBlock)
             })
         })

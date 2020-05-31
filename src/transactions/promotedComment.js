@@ -66,17 +66,20 @@ module.exports = {
                     transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
                         // insert content+vote into db
                         cache.insertOne('contents', newContent, function(){
-                            if (tx.data.pa && tx.data.pp) 
-                                cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
-                                    child: [tx.sender, tx.data.link]
-                                }}, function() {
-                                    cb(true, null, tx.data.burn)
-                                })
-                            else {
-                                // and report how much was burnt
-                                cb(true, null, tx.data.burn)
-                                rankings.new(newContent)
-                            }
+                            eco.curation(tx.sender, tx.data.link, function(distCurators, distMaster) {
+                                if (tx.data.pa && tx.data.pp) 
+                                    cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                        child: [tx.sender, tx.data.link]
+                                    }}, function() {
+                                        cb(true, distCurators+distMaster, tx.data.burn)
+                                    })
+                                else {
+                                    // and report how much was burnt
+                                    cb(true, distCurators+distMaster, tx.data.burn)
+                                    rankings.new(newContent)
+                                }
+                            }) 
+                            
                         })
                     })
                 })

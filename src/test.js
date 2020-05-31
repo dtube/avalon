@@ -1,11 +1,11 @@
-const bs58 = require('base-x')('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz')
-const secp256k1 = require('secp256k1')
-const priv = 'GCCURCQonXq9hujm8EDoRjBq83NAbkVj1nrAS1WXG5Z6'
-const rawPriv = bs58.decode(priv)
-const rawPub = secp256k1.publicKeyCreate(rawPriv)
-const pub = bs58.encode(rawPub)
+var eco = require('./economics.js')
 
-console.log(priv)
-console.log(rawPriv)
-console.log(rawPub)
-console.log(pub)
+var ts1 = 0
+var ts2 = 0
+
+var h = 0
+while (h < 8*24) {
+    console.log(h, eco.rentability(ts1, ts2))
+    ts2 += 1000*60*60
+    h++
+}

@@ -15,7 +15,8 @@ var transactions = [
     require('./promotedComment.js'),
     require('./transferVt.js'),
     require('./transferBw.js'),
-    require('./limitVt.js')
+    require('./limitVt.js'),
+    // require('./enableNode.js')
 ]
 
 module.exports = {
@@ -36,7 +37,8 @@ module.exports = {
         PROMOTED_COMMENT: 13,
         TRANSFER_VT: 14,
         TRANSFER_BW: 15,
-        LIMIT_VT: 16
+        LIMIT_VT: 16,
+        // ENABLE_NODE: 17
     },
     validate: (tx, ts, legitUser, cb) => {
         // will make sure the transaction type exists (redondant ?)
