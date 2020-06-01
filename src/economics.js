@@ -163,7 +163,7 @@ var eco = {
                 // if there are opposite votes
                 // burn 50% of the printed DTC in anti-chronological order
                 var newBurn = 0
-                var takeAwayAmount = thNewCoins*0.5
+                var takeAwayAmount = thNewCoins*config.ecoPunishPercent
                 var i = content.votes.length - 1
                 while (takeAwayAmount !== 0 && i>0) {
                     if (!content.votes[i].claimed && content.votes[i].vt*currentVote.vt < 0)
