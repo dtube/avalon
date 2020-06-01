@@ -17,19 +17,32 @@ var config = {
             // the base58 encoding alphabet
             b58Alphabet: '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',
             // the start time of the chain
-            block0ts: 1561389814000,
+            block0ts: 1590862621000,
             // the block time in ms
             blockTime: 3000,
             // the number of ms needed for 0.01 DTC to generate 1 byte of bw
-            bwGrowth: 10000000,
+            bwGrowth: 10000,
             // the maximum bandwidth an account can have available
             bwMax: 256000,
             // controls if unpaid votes should be capped to the amount needed to generate 1 token
             capUnpaidVotes: false,
             // the number of rounds of consensus before block is valid (min 2)
             consensusRounds: 2,
+            // base rentability of votes
+            ecoBaseRent: 0.50,
             // the number of blocks from the past taken into consideration for econonomics
-            ecoBlocks: 1200,
+            ecoBlocks: 100,
+            // the precision of the claimable amounts
+            ecoClaimPrecision: 3,
+            // the required number of ms before a vote reward can be claimed
+            ecoClaimTime: 604800000,
+            // the number of ms before a vote reaches 100% rentability
+            ecoRentStartTime: 86400000,
+            // the number of ms when a vote rentability starts going down
+            ecoRentEndTime: 302400000,
+            ecoRentPrecision: 6,
+            // starting rentability of votes
+            ecoStartRent: 0.75,
             // the maximum number of follows a single account can do
             followsMax: 2000,
             // the max size of a stringified json input (content / user profile)
@@ -58,7 +71,7 @@ var config = {
             // if false master can create accounts with usernames without burning tokens
             masterPaysForUsernames: false,
             // the master account public original key
-            masterPub: 'uxJ25PC95cb3xjqacMrhmiv5ChKHJnVHzkwBnQFEXs6i',
+            masterPub: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
             // the maximum time drift in ms before a transaction is invalid
             maxDrift: 200,
             // the max length of a transfer memo
@@ -70,7 +83,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000035',
+            originHash: '0000000000000000000000000000000000000000000000000000000000000201',
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 1,
@@ -89,21 +102,24 @@ var config = {
             txLimits: {
                 0: 2,
                 14: 2,
-                15: 2
+                15: 2,
+                16: 1
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
-            vtGrowth: 360000000, // +1 vt per hour per DTC
+            vtGrowth: 360000, // +1 vt per hour per DTC
             vtPerBurn: 6 // can be updated in the future to modify incentives
         },
-        1200010: {
-            capUnpaidVotes: true,
-            ecoBlocks: 2400,
-            leaders: 10,
-            leaderRewardVT: 10,
-            rewardPoolMult: 300
-        },
-        1202410: {
-            rewardPoolMult: 200
+        10: {
+            // new configs for testnet HF2
+            enableSubCommentEdit: true,
+            verifyTxHash: true,
+            leaderReward: 1,
+            leaderRewardVT: 100,
+            txLimits: {
+                0: 2,
+                14: 2,
+                15: 2
+            }
         }
     },
     read: (blockNum) => {

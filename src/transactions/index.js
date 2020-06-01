@@ -16,6 +16,7 @@ var transactions = [
     require('./transferVt.js'),
     require('./transferBw.js'),
     require('./limitVt.js'),
+    require('./claimReward.js'),
     // require('./enableNode.js')
 ]
 
@@ -38,6 +39,7 @@ module.exports = {
         TRANSFER_VT: 14,
         TRANSFER_BW: 15,
         LIMIT_VT: 16,
+        CLAIM_REWARD: 17,
         // ENABLE_NODE: 17
     },
     validate: (tx, ts, legitUser, cb) => {

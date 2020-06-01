@@ -91,10 +91,10 @@ var eco = {
             distributed += eco.currentBlock.dist
             votes += eco.currentBlock.votes
 
-            avail = Math.round(avail*1000)/1000
-            burned = Math.round(burned*1000)/1000
-            distributed = Math.round(distributed*1000)/1000
-            votes = Math.round(votes*1000)/1000
+            avail = Math.round(avail*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            burned = Math.round(burned*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            distributed = Math.round(distributed*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            votes = Math.round(votes*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
             cb({
                 theo: theoricalPool,
                 burn: burned,
@@ -112,38 +112,44 @@ var eco = {
     },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
+            var currentVote = content.votes[content.votes.length-1]
+
             // first loop to calculate the VP of active votes
-            var sumVt = 0
+            var sumVtWinners = 0
             for (let i = 0; i < content.votes.length; i++)
                 if (!content.votes[i].claimed)
-                    sumVt += content.votes[i].vt
+                    if (currentVote.vt*content.votes[i].vt > 0)
+                        sumVtWinners += content.votes[i].vt
 
             // second loop to calculate each active votes shares
             var winners = []
             for (let i = 0; i < content.votes.length; i++)
-                if (!content.votes[i].claimed) {
-                    var winner = content.votes[i]
-                    winner.share = winner.vt / sumVt
-                    winners.push(winner)
-                }
-
-            var currentVote = content.votes[content.votes.length-1]
+                if (!content.votes[i].claimed)
+                    if (currentVote.vt*content.votes[i].vt > 0) {
+                        // same vote direction => winner
+                        var winner = content.votes[i]
+                        winner.share = winner.vt / sumVtWinners
+                        winners.push(winner)
+                    }
 
             eco.print(currentVote.vt, function(thNewCoins) {
+                // share the new coins between winners
                 var newCoins = 0
                 for (let i = 0; i < winners.length; i++) {
                     if (!winners[i].claimable)
                         winners[i].claimable = 0
                     
                     var won = thNewCoins * winners[i].share
-                    var rentability = eco.rentability(winners[i].ts, currentVote.ts)
-                    won *= rentability
-                    won = Math.floor(won*1000)/1000
+                    var rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
+                    won *= rentabilityWinner
+                    won = Math.floor(won*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
                     winners[i].claimable += won
                     newCoins += won
+                    delete winners[i].share
 
-                    logr.debug(winners[i].u+' wins '+won+' coins with rentability '+rentability)
+                    logr.debug(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
                 }
+                newCoins = Math.round(newCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
 
                 // reconstruct the votes array
                 var newVotes = []
@@ -154,10 +160,31 @@ var eco = {
                                 newVotes.push(winners[y])
                     } else newVotes.push(content.votes[i])
 
-                newCoins = Math.round(newCoins*1000)/1000
+                // if there are opposite votes
+                // burn 50% of the printed DTC in anti-chronological order
+                var newBurn = 0
+                var takeAwayAmount = thNewCoins*0.5
+                var i = content.votes.length - 1
+                while (takeAwayAmount !== 0 && i>0) {
+                    if (!content.votes[i].claimed && content.votes[i].vt*currentVote.vt < 0)
+                        if (content.votes[i].claimable >= takeAwayAmount) {
+                            content.votes[i].claimable -= takeAwayAmount
+                            newBurn += takeAwayAmount
+                            takeAwayAmount = 0
+                        } else {
+                            takeAwayAmount -= content.votes[i].claimable
+                            newBurn += content.votes[i].claimable
+                            content.votes[i].claimable = 0
+                        }
+                    i--
+                }
+                newBurn = Math.round(newBurn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                
                 logr.debug(newCoins + ' dist from the vote')
+                logr.debug(newBurn + ' burn from the vote')
+
                 eco.currentBlock.dist += newCoins
-                eco.currentBlock.dist = Math.round(eco.currentBlock.dist*1000)/1000
+                eco.currentBlock.dist = Math.round(eco.currentBlock.dist*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
                 eco.currentBlock.votes += currentVote.vt
 
                 // updating the content
@@ -219,7 +246,7 @@ var eco = {
                 thNewCoins = stats.avail * Math.abs((vt) / stats.votes)
 
             // rounding down
-            thNewCoins = Math.floor(thNewCoins*1000)/1000
+            thNewCoins = Math.floor(thNewCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
             
             // and making sure one person cant empty the whole pool when network has been inactive
             // e.g. when stats.votes close to 0
@@ -237,11 +264,11 @@ var eco = {
         if (ts < 0) throw 'Invalid timestamp in rentability calculation'
 
         // https://imgur.com/a/GTLvs37
-        var startRentability = 0.75
-        var baseRentability = 0.5
-        var rentabilityStartTime = one_minute
-        var rentabilityEndTime = 3.5*one_minute
-        var claimRewardTime = 7*one_minute
+        var startRentability = config.ecoStartRent
+        var baseRentability = config.ecoBaseRent
+        var rentabilityStartTime = config.ecoRentStartTime
+        var rentabilityEndTime = config.ecoRentEndTime
+        var claimRewardTime = config.ecoClaimTime
 
         // requires that :
         // rentabilityStartTime < rentabilityEndTime < claimRewardTime
@@ -266,7 +293,7 @@ var eco = {
             rentability = baseRentability + (1-baseRentability) * (claimRewardTime-ts) / (claimRewardTime-rentabilityEndTime)
 
 
-        rentability = Math.floor(rentability*100000)/100000
+        rentability = Math.floor(rentability*Math.pow(10, config.ecoRentPrecision))/Math.pow(10, config.ecoRentPrecision)
         return rentability
     }
 } 
