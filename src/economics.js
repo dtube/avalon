@@ -87,7 +87,7 @@ var eco = {
 
             var avail = theoricalPool - distributed - eco.currentBlock.dist
             if (avail < 0) avail = 0
-            burned += eco.currentBlock.dist
+            burned += eco.currentBlock.burn
             distributed += eco.currentBlock.dist
             votes += eco.currentBlock.votes
 
@@ -154,7 +154,7 @@ var eco = {
                 // reconstruct the votes array
                 var newVotes = []
                 for (let i = 0; i < content.votes.length; i++)
-                    if (!content.votes[i].claimed) {
+                    if (!content.votes[i].claimed && currentVote.vt*content.votes[i].vt > 0) {
                         for (let y = 0; y < winners.length; y++)
                             if (winners[y].u === content.votes[i].u)
                                 newVotes.push(winners[y])
@@ -183,8 +183,11 @@ var eco = {
                 logr.debug(newCoins + ' dist from the vote')
                 logr.debug(newBurn + ' burn from the vote')
 
+                // add dist/burn/votes to currentBlock eco stats
                 eco.currentBlock.dist += newCoins
                 eco.currentBlock.dist = Math.round(eco.currentBlock.dist*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                eco.currentBlock.burn += newBurn
+                eco.currentBlock.burn = Math.round(eco.currentBlock.burn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
                 eco.currentBlock.votes += currentVote.vt
 
                 // updating the content
@@ -212,7 +215,7 @@ var eco = {
                                         masterAccount.balance -= benefReward
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
                                             transaction.adjustNodeAppr(masterAccount, benefReward, function() {
-                                                cb(newCoins, benefReward)
+                                                cb(newCoins, benefReward, newBurn)
                                             })
                                         })
                                     })

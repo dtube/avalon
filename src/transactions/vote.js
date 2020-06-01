@@ -67,10 +67,10 @@ module.exports = {
                     tags: tags
                 }}, function(){
                     // monetary distribution (curation rewards)
-                    eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster) {
+                    eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster, burnCurator) {
                         if (!content.pa && !content.pp)
                             rankings.update(tx.data.author, tx.data.link, vote, distCurators)
-                        cb(true, distCurators+distMaster)
+                        cb(true, distCurators+distMaster, burnCurator)
                     })
                 })
             })
