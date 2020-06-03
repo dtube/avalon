@@ -283,7 +283,12 @@ chain = {
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
                         allowedPubKeys.push(account.keys[i].pub)
-                
+
+            // if there is no transaction type
+            // it means we are verifying a block signature
+            // so only the leader key is allowed
+            if (!txType)
+                allowedPubKeys = [account.pub_leader]                
             
             for (let i = 0; i < allowedPubKeys.length; i++) {
                 var bufferHash = Buffer.from(hash, 'hex')
