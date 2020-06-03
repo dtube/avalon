@@ -529,7 +529,12 @@ chain = {
         })
     },
     generateLeaders: (cb) => {
-        db.collection('accounts').find({node_appr: {$gt: 0}}, {
+        db.collection('accounts').find({
+            $and: [{
+                pub_leader: {$exists: true}
+            }, {
+                node_appr: {$gt: 0}
+            }]}, {
             sort: {node_appr: -1, name: -1},
             limit: config.leaders
         }).toArray(function(err, accounts) {

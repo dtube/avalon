@@ -24,6 +24,7 @@ var mongo = {
                     db.collection('accounts').insertOne({
                         name: config.masterName,
                         pub: config.masterPub,
+                        pub_leader: config.masterPubLeader || config.masterPub,
                         balance: config.masterBalance,
                         bw: {v:0,t:config.block0ts},
                         vt: {v:0,t:config.block0ts},

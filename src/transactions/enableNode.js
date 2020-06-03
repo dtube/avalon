@@ -6,14 +6,14 @@ module.exports = {
     },
     execute: (tx, ts, cb) => {
         // because if key is incorrect, we just null it
-        var leaderKey = null
+        var pub_leader = null
         if (validate.publicKey(tx.data.pub, config.accountMaxLength))
-            leaderKey = tx.data.pub
+            pub_leader = tx.data.pub
 
         cache.updateOne('accounts', {
             name: tx.sender
         },{ $set: {
-            leaderKey: leaderKey
+            pub_leader: pub_leader
         }}, function(){
             cb(true)
         })
