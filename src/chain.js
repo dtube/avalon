@@ -95,7 +95,8 @@ chain = {
             // at this point transactions in the pool seem all validated
             // BUT with a different ts and without checking for double spend
             // so we will execute transactions in order and revalidate after each execution
-            chain.executeBlockTransactions(newBlock, true, true, function(validTxs, distributed, burned) {
+            chain.executeBlockTransactions(newBlock, true, false, function(validTxs, distributed, burned) {
+                cache.rollback()
                 // and only add the valid txs to the new block
                 newBlock.txs = validTxs
 
@@ -112,16 +113,20 @@ chain = {
                 // hash and sign the block with our private key
                 newBlock = chain.hashAndSignBlock(newBlock)
                 
-                // TODO maybe only precommit to consensus here
-                // add it to our chain !
-                chain.addBlock(newBlock, function() {
-                    // and broadcast to peers
-                    p2p.broadcastBlock(newBlock)
+                // push the new block to consensus possible blocks
+                // and go straight to end of round 0 to skip re-validating the block
+                var possBlock = {
+                    block: newBlock
+                }
+                for (let r = 0; r < config.consensusRounds; r++)
+                    possBlock[r] = []
 
-                    // process notifications (non blocking)
-                    notifications.processBlock(newBlock)
-                    cb(null, newBlock)
-                })
+                logr.info('Mined a new block, proposing to consensus')
+
+                possBlock[0].push(process.env.NODE_OWNER)
+                consensus.possBlocks.push(possBlock)
+                consensus.endRound(0, newBlock)
+                cb(null, newBlock)
             })
         })
     },
@@ -186,7 +191,7 @@ chain = {
             mineInMs = config.blockTime
         // else if the scheduled leaders miss blocks
         // backups witnesses are available after each block time intervals
-        else for (let i = 1; i <= config.leaders; i++)
+        else for (let i = 1; i < 2*config.leaders; i++)
             if (chain.recentBlocks[chain.recentBlocks.length - i]
             && chain.recentBlocks[chain.recentBlocks.length - i].miner === process.env.NODE_OWNER) {
                 mineInMs = (i+1)*config.blockTime
@@ -194,7 +199,8 @@ chain = {
             }
 
         if (mineInMs) {
-            logr.trace('Trying to mine in '+mineInMs+'ms')
+            logr.debug('Trying to mine in '+mineInMs+'ms')
+            consensus.observer = false
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
                     if (error)
@@ -288,7 +294,10 @@ chain = {
             // it means we are verifying a block signature
             // so only the leader key is allowed
             if (!txType)
-                allowedPubKeys = [account.pub_leader]                
+                if (account.pub_leader)
+                    allowedPubKeys = [account.pub_leader]
+                else
+                    allowedPubKeys = []
             
             for (let i = 0; i < allowedPubKeys.length; i++) {
                 var bufferHash = Buffer.from(hash, 'hex')
