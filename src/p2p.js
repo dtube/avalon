@@ -3,12 +3,8 @@ const replay_interval = 1500
 const discovery_interval = 60000
 const max_blocks_buffer = 100
 var p2p_port = process.env.P2P_PORT || default_port
-var replay_pub = process.env.REPLAY_PUB
 var WebSocket = require('ws')
 var chain = require('./chain.js')
-var secp256k1 = require('secp256k1')
-var bs58 = require('base-x')(config.b58Alphabet)
-var CryptoJS = require('crypto-js')
 var consensus = require('./consensus.js')
 
 var MessageType = {
@@ -27,27 +23,27 @@ var p2p = {
     recoveredBlocks: [],
     recovering: false,
     discoveryWorker: () => {
-        chain.generateLeaders(function(miners) {
-            for (let i = 0; i < miners.length; i++) {
-                if (miners[i].name === process.env.NODE_OWNER) continue
-                if (!miners[i].json) continue
+        // chain.generateLeaders(function(miners) {
+        //     for (let i = 0; i < miners.length; i++) {
+        //         if (miners[i].name === process.env.NODE_OWNER) continue
+        //         if (!miners[i].json) continue
 
-                // are we already connected?
-                var connected = false
-                for (let y = 0; y < p2p.sockets.length; y++) {
-                    if (!p2p.sockets[y] || !p2p.sockets[y].node_status) continue
-                    if (miners[i].name === p2p.sockets[y].node_status.owner)
-                        connected = true
-                }
+        //         // are we already connected?
+        //         var connected = false
+        //         // for (let y = 0; y < p2p.sockets.length; y++) {
+        //         //     if (!p2p.sockets[y] || !p2p.sockets[y].node_status) continue
+        //         //     if (miners[i].name === p2p.sockets[y].node_status.owner)
+        //         //         connected = true
+        //         // }
 
-                if (!connected) {
-                    var json = miners[i].json
-                    if (json.node && json.node.ws) 
-                        p2p.connect([json.node.ws])
+        //         if (!connected) {
+        //             var json = miners[i].json
+        //             if (json.node && json.node.ws) 
+        //                 p2p.connect([json.node.ws])
                     
-                }
-            }
-        })
+        //         }
+        //     }
+        // })
     },
     init: () => {
         var server = new WebSocket.Server({port: p2p_port})
@@ -92,38 +88,33 @@ var p2p = {
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
-            //var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
-            //logr.trace('P2P-IN:', user, data)
             try {
                 var message = JSON.parse(data)
             } catch(e) {
-                logr.warn('Received non-JSON, doing nothing ;)')
+                logr.warn('P2P received non-JSON, doing nothing ;)')
             }
             if (!message || typeof message.t === 'undefined') return
+            // logr.debug('P2P-IN '+message.t)
             
             switch (message.t) {
             case MessageType.QUERY_NODE_STATUS:
+                // a peer is requesting our node status
                 var d = {
                     origin_block: config.originHash,
                     head_block: chain.getLatestBlock()._id,
                     head_block_hash: chain.getLatestBlock().hash,
-                    previous_block_hash: chain.getLatestBlock().phash,
-                    owner: process.env.NODE_OWNER
+                    previous_block_hash: chain.getLatestBlock().phash
                 }
-                var signedMessage = p2p.hashAndSignMessage({t: MessageType.NODE_STATUS, d:d})
-                p2p.sendJSON(ws, signedMessage)
+                p2p.sendJSON(ws, {t: MessageType.NODE_STATUS, d:d})
                 break
 
             case MessageType.NODE_STATUS:
-                p2p.verifySignedMessage(message, function(isValid) {
-                    if (isValid)
-                        p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
-                    else
-                        logr.debug('Wrong p2p sign')
-                })
+                // we received a peer node status
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
                 break
 
             case MessageType.QUERY_BLOCK:
+                // a peer wants to see the data in one of our stored blocks
                 db.collection('blocks').findOne({_id: message.d}, function(err, block) {
                     if (err)
                         throw err
@@ -133,6 +124,7 @@ var p2p = {
                 break
 
             case MessageType.BLOCK:
+                // a peer sends us a block we requested with QUERY_BLOCK
                 for (let i = 0; i < p2p.recoveringBlocks.length; i++)
                     if (p2p.recoveringBlocks[i] === message.d._id) {
                         p2p.recoveringBlocks.splice(i, 1)
@@ -148,18 +140,23 @@ var p2p = {
                 break
 
             case MessageType.NEW_BLOCK:
-                var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
-                if (!socket || !socket.node_status) return
+                // we received a new block we didn't request from a peer
+                // we forward it to consensus
                 var block = message.d
                 consensus.round(0, block)
-                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
-                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block_hash = block.hash
-                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.previous_block_hash = block.phash
                 break
+                
             case MessageType.NEW_TX:
+                // we received a new transaction from a peer
                 var tx = message.d
+
+                // if its already in the mempool, it means we already handled it
+                if (transaction.isInPool(tx))
+                    break
+                
                 transaction.isValid(tx, new Date().getTime(), function(isValid) {
-                    if (isValid && !transaction.isInPool(tx)) {
+                    if (isValid) {
+                        // if its valid we add it to mempool and broadcast it to our peers
                         transaction.addToPool([tx])
                         p2p.broadcast({t:5, d:tx})
                     } 
@@ -169,14 +166,23 @@ var p2p = {
 
             case MessageType.BLOCK_CONF_ROUND:
                 // we are receiving a consensus round confirmation
-                var leader = p2p.sockets[p2p.sockets.indexOf(ws)]
-                if (!leader || !leader.node_status) return
+                // it should come from one of the elected leaders, so let's verify signature
+        
+                logr.debug(message.s.n+' U'+message.d.r)
 
                 // always try to precommit in case its the first time we see it
-                consensus.round(0, message.d.b)
-
-                // process the message inside the consensus
-                consensus.messenger(leader, message.d.r, message.d.b)
+                consensus.round(0, message.d.b, function(validationStep) {
+                    if (validationStep === -1) {
+                        // logr.trace('Ignored BLOCK_CONF_ROUND')
+                    } else if (validationStep === 0) {
+                        // block is being validated, we queue the message
+                        consensus.queue.push(message)
+                        logr.debug('Added to queue')
+                    } else {
+                        // process the message inside the consensus
+                        consensus.remoteRoundConfirm(message)
+                    }
+                })
                 break
             }
         })
@@ -215,9 +221,8 @@ var p2p = {
     },
     sendJSON: (ws, d) => {
         try {
-            var user = p2p.sockets[p2p.sockets.indexOf(ws)].node_status ? p2p.sockets[p2p.sockets.indexOf(ws)].node_status.owner : 'unknown'
             var data = JSON.stringify(d)
-            //logr.trace('P2P-OUT:', user, data)
+            // logr.debug('P2P-OUT:', d.t)
             ws.send(data)
         } catch (error) {
             logr.warn('Tried sending p2p message and failed')
@@ -228,45 +233,8 @@ var p2p = {
     broadcastBlock: (block) => {
         p2p.broadcast({t:4,d:block})
     },
-    hashAndSignMessage: (message) => {
-        var hash = CryptoJS.SHA256(JSON.stringify(message)).toString()
-        var signature = secp256k1.sign(Buffer.from(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
-        signature = bs58.encode(signature.signature)
-        message.s = {
-            n: process.env.NODE_OWNER,
-            s: signature
-        }
-        return message
-    },
-    verifySignedMessage: (message, cb) => {
-        var sign = message.s.s
-        var name = message.s.n
-        var tmpMess = message
-        delete tmpMess.s
-        var hash = CryptoJS.SHA256(JSON.stringify(tmpMess)).toString()
-        db.collection('accounts').findOne({name: name}, function(err, account) {
-            if (err) throw err
-            if (!account && replay_pub && secp256k1.verify(
-                Buffer.from(hash, 'hex'),
-                bs58.decode(sign),
-                bs58.decode(replay_pub))) {
-                cb(true)
-                return
-            }
-            if (account && secp256k1.verify(
-                Buffer.from(hash, 'hex'),
-                bs58.decode(sign),
-                bs58.decode(account.pub))) {
-                cb(account)
-                return
-            }
-        })
-    },
     addRecursive: (block) => {
         chain.validateAndAddBlock(block, true, function(err, newBlock) {
-            // if (newBlock._id == 6465) {
-            //     process.exit(0)
-            // }
             if (err)
                 logr.error('Error Replay', newBlock)
             else {
@@ -276,9 +244,7 @@ var p2p = {
                     setTimeout(function() {
                         p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
                     }, 1)
-                
-            }
-                    
+            }     
         })
     }
 }

@@ -10,6 +10,7 @@ cache = require('./cache.js')
 validate = require('./validate')
 eco = require('./economics.js')
 rankings = require('./rankings.js')
+consensus = require('./consensus')
 
 // verify node version
 const nodeV = 10

@@ -1,3 +1,7 @@
+var secp256k1 = require('secp256k1')
+var CryptoJS = require('crypto-js')
+var bs58 = require('base-x')(config.b58Alphabet)
+const cloneDeep = require('clone-deep')
 const consensus_need = 2
 const consensus_total = 3
 const consensus_threshold = consensus_need/consensus_total
@@ -5,45 +9,60 @@ const consensus_threshold = consensus_need/consensus_total
 // all p2p.sockets referenced here are verified nodes with a node_status
 
 var consensus = {
+    observer: false,
     validating: [],
+    queue: [],
     finalizing: false,
     possBlocks: [],
     buffer: [],
-    onlineLeaders: () => {
-        // list top leaders
-        var leaders = []
-        for (let y = 0; y < chain.schedule.shuffle.length; y++)
-            if (leaders.indexOf(chain.schedule.shuffle[y].name) === -1)
-                leaders.push(chain.schedule.shuffle[y].name)
-        
-        // count ourselves as active connected leader
-        var onlineLeaders = [process.env.NODE_OWNER]
-
-        // and see which we're connected with
-        // and on the same chain and close (same block or previous one)
-        // should be 100%, except in node startup / replay phase
-        // but should always be 100% after a minute or so
-        for (let i = 0; i < p2p.sockets.length; i++) {
-            if (!p2p.sockets[i].node_status) continue
-            for (let y = 0; y < leaders.length; y++)
-                if (onlineLeaders.indexOf(leaders[y]) === -1
-                && p2p.sockets[i].node_status.owner === leaders[y]
-                && (p2p.sockets[i].node_status.head_block_hash === chain.getLatestBlock().hash
-                    || p2p.sockets[i].node_status.previous_block_hash === chain.getLatestBlock().hash
-                    || p2p.sockets[i].node_status.head_block_hash === chain.getLatestBlock().phash)
-                )
-                    onlineLeaders.push(leaders[y])
+    getActiveLeaderKey: (name) => {
+        var shuffle = chain.schedule.shuffle
+        for (let i = 0; i < shuffle.length; i++)
+            if (shuffle[i].name === name)
+                return shuffle[i].pub_leader
+        return
+    },
+    isActive: () => {
+        if (consensus.observer)
+            return false
+        var thPub = consensus.getActiveLeaderKey(process.env.NODE_OWNER)
+        if (!thPub) {
+            logr.info(process.env.NODE_OWNER+' is not elected, defaulting to observer')
+            consensus.observer = true
+            return false
         }
-
-        return onlineLeaders
+        if (process.env.NODE_OWNER_PUB !== thPub) {
+            consensus.observer = true
+            logr.warn('Leader key does not match blockchain data, observing instead',thPub, process.env.NODE_OWNER_PUB)
+            return false
+        }
+        return true
+    },
+    activeLeaders: () => {
+        // the real active leaders are those who can mine or backup this block
+        // i.e. a new leader only enters consensus on the block he gets scheduled for
+        // and out of consensus 2*config.leaders blocks after his last scheduled block
+        var blockNum = chain.getLatestBlock()._id+1
+        var actives = [chain.schedule.shuffle[(blockNum-1)%config.leaders].name]
+        for (let i = 1; i < 2*config.leaders; i++)
+            if (chain.recentBlocks[chain.recentBlocks.length-i]
+            && actives.indexOf(chain.recentBlocks[chain.recentBlocks.length-i].miner) === -1)
+                actives.push(chain.recentBlocks[chain.recentBlocks.length-i].miner)
+        
+        logr.debug('Leading: ' + actives.join(','))
+        return actives
     },
     tryNextStep: () => {
-        var onlineLeaders = consensus.onlineLeaders()
-        var threshold = onlineLeaders.length * consensus_threshold
+        var consensus_size = consensus.activeLeaders().length
+        var threshold = consensus_size * consensus_threshold
+
+        // if we are observing, we need +1 to pass consensus as we want to manage our own rounds
+        if (!consensus.isActive())
+            threshold += 1
 
         for (let i = 0; i < consensus.possBlocks.length; i++) {
             const possBlock = consensus.possBlocks[i]
-            //logr.debug('CON/'+onlineLeaders.length, possBlock[0].length, possBlock[1].length)
+            logr.debug('CON/ T'+Math.ceil(threshold)+' R0-'+possBlock[0].length+' R1-'+possBlock[1].length)
             // if 2/3+ of the final round and not already finalizing another block
             if (possBlock[config.consensusRounds-1].length > threshold 
             && !consensus.finalizing 
@@ -71,60 +90,76 @@ var consensus = {
                     consensus.round(y+1, possBlock.block) 
         }
     },
-    round: (round, block) => {
+    round: (round, block, cb) => {
         // ignore for different block height
-        if (block._id !== chain.getLatestBlock()._id+1)
+        if (block._id !== chain.getLatestBlock()._id+1) {
+            if (cb) cb(-1)
             return
-
-        //logr.debug('ROUND:'+round+' '+block._id+'#'+block.hash.substr(0,4))
+        }
 
         if (round === 0) {
             // precommit stage
 
             // skip whatever we already validated
             for (let i = 0; i < consensus.possBlocks.length; i++)
-                if (consensus.possBlocks[i].block.hash === block.hash)
+                if (consensus.possBlocks[i].block.hash === block.hash) {
+                    if (cb) cb(1)
                     return
+                }
 
             // or are currently validating
-            if (consensus.validating.indexOf(block.hash) > -1)
+            if (consensus.validating.indexOf(block.hash) > -1) {
+                if (cb) cb(0)
                 return
+            }
+                
             consensus.validating.push(block.hash)
 
-            // its valid, set up the empty possible block
+            // its a new possible block, set up the empty possible block
             var possBlock = {
                 block:block
             }
             for (let r = 0; r < config.consensusRounds; r++)
                 possBlock[r] = []
 
-            // consider the miner who signed the block to have passed all consensus stages
-            for (let r = 0; r < config.consensusRounds; r++)
-                possBlock[r].push(block.miner)
-    
-            // and saving into consensus data
-            consensus.possBlocks.push(possBlock)
-
             // now we verify the block is valid
-            logr.trace('CON/ New poss block '+block._id+'#'+block.hash.substr(0,4))
+            logr.debug('CON/ New poss block '+block._id+'/'+block.miner+'/'+block.hash.substr(0,4))
             chain.isValidNewBlock(block, true, true, function(isValid) {
-                consensus.validating.splice(consensus.validating.indexOf(possBlock.block.hash), 1)                
+                consensus.validating.splice(consensus.validating.indexOf(possBlock.block.hash), 1)
                 if (!isValid) {
                     // todo add punishment (close socket?)
-                    logr.error('Received invalid new block', block.hash)
-
+                    logr.error('Received invalid new block from '+block.miner, block.hash)
+                    if (cb) cb(-1)
                 } else {
-                    logr.trace('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
+                    logr.debug('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
 
-                    // precommitting ourselves
+                    // adding to possible blocks
+                    consensus.possBlocks.push(possBlock)
+                    // adding ourselves to precommit list
                     for (let i = 0; i < consensus.possBlocks.length; i++) 
                         if (block.hash === consensus.possBlocks[i].block.hash
-                        && block.miner !== process.env.NODE_OWNER
                         && consensus.possBlocks[i][0].indexOf(process.env.NODE_OWNER) === -1)
                             possBlock[0].push(process.env.NODE_OWNER)
 
+                    // processing queued messages for this block
+                    for (let i = 0; i < consensus.queue.length; i++) {
+                        if (consensus.queue[i].d.b.hash === possBlock.block.hash) {
+                            logr.warn('From Queue: '+consensus.queue[i])
+                            consensus.remoteRoundConfirm(consensus.queue[i])
+                            consensus.queue.splice(i, 1)
+                            i--
+                            continue
+                        }
+                        if (consensus.queue[i].d.b.ts + 2*config.blockTime < new Date().getTime()) {
+                            consensus.queue.splice(i, 1)
+                            i--
+                        }
+                    }
+
                     // and broadcasting the precommit to our peers
                     consensus.endRound(round, block)
+
+                    if (cb) cb(1)
                 }
             })
         } else
@@ -137,20 +172,80 @@ var consensus = {
                 }
     },
     endRound: (round, block) => {
-        // broadcast to our peers
-        p2p.broadcast({t:6, d:{r:round, b: block}})
+        if (consensus.isActive()) {
+            logr.debug('Broadcasting round '+round)
+            // signing and broadcast to our peers
+            // only if we are an active leader
+            var signed = consensus.signMessage({t:6, d:{r:round, b: block}})
+            p2p.broadcast(signed)
+        }
+
         // try to move to next consensus step
         consensus.tryNextStep()
     },
-    messenger: (socket, round, block) => {
+    remoteRoundConfirm: (message) => {
+        var block = message.d.b
+        var round = message.d.r
+        var leader = message.s.n
+        
+        // logr.debug('Remote round: '+round+' '+leader+' '+consensus.possBlocks.length)
         for (let i = 0; i < consensus.possBlocks.length; i++) 
-            if (block.hash === consensus.possBlocks[i].block.hash
-            && consensus.possBlocks[i][round].indexOf(socket.node_status.owner) === -1) {
-                // add the leader to the ones who passed precommit
-                consensus.possBlocks[i][round].push(socket.node_status.owner)
-                consensus.tryNextStep()
-            }
-    }
+            if (block.hash === consensus.possBlocks[i].block.hash) {
+                if (consensus.possBlocks[i][round] && consensus.possBlocks[i][round].indexOf(leader) === -1) {
+                    // this leader has not already confirmed this round so lets verify signature now
+                    
+                    consensus.verifySignature(message, function(isValid) {
+                        if (!isValid) {
+                            logr.warn('Received round confirmation with wrong signature from '+leader)
+                            return
+                        } else {
+                            // the signature is legit
+                            // bounce the round confirmation as is
+                            p2p.broadcast(message)
+
+                            // and add the leader to the ones who passed precommit
+                            logr.debug(leader+' R'+round)
+                            for (let r = round; r >= 0; r--)
+                                if (consensus.possBlocks[i][r].indexOf(leader) === -1)
+                                    consensus.possBlocks[i][r].push(leader)
+                            
+                            consensus.tryNextStep()
+                        }
+                    })
+                }
+                break
+            }       
+    },
+    signMessage: (message) => {
+        var hash = CryptoJS.SHA256(JSON.stringify(message)).toString()
+        var signature = secp256k1.sign(Buffer.from(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
+        signature = bs58.encode(signature.signature)
+        message.s = {
+            n: process.env.NODE_OWNER,
+            s: signature
+        }
+        return message
+    },
+    verifySignature: (message, cb) => {
+        if (!message || !message.s) {
+            cb(false)
+            return
+        }
+        var sign = message.s.s
+        var name = message.s.n
+        var tmpMess = cloneDeep(message)
+        delete tmpMess.s
+        var hash = CryptoJS.SHA256(JSON.stringify(tmpMess)).toString()
+        var pub = consensus.getActiveLeaderKey(name)
+        if (pub && secp256k1.verify(
+            Buffer.from(hash, 'hex'),
+            bs58.decode(sign),
+            bs58.decode(pub))) {
+            cb(true)
+            return
+        }
+        cb(false)
+    },
 }
 
 module.exports = consensus
