@@ -4,7 +4,7 @@ var MongoClient = require('mongodb').MongoClient
 var fs = require('fs')
 var sha256File = require('sha256-file')
 var AdmZip = require('adm-zip')
-const { spawn } = require('child_process')
+var spawn = require('child_process').spawn
 
 var mongo = {
     init: (cb) => {
@@ -24,13 +24,19 @@ var mongo = {
                     cb()
                     return
                 } else {
+                    logr.info('Block #0 not found. Starting genesis...')
                     var genesisFolder = process.cwd()+'/genesis/'
                     var genesisZip = genesisFolder+'genesis.zip'
-                    fs.readFile(genesisZip, function(err,data) {
-                        if (err)
+                    fs.readFile(genesisZip, function(err) {
+                        if (err) {
+                            logr.warn('No genesis.zip file found')
                             // if no genesis file, we create only the master account and empty block 0
-                            mongo.fromScratch(cb)
-                        else {
+                            mongo.insertMasterAccount(function() {
+                                mongo.insertBlockZero(function() {
+                                    cb()
+                                })
+                            })
+                        } else {
                             // if there's a genesis file, we unzip and mongorestore it
                             logr.info('Found genesis.zip file, checking sha256sum...')
                             var fileHash = sha256File(genesisZip)
@@ -74,8 +80,8 @@ var mongo = {
             
         })
     },
-    fromScratch: (cb) => {
-        logr.info('Adding Master account '+config.masterName)
+    insertMasterAccount: (cb) => {
+        logr.info('Inserting new master account: '+config.masterName)
         db.collection('accounts').insertOne({
             name: config.masterName,
             pub: config.masterPub,
@@ -96,10 +102,10 @@ var mongo = {
                 ts: config.block0ts
             }
         })
-        mongo.insertBlockZero(cb)        
+        cb()     
     },
     insertBlockZero: (cb) => {
-        logr.info('New Genesis Block #0 with hash '+config.originHash)
+        logr.info('Inserting Block #0 with hash '+config.originHash)
         db.collection('blocks').findOne({}, function(err, block) {
             if (err) throw err
             if (!block) {
