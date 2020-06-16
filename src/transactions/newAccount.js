@@ -45,8 +45,6 @@ module.exports = {
             balance: 0,
             bw: {v:0,t:0},
             vt: {v:0,t:0},
-            pr: {v:0,t:0},
-            uv: 0,
             follows: [],
             followers: [],
             keys: [],

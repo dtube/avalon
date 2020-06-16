@@ -89,8 +89,6 @@ var mongo = {
             balance: config.masterBalance,
             bw: {v:0,t:config.block0ts},
             vt: {v:0,t:config.block0ts},
-            pr: {v:0,t:config.block0ts},
-            uv: 0,
             // we set those arbitrarily
             approves: [config.masterName],
             node_appr: config.masterBalance,
