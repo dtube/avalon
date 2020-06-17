@@ -548,9 +548,17 @@ chain = {
                 pub_leader: {$exists: true}
             }, {
                 node_appr: {$gt: 0}
-            }]}, {
+            }]
+        },{
             sort: {node_appr: -1, name: -1},
             limit: config.leaders
+        }).project({
+            name: 1,
+            pub: 1,
+            pub_leader: 1,
+            balance: 1,
+            approves: 1,
+            node_appr: 1,
         }).toArray(function(err, accounts) {
             if (err) throw err
             cb(accounts)
