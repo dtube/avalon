@@ -51,7 +51,8 @@ module.exports = {
             json: tx.data.json,
             child: [],
             votes: [superVote],
-            ts: ts
+            ts: ts,
+            burn: tx.data.burn
         }
         if (tx.data.tag)  {
             if (tx.data.tag) superVote.tag = tx.data.tag

@@ -299,6 +299,36 @@ var http = {
             })
         })
 
+        // get votes history of a user
+        app.get('/votes/:voter/:lastTs', (req, res) => {
+            var query = {
+                $and: [{
+                    'votes.u': req.params.voter,
+                }]
+            }
+            var lastTs = parseInt(req.params.lastBlock)
+            if (lastTs > 0)
+                query['$and'].push({ts: {$lt: lastTs}})
+
+            db.collection('contents').find(query, {sort: {ts: -1}, limit: 10}).toArray(function(err, contents) {
+                if (err) throw err
+                var votes = []
+                for (let i = 0; i < contents.length; i++) {
+                    for (let y = 0; y < contents[i].votes.length; y++) {
+                        votes.push({
+                            author: contents[i].author,
+                            link: contents[i].link,
+                            claimable: contents[i].votes[y].claimable,
+                            claimed: contents[i].votes[y].claimed,
+                            vt: contents[i].votes[y].vt,
+                            ts: contents[i].votes[y].ts
+                        })
+                    }
+                }
+                res.send(votes)
+            })
+        })
+
         // get new contents
         app.get('/content/:author/:link', (req, res) => {
             if (!req.params.author || typeof req.params.link !== 'string') {

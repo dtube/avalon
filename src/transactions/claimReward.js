@@ -46,7 +46,14 @@ module.exports = {
                         cache.updateOne('accounts', {name: tx.sender}, {
                             $inc: {balance: reward}
                         }, function() {
-                            cb(true)
+                            cache.insertOne('distributed', {
+                                name: config.masterName,
+                                dist: reward,
+                                ts: ts,
+                                _id: content.author+'/'+content.link+'/claim/'+tx.sender
+                            }, function() {
+                                cb(true)
+                            })
                         })
                     })
                     return
