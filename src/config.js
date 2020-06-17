@@ -11,6 +11,7 @@ var config = {
             accountPriceMin: 1,
             accountMaxLength: 50,
             accountMinLength: 1,
+            activeUserMinBalance: 100, // 1.00 DTC to be counted as an active user and count towards inflation
             // allowed username chars
             allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
             allowedUsernameCharsOnlyMiddle: '-.',

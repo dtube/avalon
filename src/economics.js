@@ -31,7 +31,7 @@ var eco = {
     },
     activeUsersCount: (cb) => {
         // we consider anyone with a non zero balance to be active
-        db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
+        db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
             if (err) throw err
             cb(config.rewardPoolMult*count+config.rewardPoolMin)
         })
@@ -147,7 +147,7 @@ var eco = {
                     newCoins += won
                     delete winners[i].share
 
-                    logr.debug(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
+                    logr.trace(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
                 }
                 newCoins = Math.round(newCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
 
@@ -180,8 +180,8 @@ var eco = {
                 }
                 newBurn = Math.round(newBurn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
                 
-                logr.debug(newCoins + ' dist from the vote')
-                logr.debug(newBurn + ' burn from the vote')
+                logr.trace(newCoins + ' dist from the vote')
+                logr.trace(newBurn + ' burn from the vote')
 
                 // add dist/burn/votes to currentBlock eco stats
                 eco.currentBlock.dist += newCoins
@@ -257,7 +257,7 @@ var eco = {
             if (thNewCoins > Math.floor(stats.avail*config.rewardPoolMaxShare))
                 thNewCoins = Math.floor(stats.avail*config.rewardPoolMaxShare)
 
-            logr.debug('PRINT:'+vt+' VT => '+thNewCoins+' dist', stats)
+            logr.trace('PRINT:'+vt+' VT => '+thNewCoins+' dist')
             
             cb(thNewCoins)
         })
