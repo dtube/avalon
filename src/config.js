@@ -1,6 +1,8 @@
 var config = {
     history: {
         0: {
+            // this is configuration for testnet2
+
             // the account pricing options
             // see: https://www.wolframalpha.com/input/?i=plot+10%2B100*(1.1%5E(14-x))+from+x%3D1+to+x%3D40
             accountPriceBase: 10000,
@@ -21,17 +23,15 @@ var config = {
             // the block time in ms
             blockTime: 3000,
             // the number of ms needed for 0.01 DTC to generate 1 byte of bw
-            bwGrowth: 10000,
+            bwGrowth: 36000000, // +10 bytes per hour per DTC (3600 * 1000 * 100 / 10)
             // the maximum bandwidth an account can have available
-            bwMax: 256000,
-            // controls if unpaid votes should be capped to the amount needed to generate 1 token
-            capUnpaidVotes: false,
+            bwMax: 128000,
             // the number of rounds of consensus before block is valid (min 2)
             consensusRounds: 2,
             // base rentability of votes
             ecoBaseRent: 0.50,
             // the number of blocks from the past taken into consideration for econonomics
-            ecoBlocks: 100,
+            ecoBlocks: 9600, // 8 hours
             // the precision of the claimable amounts
             ecoClaimPrecision: 3,
             // the required number of ms before a vote reward can be claimed
@@ -49,18 +49,19 @@ var config = {
             followsMax: 2000,
             // the max size of a stringified json input (content / user profile)
             // best if kept slightly lower than bwMax
-            jsonMaxBytes: 250000,
+            jsonMaxBytes: 120000,
             // the max length of a key identifier
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
-            leaderReward: 0,
-            leaderRewardVT: 0,
-            leaders: 7,
+            leaderReward: 1,
+            leaderRewardVT: 500,
+            leaders: 10,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
             // the maximum number of leaders an account can vote for
             leaderMaxVotes: 5,
             // the "master" account starting stake (total starting supply)
+            // not applied if starting from a genesis.zip file
             masterBalance: 10000000000,
             // the number of tokens distributed before master gets 1 free token printed.
             // masterFee = 2 => <33% fee
@@ -76,7 +77,7 @@ var config = {
             masterPub: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
             // the master account public leader key (for block production)
             masterPubLeader: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
-            // the maximum time drift in ms before a transaction is invalid
+            // the maximum time drift in ms before a block is invalid
             maxDrift: 200,
             // the max length of a transfer memo
             memoMaxLength: 250,
@@ -86,13 +87,14 @@ var config = {
             notifPurgeAfter: 56,
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
-            // the fake hash of block 0 (new origin hash -> new chain)
-            originHash: '0000000000000000000000000000000000000000000000000000000000000201',
+            // the sha256sum hash of block 0 (new origin hash -> new chain)
+            originHash: '1d76da9582163496ad4e3d5ce7460150efc805c41b74d1e9cd590efb7fffe0ad',
+            // the default number of random bytes to use for new key generation
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 1,
             // the multiplier for the reward pool, modifying it is a bad practise
-            rewardPoolMult: 200,
+            rewardPoolMult: 80, // 0.40 DTC / active user / cycle => 1.2 DTC / active user / day
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
             // the maximum length of tags (on votes)
@@ -107,23 +109,10 @@ var config = {
                 0: 2,
                 14: 2,
                 15: 2,
-                16: 1
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
-            vtGrowth: 360000, // +1 vt per hour per DTC
+            vtGrowth: 360000000, // +1 vt per hour per DTC (3600 * 1000 * 100)
             vtPerBurn: 6 // can be updated in the future to modify incentives
-        },
-        10: {
-            // new configs for testnet HF2
-            enableSubCommentEdit: true,
-            verifyTxHash: true,
-            leaderReward: 1,
-            leaderRewardVT: 100,
-            txLimits: {
-                0: 2,
-                14: 2,
-                15: 2
-            }
         }
     },
     read: (blockNum) => {
