@@ -2,7 +2,7 @@ var decay = require('decay')
 const cloneDeep = require('clone-deep')
 const hotHalfTime = 43200 // 12 hours
 const trendingHalfTime = 302400 // 3.5 days
-const expireFactor = 15
+const expireFactor = 5000 // disappears after 5 half times
 
 var rankings = {
     types: {
