@@ -83,14 +83,12 @@ transaction = {
         if (transaction.isPublished(tx)) {
             cb(false, 'transaction already in chain'); return
         }
-        if (config.verifyTxHash) {
-            // verify hash matches the transaction's payload
-            var newTx = cloneDeep(tx)
-            delete newTx.signature
-            delete newTx.hash
-            if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
-                cb(false, 'invalid tx hash does not match'); return
-            }
+        // verify hash matches the transaction's payload
+        var newTx = cloneDeep(tx)
+        delete newTx.signature
+        delete newTx.hash
+        if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
+            cb(false, 'invalid tx hash does not match'); return
         }
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser) {
