@@ -40,7 +40,8 @@ module.exports = {
         var superVote = {
             u: tx.sender,
             ts: ts,
-            vt: tx.data.vt+(tx.data.burn * config.vtPerBurn) // we just add some extra VTs
+            vt: tx.data.vt+(tx.data.burn * config.vtPerBurn), // we just add some extra VTs
+            burn: tx.data.burn // add burn data for later
         }
         var newContent = {
             _id: tx.sender+'/'+tx.data.link,
@@ -51,8 +52,7 @@ module.exports = {
             json: tx.data.json,
             child: [],
             votes: [superVote],
-            ts: ts,
-            burn: tx.data.burn
+            ts: ts
         }
         if (tx.data.tag)  {
             if (tx.data.tag) superVote.tag = tx.data.tag
