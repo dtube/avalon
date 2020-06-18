@@ -310,7 +310,7 @@ var http = {
             if (lastTs > 0)
                 query['$and'].push({ts: {$lt: lastTs}})
 
-            db.collection('contents').find(query, {sort: {ts: -1}, limit: 10}).toArray(function(err, contents) {
+            db.collection('contents').find(query, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
                 if (err) throw err
                 var votes = []
                 for (let i = 0; i < contents.length; i++) {
@@ -321,7 +321,9 @@ var http = {
                             claimable: contents[i].votes[y].claimable,
                             claimed: contents[i].votes[y].claimed,
                             vt: contents[i].votes[y].vt,
-                            ts: contents[i].votes[y].ts
+                            ts: contents[i].votes[y].ts,
+                            contentTs: contents[i].ts,
+                            burn: contents[i].votes[y].burn
                         })
                     }
                 }
