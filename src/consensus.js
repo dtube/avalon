@@ -49,7 +49,7 @@ var consensus = {
             && actives.indexOf(chain.recentBlocks[chain.recentBlocks.length-i].miner) === -1)
                 actives.push(chain.recentBlocks[chain.recentBlocks.length-i].miner)
         
-        logr.debug('Leading: ' + actives.join(','))
+        // logr.debug('Leading: ' + actives.join(','))
         return actives
     },
     tryNextStep: () => {
@@ -62,7 +62,7 @@ var consensus = {
 
         for (let i = 0; i < consensus.possBlocks.length; i++) {
             const possBlock = consensus.possBlocks[i]
-            logr.debug('CON/ T'+Math.ceil(threshold)+' R0-'+possBlock[0].length+' R1-'+possBlock[1].length)
+            logr.trace('CON/ T'+Math.ceil(threshold)+' R0-'+possBlock[0].length+' R1-'+possBlock[1].length)
             // if 2/3+ of the final round and not already finalizing another block
             if (possBlock[config.consensusRounds-1].length > threshold 
             && !consensus.finalizing 
@@ -123,7 +123,7 @@ var consensus = {
                 possBlock[r] = []
 
             // now we verify the block is valid
-            logr.debug('CON/ New poss block '+block._id+'/'+block.miner+'/'+block.hash.substr(0,4))
+            logr.trace('CON/ New poss block '+block._id+'/'+block.miner+'/'+block.hash.substr(0,4))
             chain.isValidNewBlock(block, true, true, function(isValid) {
                 consensus.validating.splice(consensus.validating.indexOf(possBlock.block.hash), 1)
                 if (!isValid) {
@@ -131,7 +131,7 @@ var consensus = {
                     logr.error('Received invalid new block from '+block.miner, block.hash)
                     if (cb) cb(-1)
                 } else {
-                    logr.debug('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
+                    logr.trace('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
 
                     // adding to possible blocks
                     consensus.possBlocks.push(possBlock)
@@ -173,7 +173,6 @@ var consensus = {
     },
     endRound: (round, block) => {
         if (consensus.isActive()) {
-            logr.debug('Broadcasting round '+round)
             // signing and broadcast to our peers
             // only if we are an active leader
             var signed = consensus.signMessage({t:6, d:{r:round, b: block}})
@@ -204,7 +203,7 @@ var consensus = {
                             p2p.broadcast(message)
 
                             // and add the leader to the ones who passed precommit
-                            logr.debug(leader+' R'+round)
+                            // logr.debug(leader+' R'+round)
                             for (let r = round; r >= 0; r--)
                                 if (consensus.possBlocks[i][r].indexOf(leader) === -1)
                                     consensus.possBlocks[i][r].push(leader)
