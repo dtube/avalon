@@ -293,7 +293,7 @@ chain = {
             // if there is no transaction type
             // it means we are verifying a block signature
             // so only the leader key is allowed
-            if (typeof txType === undefined)
+            if (txType === null)
                 if (account.pub_leader)
                     allowedPubKeys = [account.pub_leader]
                 else
@@ -517,7 +517,7 @@ chain = {
         var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         if (!p2p.recovering)
             logr.info('Generating schedule... NRNG: ' + rand)
-        chain.generateLeaders(function(miners) {
+        chain.generateLeaders(true, config.leaders, function(miners) {
             miners = miners.sort(function(a,b) {
                 if(a.name < b.name) return -1
                 if(a.name > b.name) return 1
@@ -542,16 +542,20 @@ chain = {
             })
         })
     },
-    generateLeaders: (cb) => {
-        db.collection('accounts').find({
+    generateLeaders: (withLeaderPub, limit, cb) => {
+        
+        var query = {
             $and: [{
                 pub_leader: {$exists: true}
             }, {
                 node_appr: {$gt: 0}
             }]
-        },{
+        }
+        if (!withLeaderPub)
+            query['$and'].splice(0,1)
+        db.collection('accounts').find(query,{
             sort: {node_appr: -1, name: -1},
-            limit: config.leaders
+            limit: limit
         }).project({
             name: 1,
             pub: 1,
@@ -559,6 +563,7 @@ chain = {
             balance: 1,
             approves: 1,
             node_appr: 1,
+            json: 1,
         }).toArray(function(err, accounts) {
             if (err) throw err
             cb(accounts)
