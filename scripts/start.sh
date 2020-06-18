@@ -11,6 +11,7 @@
 # Peering configuration
 #export OFFLINE=1
 #export NO_DISCOVERY=1
+#export DISCOVERY_EXCLUDE=dtube
 
 # Disabling notifications
 #export NOTIFICATIONS=1
@@ -23,7 +24,7 @@ export REPLAY_OUTPUT=100
 
 # default peers to connect with on startup
 export PEERS=ws://127.0.0.1:6002
-export MAX_PEERS=15
+export MAX_PEERS=20
 
 # your user and keys (only useful for active node owners)
 export NODE_OWNER=dtube
