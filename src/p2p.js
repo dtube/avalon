@@ -33,7 +33,7 @@ var p2p = {
                     
                 if (leaders[i].json && leaders[i].json.node && leaders[i].json.node.ws) {
                     var excluded = (process.env.DISCOVERY_EXCLUDE ? process.env.DISCOVERY_EXCLUDE.split(',') : [])
-                    if (excluded.indexOf(leaders[i].name))
+                    if (excluded.indexOf(leaders[i].name) > -1)
                         continue
                     var isConnected = false
                     for (let w = 0; w < p2p.sockets.length; w++) {
