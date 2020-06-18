@@ -293,7 +293,7 @@ chain = {
             // if there is no transaction type
             // it means we are verifying a block signature
             // so only the leader key is allowed
-            if (!txType)
+            if (typeof txType === undefined)
                 if (account.pub_leader)
                     allowedPubKeys = [account.pub_leader]
                 else
