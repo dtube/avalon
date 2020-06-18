@@ -1,8 +1,8 @@
 const default_port = 6001
 const replay_interval = 1500
-const discovery_interval = 3000
+const discovery_interval = 60000
 const max_blocks_buffer = 100
-const max_peers = process.env.MAX_PEERS || 10
+const max_peers = process.env.MAX_PEERS || 15
 var p2p_port = process.env.P2P_PORT || default_port
 var WebSocket = require('ws')
 var chain = require('./chain.js')
@@ -40,15 +40,12 @@ var p2p = {
                         var ip = p2p.sockets[w]._socket.remoteAddress
                         if (ip.indexOf('::ffff:') > -1)
                             ip = ip.replace('::ffff:', '')
-                        
                         try {
                             var leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
                             if (leaderIp === ip) {
                                 logr.trace('Already peered with '+leaders[i].name)
                                 isConnected = true
                             }
-                                
-                            break
                         } catch (error) {
                             logr.warn('Wrong json.node.ws for leader '+leaders[i].name+' '+leaders[i].json.node.ws, error)
                         }
@@ -161,6 +158,13 @@ var p2p = {
                 // we forward it to consensus
                 var block = message.d
                 consensus.round(0, block)
+
+                // we save the head_block of our peers
+                var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
+                if (!socket || !socket.node_status) return
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block_hash = block.hash
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status.previous_block_hash = block.phash
                 break
                 
             case MessageType.NEW_TX:
