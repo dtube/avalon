@@ -144,7 +144,7 @@ var consensus = {
                     // processing queued messages for this block
                     for (let i = 0; i < consensus.queue.length; i++) {
                         if (consensus.queue[i].d.b.hash === possBlock.block.hash) {
-                            logr.warn('From Queue: '+consensus.queue[i])
+                            logr.warn('From Queue: '+consensus.queue[i].d.b.hash)
                             consensus.remoteRoundConfirm(consensus.queue[i])
                             consensus.queue.splice(i, 1)
                             i--
