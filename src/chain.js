@@ -121,7 +121,7 @@ chain = {
                 for (let r = 0; r < config.consensusRounds; r++)
                     possBlock[r] = []
 
-                logr.info('Mined a new block, proposing to consensus')
+                logr.debug('Mined a new block, proposing to consensus')
 
                 possBlock[0].push(process.env.NODE_OWNER)
                 consensus.possBlocks.push(possBlock)

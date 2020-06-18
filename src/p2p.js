@@ -44,7 +44,7 @@ var p2p = {
                         try {
                             var leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
                             if (leaderIp === ip) {
-                                logr.debug('Already peered with '+leaders[i].name)
+                                logr.trace('Already peered with '+leaders[i].name)
                                 isConnected = true
                             }
                                 
