@@ -3,6 +3,8 @@ const replay_interval = 1500
 const discovery_interval = 60000
 const max_blocks_buffer = 100
 const max_peers = process.env.MAX_PEERS || 15
+const history_interval = 10000
+const keep_history_for = 20000
 var p2p_port = process.env.P2P_PORT || default_port
 var WebSocket = require('ws')
 var chain = require('./chain.js')
@@ -67,6 +69,7 @@ var p2p = {
             setInterval(function(){p2p.discoveryWorker()}, discovery_interval)
             p2p.discoveryWorker()
         }
+        setInterval(function(){p2p.cleanRoundConfHistory()}, history_interval)
     },
     connect: (newPeers) => {
         newPeers.forEach((peer) => {
@@ -191,11 +194,6 @@ var p2p = {
                 if (!message.s || !message.s.s || !message.s.n) return
                 // logr.debug(message.s.n+' U'+message.d.r)
 
-                // if (!p2p.sockets[p2p.sockets.indexOf(ws)]) throw err
-                // if (!p2p.sockets[p2p.sockets.indexOf(ws)].sentUs)
-                //     p2p.sockets[p2p.sockets.indexOf(ws)].sentUs = []
-                // p2p.sockets[p2p.sockets.indexOf(ws)].sentUs.push(message.s.s)
-
                 // always try to precommit in case its the first time we see it
                 consensus.round(0, message.d.b, function(validationStep) {
                     if (validationStep === -1) {
@@ -209,6 +207,11 @@ var p2p = {
                         consensus.remoteRoundConfirm(message)
                     }
                 })
+
+                if (!p2p.sockets[p2p.sockets.indexOf(ws)]) return
+                if (!p2p.sockets[p2p.sockets.indexOf(ws)].sentUs)
+                    p2p.sockets[p2p.sockets.indexOf(ws)].sentUs = []
+                p2p.sockets[p2p.sockets.indexOf(ws)].sentUs.push([message.s.s,new Date().getTime()])
                 break
             }
         })
@@ -255,6 +258,16 @@ var p2p = {
         }
         
     },
+    broadcastNotSent: (d) => {
+        firstLoop:
+        for (let i = 0; i < p2p.sockets.length; i++) {
+            if (!p2p.sockets[i].sentUs) continue
+            for (let y = 0; y < p2p.sockets[i].sentUs.length; y++) 
+                if (p2p.sockets[i].sentUs[y][0] === d.s.s)
+                    continue firstLoop
+            p2p.sendJSON(p2p.sockets[i], d)
+        }
+    },
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
     broadcastBlock: (block) => {
         p2p.broadcast({t:4,d:block})
@@ -272,6 +285,19 @@ var p2p = {
                     }, 1)
             }     
         })
+    },
+    cleanRoundConfHistory: () => {
+        logr.trace('Cleaning old p2p messages history')
+        for (let i = 0; i < p2p.sockets.length; i++) {
+            if (!p2p.sockets[i].sentUs)
+                continue
+            for (let y = 0; y < p2p.sockets[i].sentUs.length; y++) {
+                if (new Date().getTime() - p2p.sockets[i].sentUs[y][1] > keep_history_for) {
+                    p2p.sockets[i].sentUs.splice(y,1)
+                    y--
+                }                
+            }
+        }
     }
 }
 

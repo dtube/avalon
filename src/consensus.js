@@ -200,7 +200,7 @@ var consensus = {
                         } else {
                             // the signature is legit
                             // bounce the round confirmation as is
-                            p2p.broadcast(message)
+                            p2p.broadcastNotSent(message)
 
                             // and add the leader to the ones who passed precommit
                             // logr.debug(leader+' R'+round)
