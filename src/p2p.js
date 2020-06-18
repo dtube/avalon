@@ -1,7 +1,8 @@
 const default_port = 6001
 const replay_interval = 1500
-const discovery_interval = 60000
+const discovery_interval = 3000
 const max_blocks_buffer = 100
+const max_peers = process.env.MAX_PEERS || 10
 var p2p_port = process.env.P2P_PORT || default_port
 var WebSocket = require('ws')
 var chain = require('./chain.js')
@@ -23,27 +24,39 @@ var p2p = {
     recoveredBlocks: [],
     recovering: false,
     discoveryWorker: () => {
-        // chain.generateLeaders(function(miners) {
-        //     for (let i = 0; i < miners.length; i++) {
-        //         if (miners[i].name === process.env.NODE_OWNER) continue
-        //         if (!miners[i].json) continue
-
-        //         // are we already connected?
-        //         var connected = false
-        //         // for (let y = 0; y < p2p.sockets.length; y++) {
-        //         //     if (!p2p.sockets[y] || !p2p.sockets[y].node_status) continue
-        //         //     if (miners[i].name === p2p.sockets[y].node_status.owner)
-        //         //         connected = true
-        //         // }
-
-        //         if (!connected) {
-        //             var json = miners[i].json
-        //             if (json.node && json.node.ws) 
-        //                 p2p.connect([json.node.ws])
+        chain.generateLeaders(false, config.leaders*3, function(leaders) {
+            for (let i = 0; i < leaders.length; i++) {
+                if (p2p.sockets.length >= max_peers) {
+                    logr.debug('We already have maximum peers: '+p2p.sockets.length+'/'+max_peers)
+                    break
+                }
                     
-        //         }
-        //     }
-        // })
+                if (leaders[i].json && leaders[i].json.node && leaders[i].json.node.ws) {
+                    var isConnected = false
+                    for (let w = 0; w < p2p.sockets.length; w++) {
+                        var ip = p2p.sockets[w]._socket.remoteAddress
+                        if (ip.indexOf('::ffff:') > -1)
+                            ip = ip.replace('::ffff:', '')
+                        
+                        try {
+                            var leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
+                            if (leaderIp === ip) {
+                                logr.debug('Already peered with '+leaders[i].name)
+                                isConnected = true
+                            }
+                                
+                            break
+                        } catch (error) {
+                            logr.warn('Wrong json.node.ws for leader '+leaders[i].name+' '+leaders[i].json.node.ws, error)
+                        }
+                    }
+                    if (!isConnected) {
+                        logr.info('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
+                        p2p.connect([leaders[i].json.node.ws])
+                    }
+                }
+            }
+        })
     },
     init: () => {
         var server = new WebSocket.Server({port: p2p_port})
@@ -69,8 +82,8 @@ var p2p = {
             logr.warn('Incoming handshake refused because OFFLINE')
             ws.close(); return
         }
-        if (process.env.NO_DISCOVERY && p2p.sockets.length >= process.env.PEERS.split(',').length) {
-            logr.warn('Incoming handshake refused because in NO_DISCOVERY mode and already peered enough')
+        if (p2p.sockets.length >= max_peers) {
+            logr.warn('Incoming handshake refused because already peered enough '+p2p.sockets.length+'/'+max_peers)
             ws.close(); return
         }
         // close connection if we already have this peer ip in our connected sockets
@@ -94,6 +107,7 @@ var p2p = {
                 logr.warn('P2P received non-JSON, doing nothing ;)')
             }
             if (!message || typeof message.t === 'undefined') return
+            if (!message.d && message.t !== MessageType.QUERY_NODE_STATUS) return
             // logr.debug('P2P-IN '+message.t)
             
             switch (message.t) {
@@ -167,8 +181,13 @@ var p2p = {
             case MessageType.BLOCK_CONF_ROUND:
                 // we are receiving a consensus round confirmation
                 // it should come from one of the elected leaders, so let's verify signature
-        
-                logr.debug(message.s.n+' U'+message.d.r)
+                if (!message.s || !message.s.s || !message.s.n) return
+                // logr.debug(message.s.n+' U'+message.d.r)
+
+                // if (!p2p.sockets[p2p.sockets.indexOf(ws)]) throw err
+                // if (!p2p.sockets[p2p.sockets.indexOf(ws)].sentUs)
+                //     p2p.sockets[p2p.sockets.indexOf(ws)].sentUs = []
+                // p2p.sockets[p2p.sockets.indexOf(ws)].sentUs.push(message.s.s)
 
                 // always try to precommit in case its the first time we see it
                 consensus.round(0, message.d.b, function(validationStep) {
