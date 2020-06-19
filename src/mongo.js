@@ -25,55 +25,57 @@ var mongo = {
                     return
                 } else {
                     logr.info('Block #0 not found. Starting genesis...')
-                    var genesisFolder = process.cwd()+'/genesis/'
-                    var genesisZip = genesisFolder+'genesis.zip'
-                    fs.readFile(genesisZip, function(err) {
-                        if (err) {
-                            logr.warn('No genesis.zip file found')
-                            // if no genesis file, we create only the master account and empty block 0
-                            mongo.insertMasterAccount(function() {
-                                mongo.insertBlockZero(function() {
-                                    cb()
+                    mongo.addMongoIndexes(function() {
+                        var genesisFolder = process.cwd()+'/genesis/'
+                        var genesisZip = genesisFolder+'genesis.zip'
+                        fs.readFile(genesisZip, function(err) {
+                            if (err) {
+                                logr.warn('No genesis.zip file found')
+                                // if no genesis file, we create only the master account and empty block 0
+                                mongo.insertMasterAccount(function() {
+                                    mongo.insertBlockZero(function() {
+                                        cb()
+                                    })
                                 })
-                            })
-                        } else {
-                            // if there's a genesis file, we unzip and mongorestore it
-                            logr.info('Found genesis.zip file, checking sha256sum...')
-                            var fileHash = sha256File(genesisZip)
-                            logr.debug(config.originHash+'\t config.originHash')
-                            logr.debug(fileHash+'\t genesis.zip')
-                            if (fileHash !== config.originHash) {
-                                logr.fatal('Existing genesis.zip file does not match block #0 hash')
-                                process.exit(1)
-                            }
-                            
-                            logr.info('OK sha256sum, unzipping genesis.zip...')
-                            var zip = new AdmZip(genesisZip)
-                            var zipEntries = zip.getEntries()
-                            var mongoUri = db_url+'/'+db_name
-                            for (let i = 0; i < zipEntries.length; i++) {
-                                var entry = zipEntries[i]
-                                zip.extractEntryTo(entry.name, genesisFolder, false, true)
-                                logr.debug('Unzipped '+entry.name)
-                            }
-
-                            logr.info('Finished unzipping, importing data now...')
-
-                            var mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
-                            mongorestore.stderr.on('data', (data) => {
-                                data = data.toString().split('\n')
-                                for (let i = 0; i < data.length; i++) {
-                                    var line = data[i].split('\t')
-                                    if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
-                                        logr.debug(line[1])
+                            } else {
+                                // if there's a genesis file, we unzip and mongorestore it
+                                logr.info('Found genesis.zip file, checking sha256sum...')
+                                var fileHash = sha256File(genesisZip)
+                                logr.debug(config.originHash+'\t config.originHash')
+                                logr.debug(fileHash+'\t genesis.zip')
+                                if (fileHash !== config.originHash) {
+                                    logr.fatal('Existing genesis.zip file does not match block #0 hash')
+                                    process.exit(1)
                                 }
-                            })
-                            
-                            mongorestore.on('close', () => {
-                                logr.info('Finished importing genesis data')
-                                mongo.insertBlockZero(cb)
-                            })
-                        }
+                                
+                                logr.info('OK sha256sum, unzipping genesis.zip...')
+                                var zip = new AdmZip(genesisZip)
+                                var zipEntries = zip.getEntries()
+                                var mongoUri = db_url+'/'+db_name
+                                for (let i = 0; i < zipEntries.length; i++) {
+                                    var entry = zipEntries[i]
+                                    zip.extractEntryTo(entry.name, genesisFolder, false, true)
+                                    logr.debug('Unzipped '+entry.name)
+                                }
+    
+                                logr.info('Finished unzipping, importing data now...')
+    
+                                var mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
+                                mongorestore.stderr.on('data', (data) => {
+                                    data = data.toString().split('\n')
+                                    for (let i = 0; i < data.length; i++) {
+                                        var line = data[i].split('\t')
+                                        if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
+                                            logr.debug(line[1])
+                                    }
+                                })
+                                
+                                mongorestore.on('close', () => {
+                                    logr.info('Finished importing genesis data')
+                                    mongo.insertBlockZero(cb)
+                                })
+                            }
+                        })
                     })
                 }
             })
@@ -114,6 +116,13 @@ var mongo = {
             } else 
                 cb()
             
+        })
+    },
+    addMongoIndexes: (cb) => {
+        db.collection('accounts').createIndex( {name:1}, function(err, result) {
+            db.collection('accounts').createIndex( {balance:1}, function(err, result) {
+                cb()
+            })
         })
     },
     fillInMemoryBlocks: (cb) => {
