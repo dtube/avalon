@@ -261,7 +261,10 @@ var p2p = {
     broadcastNotSent: (d) => {
         firstLoop:
         for (let i = 0; i < p2p.sockets.length; i++) {
-            if (!p2p.sockets[i].sentUs) continue
+            if (!p2p.sockets[i].sentUs) {
+                p2p.sendJSON(p2p.sockets[i], d)
+                continue
+            }
             for (let y = 0; y < p2p.sockets[i].sentUs.length; y++) 
                 if (p2p.sockets[i].sentUs[y][0] === d.s.s)
                     continue firstLoop
