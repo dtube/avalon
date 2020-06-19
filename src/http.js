@@ -303,9 +303,10 @@ var http = {
 
         // get votes history of a user
         app.get('/votes/:voter/:lastTs', (req, res) => {
+            var voter = req.params.voter
             var query = {
                 $and: [{
-                    'votes.u': req.params.voter,
+                    'votes.u': voter,
                 }]
             }
             var lastTs = parseInt(req.params.lastBlock)
@@ -317,16 +318,17 @@ var http = {
                 var votes = []
                 for (let i = 0; i < contents.length; i++) {
                     for (let y = 0; y < contents[i].votes.length; y++) {
-                        votes.push({
-                            author: contents[i].author,
-                            link: contents[i].link,
-                            claimable: contents[i].votes[y].claimable,
-                            claimed: contents[i].votes[y].claimed,
-                            vt: contents[i].votes[y].vt,
-                            ts: contents[i].votes[y].ts,
-                            contentTs: contents[i].ts,
-                            burn: contents[i].votes[y].burn
-                        })
+                        if (contents[i].votes[y].u === voter)
+                            votes.push({
+                                author: contents[i].author,
+                                link: contents[i].link,
+                                claimable: contents[i].votes[y].claimable,
+                                claimed: contents[i].votes[y].claimed,
+                                vt: contents[i].votes[y].vt,
+                                ts: contents[i].votes[y].ts,
+                                contentTs: contents[i].ts,
+                                burn: contents[i].votes[y].burn
+                            })
                     }
                 }
                 res.send(votes)
