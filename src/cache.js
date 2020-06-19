@@ -211,7 +211,7 @@ var cache = {
                     var newDoc = docsToUpdate[col][i]
                     var query = {}
                     query[key] = newDoc[key]
-                    db.collection(col).updateOne(query, {$set: newDoc}, function(err) {
+                    db.collection(col).replaceOne(query, newDoc, function(err) {
                         if (err) throw err
                         callback()
                     })
