@@ -19,6 +19,7 @@ var TransactionType = require('./transactions').Types
 // 6- Use weighted averages for rewardPool data to smooth it out
 
 var eco = {
+    activeUsers: null,
     currentBlock: {
         dist: 0,
         burn: 0,
@@ -28,12 +29,19 @@ var eco = {
         eco.currentBlock.dist = 0
         eco.currentBlock.burn = 0
         eco.currentBlock.votes = 0
+        eco.activeUsers = null
     },
-    activeUsersCount: (cb) => {
+    inflation: (cb) => {
+        if (eco.activeUsers) {
+            cb(config.rewardPoolMult * eco.activeUsers + config.rewardPoolMin)
+            return 
+        }
+            
         // we consider anyone with a non zero balance to be active
         db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
             if (err) throw err
-            cb(config.rewardPoolMult*count+config.rewardPoolMin)
+            eco.activeUsers = count
+            cb(config.rewardPoolMult * count + config.rewardPoolMin)
         })
     },
     totalSupply: (cb) => {
@@ -52,13 +60,8 @@ var eco = {
             cb(res)
         })
     },
-    theoricalRewardPool: (cb) => {
-        eco.activeUsersCount(function(activeUsers) {
-            cb(activeUsers)
-        })
-    },
     rewardPool: (cb) => {
-        eco.theoricalRewardPool(function(theoricalPool){
+        eco.inflation(function(theoricalPool){
             var burned = 0
             var distributed = 0
             var votes = 0
@@ -131,7 +134,6 @@ var eco = {
                         winner.share = winner.vt / sumVtWinners
                         winners.push(winner)
                     }
-
             eco.print(currentVote.vt, function(thNewCoins) {
                 // share the new coins between winners
                 var newCoins = 0
@@ -258,7 +260,6 @@ var eco = {
                 thNewCoins = Math.floor(stats.avail*config.rewardPoolMaxShare)
 
             logr.trace('PRINT:'+vt+' VT => '+thNewCoins+' dist')
-            
             cb(thNewCoins)
         })
     },
