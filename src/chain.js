@@ -199,6 +199,7 @@ chain = {
             }
 
         if (mineInMs) {
+            mineInMs -= (new Date().getTime()-block.timestamp)
             logr.debug('Trying to mine in '+mineInMs+'ms')
             consensus.observer = false
             chain.worker = setTimeout(function(){
@@ -259,7 +260,7 @@ chain = {
 
             output += '  dist: '+chain.nextOutput.dist
             output += '  burn: '+chain.nextOutput.burn
-            output += '  delay: '+ (block.timestamp - chain.recentBlocks[chain.recentBlocks.length-2].timestamp - config.blockTime)
+            output += '  delay: '+ (new Date().getTime() - block.timestamp)
 
             if (block.missedBy)
                 output += '  MISS: '+block.missedBy
