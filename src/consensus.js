@@ -43,10 +43,15 @@ var consensus = {
         // i.e. a new leader only enters consensus on the block he gets scheduled for
         // and out of consensus 2*config.leaders blocks after his last scheduled block
         var blockNum = chain.getLatestBlock()._id+1
-        var actives = [chain.schedule.shuffle[(blockNum-1)%config.leaders].name]
+        var actives = []
+        var currentLeader = chain.schedule.shuffle[(blockNum-1)%config.leaders].name
+        if (consensus.getActiveLeaderKey(currentLeader))
+            actives.push(currentLeader)
+
         for (let i = 1; i < 2*config.leaders; i++)
             if (chain.recentBlocks[chain.recentBlocks.length-i]
-            && actives.indexOf(chain.recentBlocks[chain.recentBlocks.length-i].miner) === -1)
+            && actives.indexOf(chain.recentBlocks[chain.recentBlocks.length-i].miner) === -1
+            && consensus.getActiveLeaderKey(chain.recentBlocks[chain.recentBlocks.length-i].miner))
                 actives.push(chain.recentBlocks[chain.recentBlocks.length-i].miner)
         
         // logr.debug('Leading: ' + actives.join(','))
@@ -191,26 +196,15 @@ var consensus = {
         for (let i = 0; i < consensus.possBlocks.length; i++) 
             if (block.hash === consensus.possBlocks[i].block.hash) {
                 if (consensus.possBlocks[i][round] && consensus.possBlocks[i][round].indexOf(leader) === -1) {
-                    // this leader has not already confirmed this round so lets verify signature now
+                    // this leader has not already confirmed this round
+                    //  add the leader to the ones who passed precommit
+                    // logr.debug(leader+' R'+round)
                     
-                    consensus.verifySignature(message, function(isValid) {
-                        if (!isValid) {
-                            logr.warn('Received round confirmation with wrong signature from '+leader)
-                            return
-                        } else {
-                            // the signature is legit
-                            // bounce the round confirmation as is
-                            p2p.broadcastNotSent(message)
-
-                            // and add the leader to the ones who passed precommit
-                            // logr.debug(leader+' R'+round)
-                            for (let r = round; r >= 0; r--)
-                                if (consensus.possBlocks[i][r].indexOf(leader) === -1)
-                                    consensus.possBlocks[i][r].push(leader)
-                            
-                            consensus.tryNextStep()
-                        }
-                    })
+                    for (let r = round; r >= 0; r--)
+                        if (consensus.possBlocks[i][r].indexOf(leader) === -1)
+                            consensus.possBlocks[i][r].push(leader)
+                    
+                    consensus.tryNextStep()
                 }
                 break
             }       

@@ -194,24 +194,34 @@ var p2p = {
                 if (!message.s || !message.s.s || !message.s.n) return
                 // logr.debug(message.s.n+' U'+message.d.r)
 
-                // always try to precommit in case its the first time we see it
-                consensus.round(0, message.d.b, function(validationStep) {
-                    if (validationStep === -1) {
-                        // logr.trace('Ignored BLOCK_CONF_ROUND')
-                    } else if (validationStep === 0) {
-                        // block is being validated, we queue the message
-                        consensus.queue.push(message)
-                        logr.debug('Added to queue')
-                    } else {
-                        // process the message inside the consensus
-                        consensus.remoteRoundConfirm(message)
-                    }
-                })
+                if (p2p.sockets[p2p.sockets.indexOf(ws)]) {
+                    if (!p2p.sockets[p2p.sockets.indexOf(ws)].sentUs)
+                        p2p.sockets[p2p.sockets.indexOf(ws)].sentUs = []
+                    p2p.sockets[p2p.sockets.indexOf(ws)].sentUs.push([message.s.s,new Date().getTime()])
+                }
 
-                if (!p2p.sockets[p2p.sockets.indexOf(ws)]) return
-                if (!p2p.sockets[p2p.sockets.indexOf(ws)].sentUs)
-                    p2p.sockets[p2p.sockets.indexOf(ws)].sentUs = []
-                p2p.sockets[p2p.sockets.indexOf(ws)].sentUs.push([message.s.s,new Date().getTime()])
+                consensus.verifySignature(message, function(isValid) {
+                    if (!isValid) {
+                        logr.warn('Received wrong consensus signature', message)
+                        return
+                    }
+
+                    // bounce the message to peers
+                    p2p.broadcastNotSent(message)
+
+                    // always try to precommit in case its the first time we see it
+                    consensus.round(0, message.d.b, function(validationStep) {
+                        if (validationStep === -1) {
+                            // logr.trace('Ignored BLOCK_CONF_ROUND')
+                        } else if (validationStep === 0) {
+                            // block is being validated, we queue the message
+                            consensus.queue.push(message)
+                            logr.debug('Added to queue')
+                        } else
+                            // process the message inside the consensus
+                            consensus.remoteRoundConfirm(message)
+                    })
+                })
                 break
             }
         })
