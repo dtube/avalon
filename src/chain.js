@@ -248,12 +248,14 @@ chain = {
             chain.nextOutput.burn += block.burn
 
         if (!p2p.recovering || block._id%replay_output === 0) {
-            var output = 'block #'+block._id+': '+chain.nextOutput.txs+' tx(s) mined by '+block.miner
+            var output = 'block #'+block._id+': '+chain.nextOutput.txs+' tx(s) by '+block.miner
             if (block.missedBy)
-                output += ' missed by '+block.missedBy
+                output += ' miss '+block.missedBy
 
             output += ' dist: '+chain.nextOutput.dist
             output += ' burn: '+chain.nextOutput.burn
+            output += ' delay: '+ (block.timestamp - chain.recentBlocks[chain.recentBlocks.length-2].timestamp - config.blockTime)
+
             logr.info(output)
             chain.nextOutput = {
                 txs: 0,
