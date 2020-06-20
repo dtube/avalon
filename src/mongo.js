@@ -121,7 +121,11 @@ var mongo = {
     addMongoIndexes: (cb) => {
         db.collection('accounts').createIndex( {name:1}, function(err, result) {
             db.collection('accounts').createIndex( {balance:1}, function(err, result) {
-                cb()
+                db.collection('contents').createIndex( {ts:1}, function(err, result) {
+                    db.collection('contents').createIndex( {author:1}, function(err, result) {
+                        cb()
+                    })
+                })
             })
         })
     },

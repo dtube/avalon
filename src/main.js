@@ -24,27 +24,39 @@ if (!versionCorrect) {
 
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {
-    mongo.lastBlock(function(block) {
-        logr.info('#' + block._id + ' is the latest block in our db')
-        config = require('./config.js').read(block._id)
-        mongo.fillInMemoryBlocks(function() {
-            // start miner schedule
-            db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
-                if (err) throw err
-                chain.minerSchedule(block, function(minerSchedule) {
-                    chain.schedule = minerSchedule
+    var timeStart = new Date().getTime()
+    cache.warmup('accounts', parseInt(process.env.WARMUP_ACCOUNTS), function(err) {
+        if (err) throw err
+        logr.info(Object.keys(cache.accounts).length+' acccounts loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+        timeStart = new Date().getTime()
+        
+        cache.warmup('contents', parseInt(process.env.WARMUP_CONTENTS), function(err) {
+            if (err) throw err
+            logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+
+            mongo.lastBlock(function(block) {
+                logr.info('#' + block._id + ' is the latest block in our db')
+                config = require('./config.js').read(block._id)
+                mongo.fillInMemoryBlocks(function() {
+                    // start miner schedule
+                    db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
+                        if (err) throw err
+                        chain.minerSchedule(block, function(minerSchedule) {
+                            chain.schedule = minerSchedule
+                        })
+                    })
+            
+                    // init hot/trending
+                    rankings.init()
+            
+                    // start the http server
+                    http.init()
+                    // start the websocket server
+                    p2p.init()
+                    // and connect to peers
+                    p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
                 })
             })
-    
-            // init hot/trending
-            rankings.init()
-    
-            // start the http server
-            http.init()
-            // start the websocket server
-            p2p.init()
-            // and connect to peers
-            p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
         })
     })
 })

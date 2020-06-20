@@ -16,6 +16,10 @@
 # Disabling notifications
 #export NOTIFICATIONS=1
 
+# Cache warmup option
+export WARMUP_ACCOUNTS=10000
+export WARMUP_CONTENTS=10000
+
 # trace / debug / info / warn
 export LOG_LEVEL=debug
 

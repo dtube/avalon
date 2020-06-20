@@ -246,6 +246,41 @@ var cache = {
         default:
             return '_id'
         }
+    },
+    warmup: function(collection, maxDoc, cb) {
+        if (!collection || !maxDoc || maxDoc === 0) {
+            cb(null)
+            return
+        }
+        switch (collection) {
+        case 'accounts':
+            db.collection(collection).find({}, {
+                sort: {balance: -1, name: -1},
+                limit: maxDoc
+            }).toArray(function(err, accounts) {
+                if (err) throw err
+                for (let i = 0; i < accounts.length; i++)
+                    cache[collection][accounts[i].name] = accounts[i]
+                cb(null)
+            })
+            break
+
+        case 'contents':
+            db.collection(collection).find({}, {
+                sort: {ts: -1},
+                limit: maxDoc
+            }).toArray(function(err, contents) {
+                if (err) throw err
+                for (let i = 0; i < contents.length; i++)
+                    cache[collection][contents[i]._id] = contents[i]
+                cb(null)
+            })
+            break
+    
+        default:
+            cb('Collection type not found')
+            break
+        }
     }
 }
 
