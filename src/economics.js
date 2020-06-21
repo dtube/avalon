@@ -20,6 +20,7 @@ var TransactionType = require('./transactions').Types
 
 var eco = {
     activeUsers: null,
+    startRewardPool: null,
     currentBlock: {
         dist: 0,
         burn: 0,
@@ -30,13 +31,17 @@ var eco = {
         eco.currentBlock.burn = 0
         eco.currentBlock.votes = 0
         eco.activeUsers = null
+        eco.startRewardPool = null
     },
     inflation: (cb) => {
+        // cb(config.rewardPoolMult * 30000 + config.rewardPoolMin)
+        // return
         if (eco.activeUsers) {
             cb(config.rewardPoolMult * eco.activeUsers + config.rewardPoolMin)
             return 
         }
             
+        logr.info("Using Mongo to get eco data")
         // we consider anyone with a non zero balance to be active
         db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
             if (err) throw err
@@ -44,49 +49,46 @@ var eco = {
             cb(config.rewardPoolMult * count + config.rewardPoolMin)
         })
     },
-    totalSupply: (cb) => {
-        db.collection('accounts').aggregate([
-            {$match: {}},
-            {
-                $group: {
-                    _id: null,
-                    count: {
-                        $sum:'$balance'
-                    }
-                }
-            }
-        ]).toArray(function(err, res) {
-            if (err) throw err
-            cb(res)
-        })
-    },
     rewardPool: (cb) => {
         eco.inflation(function(theoricalPool){
             var burned = 0
             var distributed = 0
             var votes = 0
-            var firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
-            if (firstBlockIndex < 0) firstBlockIndex = 0
-            var weight = 1
-            for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
-                const block = chain.recentBlocks[i]
-                if (block.burn)
-                    burned += block.burn
-                if (block.dist)
-                    distributed += block.dist
-                
-                for (let y = 0; y < block.txs.length; y++) {
-                    var tx = block.txs[y]
-                    if (tx.type === TransactionType.VOTE
-                        || tx.type === TransactionType.COMMENT
-                        || tx.type === TransactionType.PROMOTED_COMMENT)
-                        votes += Math.abs(tx.data.vt)*weight
+            if (!eco.startRewardPool) {
+                var firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
+                if (firstBlockIndex < 0) firstBlockIndex = 0
+                var weight = 1
+                for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
+                    const block = chain.recentBlocks[i]
+                    if (block.burn)
+                        burned += block.burn
+                    if (block.dist)
+                        distributed += block.dist
+                    
+                    for (let y = 0; y < block.txs.length; y++) {
+                        var tx = block.txs[y]
+                        if (tx.type === TransactionType.VOTE
+                            || tx.type === TransactionType.COMMENT
+                            || tx.type === TransactionType.PROMOTED_COMMENT)
+                            votes += Math.abs(tx.data.vt)*weight
+                    }
+                    weight++
                 }
-                weight++
-            }
+    
+                // weighted average for votes
+                votes /= (weight+1)/2
 
-            // weighted average for votes
-            votes /= (weight+1)/2
+                eco.startRewardPool = {
+                    burn: burned,
+                    dist: distributed,
+                    votes: votes
+                }
+            } else {
+                burned = eco.startRewardPool.burn
+                distributed = eco.startRewardPool.dist
+                votes = eco.startRewardPool.votes
+            }
+            
 
             var avail = theoricalPool - distributed - eco.currentBlock.dist
             if (avail < 0) avail = 0
@@ -134,6 +136,7 @@ var eco = {
                         winner.share = winner.vt / sumVtWinners
                         winners.push(winner)
                     }
+
             eco.print(currentVote.vt, function(thNewCoins) {
                 // share the new coins between winners
                 var newCoins = 0

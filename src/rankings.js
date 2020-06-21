@@ -78,7 +78,7 @@ var rankings = {
         }
     },
     update: function(author, link, vote, dist) {
-        for (const key in rankings.types) {
+        for (const key in rankings.types)
             for (let i = 0; i < rankings.contents[key].length; i++)
                 if (rankings.contents[key][i].author === author && rankings.contents[key][i].link === link) {
                     var ts = rankings.contents[key][i].ts
@@ -99,14 +99,9 @@ var rankings = {
                         rankings.contents[key][i].votes = [vote]
                     else
                         rankings.contents[key][i].votes.push(vote)
-                        
-                    rankings.contents[key][i].score = rankings.types[key].score(rankings.contents[key][i].ups, rankings.contents[key][i].downs, new Date(ts))
+                    
+                    break
                 }
-                
-            rankings.contents[key] = rankings.contents[key].sort(function(a,b) {
-                return b.score - a.score
-            })
-        }
     },
     rescore: function() {
         for (const key in rankings.types) {
