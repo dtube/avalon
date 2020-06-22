@@ -200,6 +200,7 @@ chain = {
 
         if (mineInMs) {
             mineInMs -= (new Date().getTime()-block.timestamp)
+            mineInMs += 20
             logr.debug('Trying to mine in '+mineInMs+'ms')
             consensus.observer = false
             chain.worker = setTimeout(function(){
