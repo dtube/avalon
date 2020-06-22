@@ -40,8 +40,7 @@ var eco = {
             cb(config.rewardPoolMult * eco.activeUsers + config.rewardPoolMin)
             return 
         }
-            
-        logr.info("Using Mongo to get eco data")
+
         // we consider anyone with a non zero balance to be active
         db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
             if (err) throw err
