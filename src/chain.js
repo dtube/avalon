@@ -226,22 +226,43 @@ chain = {
 
             eco.nextBlock()
 
-            // if block id is mult of n leaders, reschedule next n blocks
-            if (block._id % config.leaders === 0) 
-                chain.minerSchedule(block, function(minerSchedule) {
-                    chain.schedule = minerSchedule
+            if (!p2p.recovering) {
+                // if block id is mult of n leaders, reschedule next n blocks
+                if (block._id % config.leaders === 0) 
+                    chain.minerSchedule(block, function(minerSchedule) {
+                        chain.schedule = minerSchedule
+                        chain.recentBlocks.push(block)
+                        chain.minerWorker(block)
+                        chain.output(block)
+                        cache.writeToDisk(function() {})
+                        cb(true)
+                    })
+                else {
                     chain.recentBlocks.push(block)
                     chain.minerWorker(block)
                     chain.output(block)
                     cache.writeToDisk(function() {})
                     cb(true)
+                }
+            } else {
+                // if we are recovering we wait for mongo to update
+                cache.writeToDisk(function() {
+                    if (block._id % config.leaders === 0) 
+                        chain.minerSchedule(block, function(minerSchedule) {
+                            chain.schedule = minerSchedule
+                            chain.recentBlocks.push(block)
+                            chain.minerWorker(block)
+                            chain.output(block)
+                            
+                            cb(true)
+                        })
+                    else {
+                        chain.recentBlocks.push(block)
+                        chain.minerWorker(block)
+                        chain.output(block)
+                        cb(true)
+                    }
                 })
-            else {
-                chain.recentBlocks.push(block)
-                chain.minerWorker(block)
-                chain.output(block)
-                cache.writeToDisk(function() {})
-                cb(true)
             }
         })
     },
