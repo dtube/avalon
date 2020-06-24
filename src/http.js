@@ -39,9 +39,8 @@ var http = {
 
         // check econ data
         app.get('/rewardPool', (req, res) => {
-            eco.rewardPool(function(rp) {
-                res.send(rp)
-            })
+            if (eco.lastRewardPool)
+                res.send(eco.lastRewardPool)
         })
 
         // generate a new key pair

@@ -3,6 +3,7 @@ const cloneDeep = require('clone-deep')
 const hotHalfTime = 43200 // 12 hours
 const trendingHalfTime = 302400 // 3.5 days
 const expireFactor = 5000 // disappears after 5 half times
+var isEnabled = process.env.RANKINGS || false
 
 var rankings = {
     types: {
@@ -16,6 +17,7 @@ var rankings = {
         }
     },
     init: function() {
+        if (!isEnabled) return
         rankings.contents = {
             hot: [],
             trending: []
@@ -24,8 +26,10 @@ var rankings = {
         rankings.generate()
         // then rescore them once every minute (score decays through time)
         setInterval(function(){rankings.rescore()}, 60000)
+        logr.trace('Rankings initialized')
     },
     generate: function() {
+        if (!isEnabled) return
         for (const key in rankings.types) {
             var minTs = new Date().getTime() - rankings.types[key].halfLife*expireFactor
             db.collection('contents').find({pa: null, ts: {'$gt': minTs}}, {sort: {ts: -1}}).toArray(function(err, contents) {
@@ -53,6 +57,7 @@ var rankings = {
         
     },
     new: function(content) {
+        if (!isEnabled) return
         content = cloneDeep(content)
         for (const key in rankings.types) {
             var alreadyAdded = false
@@ -78,6 +83,7 @@ var rankings = {
         }
     },
     update: function(author, link, vote, dist) {
+        if (!isEnabled) return
         for (const key in rankings.types)
             for (let i = 0; i < rankings.contents[key].length; i++)
                 if (rankings.contents[key][i].author === author && rankings.contents[key][i].link === link) {
@@ -104,6 +110,8 @@ var rankings = {
                 }
     },
     rescore: function() {
+        if (!isEnabled) return
+        logr.trace('Regenerating rankings')
         for (const key in rankings.types) {
             for (let i = 0; i < rankings.contents[key].length; i++)
                 rankings.contents[key][i].score = rankings.types[key].score(rankings.contents[key][i].ups, rankings.contents[key][i].downs, new Date(rankings.contents[key][i].ts))
@@ -111,6 +119,7 @@ var rankings = {
                 return b.score - a.score
             })
         }
+        logr.trace('Finished regenerating rankings')
     }
 }
 

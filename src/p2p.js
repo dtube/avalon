@@ -26,39 +26,38 @@ var p2p = {
     recoveredBlocks: [],
     recovering: false,
     discoveryWorker: () => {
-        chain.generateLeaders(false, config.leaders*3, function(leaders) {
-            for (let i = 0; i < leaders.length; i++) {
-                if (p2p.sockets.length >= max_peers) {
-                    logr.debug('We already have maximum peers: '+p2p.sockets.length+'/'+max_peers)
-                    break
-                }
-                    
-                if (leaders[i].json && leaders[i].json.node && leaders[i].json.node.ws) {
-                    var excluded = (process.env.DISCOVERY_EXCLUDE ? process.env.DISCOVERY_EXCLUDE.split(',') : [])
-                    if (excluded.indexOf(leaders[i].name) > -1)
-                        continue
-                    var isConnected = false
-                    for (let w = 0; w < p2p.sockets.length; w++) {
-                        var ip = p2p.sockets[w]._socket.remoteAddress
-                        if (ip.indexOf('::ffff:') > -1)
-                            ip = ip.replace('::ffff:', '')
-                        try {
-                            var leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
-                            if (leaderIp === ip) {
-                                logr.trace('Already peered with '+leaders[i].name)
-                                isConnected = true
-                            }
-                        } catch (error) {
-                            logr.warn('Wrong json.node.ws for leader '+leaders[i].name+' '+leaders[i].json.node.ws, error)
+        var leaders = chain.generateLeaders(false, config.leaders*3, 0)
+        for (let i = 0; i < leaders.length; i++) {
+            if (p2p.sockets.length >= max_peers) {
+                logr.debug('We already have maximum peers: '+p2p.sockets.length+'/'+max_peers)
+                break
+            }
+                
+            if (leaders[i].json && leaders[i].json.node && leaders[i].json.node.ws) {
+                var excluded = (process.env.DISCOVERY_EXCLUDE ? process.env.DISCOVERY_EXCLUDE.split(',') : [])
+                if (excluded.indexOf(leaders[i].name) > -1)
+                    continue
+                var isConnected = false
+                for (let w = 0; w < p2p.sockets.length; w++) {
+                    var ip = p2p.sockets[w]._socket.remoteAddress
+                    if (ip.indexOf('::ffff:') > -1)
+                        ip = ip.replace('::ffff:', '')
+                    try {
+                        var leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
+                        if (leaderIp === ip) {
+                            logr.trace('Already peered with '+leaders[i].name)
+                            isConnected = true
                         }
+                    } catch (error) {
+                        logr.warn('Wrong json.node.ws for leader '+leaders[i].name+' '+leaders[i].json.node.ws, error)
                     }
-                    if (!isConnected) {
-                        logr.info('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
-                        p2p.connect([leaders[i].json.node.ws])
-                    }
+                }
+                if (!isConnected) {
+                    logr.info('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
+                    p2p.connect([leaders[i].json.node.ws])
                 }
             }
-        })
+        }
     },
     init: () => {
         var server = new WebSocket.Server({port: p2p_port})
@@ -192,7 +191,7 @@ var p2p = {
                 // we are receiving a consensus round confirmation
                 // it should come from one of the elected leaders, so let's verify signature
                 if (!message.s || !message.s.s || !message.s.n) return
-                // logr.debug(message.s.n+' U'+message.d.r)
+                logr.cons(message.s.n+' U-R'+message.d.r)
 
                 if (p2p.sockets[p2p.sockets.indexOf(ws)]) {
                     if (!p2p.sockets[p2p.sockets.indexOf(ws)].sentUs)
@@ -201,7 +200,7 @@ var p2p = {
                 }
 
                 consensus.verifySignature(message, function(isValid) {
-                    if (!isValid) {
+                    if (!isValid && !p2p.recovering) {
                         logr.warn('Received wrong consensus signature', message)
                         return
                     }

@@ -176,7 +176,7 @@ var cache = {
         cache.distributed = {}
     },
     writeToDisk: function(cb) {
-        // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
+        if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
         var executions = []
         // executing the inserts (new comment / new account)
         for (let i = 0; i < cache.inserts.length; i++)
@@ -202,7 +202,7 @@ var cache = {
             docsToUpdate[collection][key] = cache[collection][key]
         }
 
-        // if (cache.changes.length) logr.trace(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
+        if (cache.changes.length) logr.debug(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
 
         for (const col in docsToUpdate) 
             for (const i in docsToUpdate[col]) 
@@ -227,9 +227,9 @@ var cache = {
         //     })
         // }
         
-        //var timeBefore = new Date().getTime()
+        var timeBefore = new Date().getTime()
         series(executions, function(err, results) {
-            //logr.debug(executions.length+' mongo update executed in '+(new Date().getTime()-timeBefore)+'ms')
+            logr.debug(executions.length+' mongo queries executed in '+(new Date().getTime()-timeBefore)+'ms')
             cb(err, results)
             cache.changes = []
             cache.inserts = []
@@ -255,7 +255,7 @@ var cache = {
         switch (collection) {
         case 'accounts':
             db.collection(collection).find({}, {
-                sort: {balance: -1, name: -1},
+                sort: {node_appr: -1, name: -1},
                 limit: maxDoc
             }).toArray(function(err, accounts) {
                 if (err) throw err

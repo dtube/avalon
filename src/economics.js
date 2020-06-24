@@ -21,6 +21,7 @@ var TransactionType = require('./transactions').Types
 var eco = {
     activeUsers: null,
     startRewardPool: null,
+    lastRewardPool: null,
     currentBlock: {
         dist: 0,
         burn: 0,
@@ -31,22 +32,24 @@ var eco = {
         eco.currentBlock.burn = 0
         eco.currentBlock.votes = 0
         eco.activeUsers = null
+        eco.lastRewardPool = eco.startRewardPool
         eco.startRewardPool = null
     },
     inflation: (cb) => {
-        // cb(config.rewardPoolMult * 30000 + config.rewardPoolMin)
-        // return
-        if (eco.activeUsers) {
-            cb(config.rewardPoolMult * eco.activeUsers + config.rewardPoolMin)
-            return 
-        }
+        cb(config.rewardPoolMult * 30000 + config.rewardPoolMin)
+        return
+        // if (eco.activeUsers) {
+        //     cb(config.rewardPoolMult * eco.activeUsers + config.rewardPoolMin)
+        //     return 
+        // }
 
-        // we consider anyone with a non zero balance to be active
-        db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
-            if (err) throw err
-            eco.activeUsers = count
-            cb(config.rewardPoolMult * count + config.rewardPoolMin)
-        })
+        // // we consider anyone with a non zero balance to be active
+        // db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
+        //     if (err) throw err
+        //     eco.activeUsers = count
+        //     logr.econ('Inflation for block is : '+(config.rewardPoolMult * count + config.rewardPoolMin))
+        //     cb(config.rewardPoolMult * count + config.rewardPoolMin)
+        // })
     },
     rewardPool: (cb) => {
         eco.inflation(function(theoricalPool){
@@ -80,7 +83,9 @@ var eco = {
                 eco.startRewardPool = {
                     burn: burned,
                     dist: distributed,
-                    votes: votes
+                    votes: votes,
+                    theo: theoricalPool,
+                    avail: theoricalPool - distributed
                 }
             } else {
                 burned = eco.startRewardPool.burn
@@ -151,7 +156,7 @@ var eco = {
                     newCoins += won
                     delete winners[i].share
 
-                    logr.trace(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
+                    // logr.econ(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
                 }
                 newCoins = Math.round(newCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
 
@@ -184,8 +189,8 @@ var eco = {
                 }
                 newBurn = Math.round(newBurn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
                 
-                logr.trace(newCoins + ' dist from the vote')
-                logr.trace(newBurn + ' burn from the vote')
+                logr.econ(newCoins + ' dist from the vote')
+                logr.econ(newBurn + ' burn from the vote')
 
                 // add dist/burn/votes to currentBlock eco stats
                 eco.currentBlock.dist += newCoins
@@ -261,7 +266,7 @@ var eco = {
             if (thNewCoins > Math.floor(stats.avail*config.rewardPoolMaxShare))
                 thNewCoins = Math.floor(stats.avail*config.rewardPoolMaxShare)
 
-            logr.trace('PRINT:'+vt+' VT => '+thNewCoins+' dist')
+            logr.econ('PRINT:'+vt+' VT => '+thNewCoins+' dist', stats.avail)
             cb(thNewCoins)
         })
     },

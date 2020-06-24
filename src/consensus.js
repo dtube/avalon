@@ -54,7 +54,7 @@ var consensus = {
             && consensus.getActiveLeaderKey(chain.recentBlocks[chain.recentBlocks.length-i].miner))
                 actives.push(chain.recentBlocks[chain.recentBlocks.length-i].miner)
         
-        // logr.debug('Leading: ' + actives.join(','))
+        // logr.cons('Leaders: ' + actives.join(','))
         return actives
     },
     tryNextStep: () => {
@@ -67,7 +67,7 @@ var consensus = {
 
         for (let i = 0; i < consensus.possBlocks.length; i++) {
             const possBlock = consensus.possBlocks[i]
-            logr.trace('CON/ T'+Math.ceil(threshold)+' R0-'+possBlock[0].length+' R1-'+possBlock[1].length)
+            logr.cons('T'+Math.ceil(threshold)+' R0-'+possBlock[0].length+' R1-'+possBlock[1].length)
             // if 2/3+ of the final round and not already finalizing another block
             if (possBlock[config.consensusRounds-1].length > threshold 
             && !consensus.finalizing 
@@ -75,7 +75,7 @@ var consensus = {
             && possBlock[0] && possBlock[0].indexOf(process.env.NODE_OWNER) !== -1) {
                 // block becomes valid, we can move forward !
                 consensus.finalizing = true
-                logr.trace('CON block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
+                logr.cons('block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
                 chain.validateAndAddBlock(possBlock.block, false, function(err) {
                     if (err) throw err
 
@@ -128,7 +128,7 @@ var consensus = {
                 possBlock[r] = []
 
             // now we verify the block is valid
-            logr.trace('CON/ New poss block '+block._id+'/'+block.miner+'/'+block.hash.substr(0,4))
+            logr.cons('New poss block '+block._id+'/'+block.miner+'/'+block.hash.substr(0,4))
             chain.isValidNewBlock(block, true, true, function(isValid) {
                 consensus.validating.splice(consensus.validating.indexOf(possBlock.block.hash), 1)
                 if (!isValid) {
@@ -136,7 +136,7 @@ var consensus = {
                     logr.error('Received invalid new block from '+block.miner, block.hash)
                     if (cb) cb(-1)
                 } else {
-                    logr.trace('CON/ Precommitting block '+block._id+'#'+block.hash.substr(0,4))
+                    logr.cons('Precommitting block '+block._id+'#'+block.hash.substr(0,4))
 
                     // adding to possible blocks
                     consensus.possBlocks.push(possBlock)
@@ -149,7 +149,7 @@ var consensus = {
                     // processing queued messages for this block
                     for (let i = 0; i < consensus.queue.length; i++) {
                         if (consensus.queue[i].d.b.hash === possBlock.block.hash) {
-                            logr.warn('From Queue: '+consensus.queue[i].d.b.hash)
+                            // logr.warn('From Queue: '+consensus.queue[i].d.b.hash)
                             consensus.remoteRoundConfirm(consensus.queue[i])
                             consensus.queue.splice(i, 1)
                             i--
@@ -192,13 +192,11 @@ var consensus = {
         var round = message.d.r
         var leader = message.s.n
         
-        // logr.debug('Remote round: '+round+' '+leader+' '+consensus.possBlocks.length)
         for (let i = 0; i < consensus.possBlocks.length; i++) 
             if (block.hash === consensus.possBlocks[i].block.hash) {
                 if (consensus.possBlocks[i][round] && consensus.possBlocks[i][round].indexOf(leader) === -1) {
                     // this leader has not already confirmed this round
                     //  add the leader to the ones who passed precommit
-                    // logr.debug(leader+' R'+round)
                     
                     for (let r = round; r >= 0; r--)
                         if (consensus.possBlocks[i][r].indexOf(leader) === -1)

@@ -3,6 +3,7 @@ const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 const series = require('run-series')
+const cloneDeep = require('clone-deep')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
 var GrowInt = require('growint')
@@ -213,33 +214,35 @@ chain = {
             
     },
     addBlock: (block, cb) => {
-        eco.nextBlock()
         // add the block in our own db
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err
             // push cached accounts and contents to mongodb
-            cache.writeToDisk(function() {
-                chain.cleanMemory()
+            
+            chain.cleanMemory()
 
-                // update the config if an update was scheduled
-                config = require('./config.js').read(block._id)
-                
-                // if block id is mult of n leaders, reschedule next n blocks
-                if (block._id % config.leaders === 0) 
-                    chain.minerSchedule(block, function(minerSchedule) {
-                        chain.schedule = minerSchedule
-                        chain.recentBlocks.push(block)
-                        chain.minerWorker(block)
-                        chain.output(block)
-                        cb(true)
-                    })
-                else {
+            // update the config if an update was scheduled
+            config = require('./config.js').read(block._id)
+
+            eco.nextBlock()
+
+            // if block id is mult of n leaders, reschedule next n blocks
+            if (block._id % config.leaders === 0) 
+                chain.minerSchedule(block, function(minerSchedule) {
+                    chain.schedule = minerSchedule
                     chain.recentBlocks.push(block)
                     chain.minerWorker(block)
                     chain.output(block)
+                    cache.writeToDisk(function() {})
                     cb(true)
-                }
-            })
+                })
+            else {
+                chain.recentBlocks.push(block)
+                chain.minerWorker(block)
+                chain.output(block)
+                cache.writeToDisk(function() {})
+                cb(true)
+            }
         })
     },
     output: (block) => {
@@ -412,11 +415,15 @@ chain = {
         // to mine after (n+1)*blockTime as 'backups'
         // so that the network can keep going even if 1,2,3...n node(s) have issues
         else
-            for (let i = 1; i <= config.leaders; i++)
+            for (let i = 1; i <= config.leaders; i++) {
+                if (!chain.recentBlocks[chain.recentBlocks.length - i])
+                    break
                 if (chain.recentBlocks[chain.recentBlocks.length - i].miner === newBlock.miner) {
                     minerPriority = i+1
                     break
                 }
+            }
+                
 
         if (minerPriority === 0) {
             logr.debug('unauthorized miner')
@@ -520,6 +527,7 @@ chain = {
             chain.leaderRewards(block.miner, block.timestamp, function(dist) {
                 distributedInBlock += dist
                 distributedInBlock = Math.round(distributedInBlock*1000) / 1000
+                burnedInBlock = Math.round(burnedInBlock*1000) / 1000
                 cb(executedSuccesfully, distributedInBlock, burnedInBlock)
             })
         })
@@ -528,58 +536,79 @@ chain = {
         var hash = block.hash
         var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         if (!p2p.recovering)
-            logr.info('Generating schedule... NRNG: ' + rand)
-        chain.generateLeaders(true, config.leaders, function(miners) {
-            miners = miners.sort(function(a,b) {
-                if(a.name < b.name) return -1
-                if(a.name > b.name) return 1
-                return 0
-            })
-            var shuffledMiners = []
-            while (miners.length > 0) {
-                var i = rand%miners.length
-                shuffledMiners.push(miners[i])
-                miners.splice(i, 1)
-            }
-            
-            var y = 0
-            while (shuffledMiners.length < config.leaders) {
-                shuffledMiners.push(shuffledMiners[y])
-                y++
-            }
+            logr.debug('Generating schedule... NRNG: ' + rand)
+        var miners = chain.generateLeaders(true, config.leaders, 0)
+        miners = miners.sort(function(a,b) {
+            if(a.name < b.name) return -1
+            if(a.name > b.name) return 1
+            return 0
+        })
+        var shuffledMiners = []
+        while (miners.length > 0) {
+            var i = rand%miners.length
+            shuffledMiners.push(miners[i])
+            miners.splice(i, 1)
+        }
+        
+        var y = 0
+        while (shuffledMiners.length < config.leaders) {
+            shuffledMiners.push(shuffledMiners[y])
+            y++
+        }
 
-            cb({
-                block: block,
-                shuffle: shuffledMiners
-            })
+        cb({
+            block: block,
+            shuffle: shuffledMiners
         })
     },
-    generateLeaders: (withLeaderPub, limit, cb) => {
-        
-        var query = {
-            $and: [{
-                pub_leader: {$exists: true}
-            }, {
-                node_appr: {$gt: 0}
-            }]
+    generateLeaders: (withLeaderPub, limit, start) => {
+        var leaders = []
+        for (const key in cache.accounts) {
+            if (!cache.accounts[key].node_appr || cache.accounts[key].node_appr <= 0)
+                continue
+            if (withLeaderPub && !cache.accounts[key].pub_leader)
+                continue
+            var newLeader = cloneDeep(cache.accounts[key])
+            leaders.push({
+                name: newLeader.name,
+                pub: newLeader.pub,
+                pub_leader: newLeader.pub_leader,
+                balance: newLeader.balance,
+                approves: newLeader.approves,
+                node_appr: newLeader.node_appr,
+                json: newLeader.json,
+            })
         }
-        if (!withLeaderPub)
-            query['$and'].splice(0,1)
-        db.collection('accounts').find(query,{
-            sort: {node_appr: -1, name: -1},
-            limit: limit
-        }).project({
-            name: 1,
-            pub: 1,
-            pub_leader: 1,
-            balance: 1,
-            approves: 1,
-            node_appr: 1,
-            json: 1,
-        }).toArray(function(err, accounts) {
-            if (err) throw err
-            cb(accounts)
+        leaders = leaders.sort(function(a,b) {
+            return b.node_appr - a.node_appr
         })
+        return leaders.slice(start, limit)
+
+        // the old mongodb query used instead
+        // var query = {
+        //     $and: [{
+        //         pub_leader: {$exists: true}
+        //     }, {
+        //         node_appr: {$gt: 0}
+        //     }]
+        // }
+        // if (!withLeaderPub)
+        //     query['$and'].splice(0,1)
+        // db.collection('accounts').find(query,{
+        //     sort: {node_appr: -1, name: -1},
+        //     limit: limit
+        // }).project({
+        //     name: 1,
+        //     pub: 1,
+        //     pub_leader: 1,
+        //     balance: 1,
+        //     approves: 1,
+        //     node_appr: 1,
+        //     json: 1,
+        // }).toArray(function(err, accounts) {
+        //     if (err) throw err
+        //     cb(accounts)
+        // })
     },
     leaderRewards: (name, ts, cb) => {
         // rewards leaders with 'free' voting power in the network
