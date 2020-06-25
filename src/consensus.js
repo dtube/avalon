@@ -97,7 +97,7 @@ var consensus = {
     },
     round: (round, block, cb) => {
         // ignore for different block height
-        if (block._id !== chain.getLatestBlock()._id+1) {
+        if (block._id && block._id !== chain.getLatestBlock()._id+1) {
             if (cb) cb(-1)
             return
         }
@@ -114,6 +114,11 @@ var consensus = {
 
             // or are currently validating
             if (consensus.validating.indexOf(block.hash) > -1) {
+                if (cb) cb(0)
+                return
+            }
+
+            if (Object.keys(block).length === 1 && block.hash) {
                 if (cb) cb(0)
                 return
             }
@@ -180,7 +185,12 @@ var consensus = {
         if (consensus.isActive()) {
             // signing and broadcast to our peers
             // only if we are an active leader
-            var signed = consensus.signMessage({t:6, d:{r:round, b: block}})
+            var onlyBlockHash = {
+                hash: block.hash
+            }
+            if (block.miner === process.env.NODE_OWNER && round === 0)
+                onlyBlockHash = block
+            var signed = consensus.signMessage({t:6, d:{r:round, b: onlyBlockHash}})
             p2p.broadcast(signed)
         }
 
