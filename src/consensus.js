@@ -102,6 +102,12 @@ var consensus = {
             return
         }
 
+        // or the already added block hash
+        if (block.hash === chain.getLatestBlock().hash) {
+            if (cb) cb(-1)
+            return
+        }
+
         if (round === 0) {
             // precommit stage
 
