@@ -7,6 +7,9 @@ const history_interval = 10000
 const keep_history_for = 20000
 var p2p_port = process.env.P2P_PORT || default_port
 var WebSocket = require('ws')
+const { randomBytes } = require('crypto')
+var secp256k1 = require('secp256k1')
+var bs58 = require('base-x')(config.b58Alphabet)
 var chain = require('./chain.js')
 var consensus = require('./consensus.js')
 
@@ -25,6 +28,23 @@ var p2p = {
     recoveringBlocks: [],
     recoveredBlocks: [],
     recovering: false,
+    nodeId: null,
+    init: () => {
+        p2p.generateNodeId()
+        var server = new WebSocket.Server({port: p2p_port})
+        server.on('connection', ws => p2p.handshake(ws))
+        logr.info('Listening websocket p2p port on: ' + p2p_port)
+        setTimeout(function(){p2p.recover()}, replay_interval)
+        if (!process.env.NO_DISCOVERY) {
+            setInterval(function(){p2p.discoveryWorker()}, discovery_interval)
+            p2p.discoveryWorker()
+        }
+        setInterval(function(){p2p.cleanRoundConfHistory()}, history_interval)
+    },
+    generateNodeId: () => {
+        p2p.nodeId = chain.getNewKeyPair()
+        logr.info('P2P ID: '+p2p.nodeId.pub)
+    },
     discoveryWorker: () => {
         var leaders = chain.generateLeaders(false, config.leaders*3, 0)
         for (let i = 0; i < leaders.length; i++) {
@@ -59,17 +79,6 @@ var p2p = {
             }
         }
     },
-    init: () => {
-        var server = new WebSocket.Server({port: p2p_port})
-        server.on('connection', ws => p2p.handshake(ws))
-        logr.info('Listening websocket p2p port on: ' + p2p_port)
-        setTimeout(function(){p2p.recover()}, replay_interval)
-        if (!process.env.NO_DISCOVERY) {
-            setInterval(function(){p2p.discoveryWorker()}, discovery_interval)
-            p2p.discoveryWorker()
-        }
-        setInterval(function(){p2p.cleanRoundConfHistory()}, history_interval)
-    },
     connect: (newPeers) => {
         newPeers.forEach((peer) => {
             var ws = new WebSocket(peer)
@@ -96,10 +105,26 @@ var p2p = {
                 return
             }
         logr.debug('Handshaking new peer', ws.url || ws._socket.remoteAddress+':'+ws._socket.remotePort)
+        var random = randomBytes(config.randomBytesLength).toString('hex')
+        ws.challengeHash = random
+        ws.pendingDisconnect = setTimeout(function() {
+            for (let i = 0; i < p2p.sockets.length; i++)
+                if (p2p.sockets[i].challengeHash === random) {
+                    p2p.sockets[i].close()
+                    logr.warn('A peer did not reply to NODE_STATUS')
+                    continue
+                }
+        }, 1000)
         p2p.sockets.push(ws)
         p2p.messageHandler(ws)
         p2p.errorHandler(ws)
-        p2p.sendJSON(ws, {t: MessageType.QUERY_NODE_STATUS})
+        p2p.sendJSON(ws, {
+            t: MessageType.QUERY_NODE_STATUS,
+            d: {
+                nodeId: p2p.nodeId.pub,
+                random: random
+            }
+        })
     },
     messageHandler: (ws) => {
         ws.on('message', (data) => {
@@ -109,24 +134,76 @@ var p2p = {
                 logr.warn('P2P received non-JSON, doing nothing ;)')
             }
             if (!message || typeof message.t === 'undefined') return
-            if (!message.d && message.t !== MessageType.QUERY_NODE_STATUS) return
+            if (!message.d) return
             // logr.debug('P2P-IN '+message.t)
             
             switch (message.t) {
             case MessageType.QUERY_NODE_STATUS:
                 // a peer is requesting our node status
+                if (typeof message.d !== 'object'
+                && typeof message.d.nodeId !== 'string'
+                && typeof message.d.random !== 'string')
+                    return
+                var wsNodeId = message.d
+                if (wsNodeId === p2p.nodeId.pub) {
+                    logr.warn('Peer disconnected: same P2P ID')
+                    ws.close()
+                    return
+                }
+
+                p2p.sockets[p2p.sockets.indexOf(ws)].node_status = {
+                    nodeId: message.d.nodeId
+                }
+
+                var sign = secp256k1.sign(Buffer.from(message.d.random, 'hex'), bs58.decode(p2p.nodeId.priv))
+                sign = bs58.encode(sign.signature)
+
                 var d = {
                     origin_block: config.originHash,
                     head_block: chain.getLatestBlock()._id,
                     head_block_hash: chain.getLatestBlock().hash,
-                    previous_block_hash: chain.getLatestBlock().phash
+                    previous_block_hash: chain.getLatestBlock().phash,
+                    nodeId: p2p.nodeId.pub,
+                    sign: sign
                 }
                 p2p.sendJSON(ws, {t: MessageType.NODE_STATUS, d:d})
                 break
 
             case MessageType.NODE_STATUS:
                 // we received a peer node status
-                p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
+                if (typeof message.d.sign === 'string') {
+                    var nodeId = p2p.sockets[p2p.sockets.indexOf(ws)].node_status.nodeId
+                    if (!message.d.nodeId || message.d.nodeId !== nodeId)
+                        return
+                    var challengeHash = p2p.sockets[p2p.sockets.indexOf(ws)].challengeHash
+                    if (!challengeHash)
+                        return
+                    try {
+                        var isValidSignature = secp256k1.verify(
+                            Buffer.from(challengeHash, 'hex'),
+                            bs58.decode(message.d.sign),
+                            bs58.decode(nodeId))
+                        if (!isValidSignature) {
+                            logr.warn('Wrong NODE_STATUS signature, disconnecting')
+                            ws.close()
+                        }
+                        
+                        for (let i = 0; i < p2p.sockets.length; i++)
+                            if (i !== p2p.sockets.indexOf(ws)
+                            && p2p.sockets[i].node_status
+                            && p2p.sockets[i].node_status.nodeId === nodeId) {
+                                logr.warn('Peer disconnected because duplicate connections')
+                                p2p.sockets[i].close()
+                            }
+    
+                        clearInterval(p2p.sockets[p2p.sockets.indexOf(ws)].pendingDisconnect)
+                        delete message.d.sign
+                        p2p.sockets[p2p.sockets.indexOf(ws)].node_status = message.d
+                    } catch (error) {
+                        logr.error('Error during NODE_STATUS verification', error)
+                    }
+                }
+                
                 break
 
             case MessageType.QUERY_BLOCK:
