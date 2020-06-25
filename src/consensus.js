@@ -11,6 +11,7 @@ const consensus_threshold = consensus_need/consensus_total
 var consensus = {
     observer: false,
     validating: [],
+    processed: [],
     queue: [],
     finalizing: false,
     possBlocks: [],

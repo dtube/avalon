@@ -276,6 +276,17 @@ var p2p = {
                     p2p.sockets[p2p.sockets.indexOf(ws)].sentUs.push([message.s.s,new Date().getTime()])
                 }
 
+                for (let i = 0; i < consensus.processed.length; i++) {
+                    if (consensus.processed[i].d.b.ts + 2*config.blockTime < new Date().getTime()) {
+                        consensus.processed.splice(i, 1)
+                        i--
+                        continue
+                    }
+                    if (consensus.processed[i].s.s === message.s.s)
+                        return
+                }
+                consensus.processed.push(message)
+
                 consensus.verifySignature(message, function(isValid) {
                     if (!isValid && !p2p.recovering) {
                         logr.warn('Received wrong consensus signature', message)
