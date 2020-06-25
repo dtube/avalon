@@ -144,7 +144,7 @@ var p2p = {
                 && typeof message.d.nodeId !== 'string'
                 && typeof message.d.random !== 'string')
                     return
-                var wsNodeId = message.d
+                var wsNodeId = message.d.nodeId
                 if (wsNodeId === p2p.nodeId.pub) {
                     logr.warn('Peer disconnected: same P2P ID')
                     ws.close()
