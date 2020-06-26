@@ -235,6 +235,7 @@ var p2p = {
             case MessageType.NEW_BLOCK:
                 // we received a new block we didn't request from a peer
                 // we forward it to consensus
+                if (p2p.recovering) return
                 var block = message.d
                 consensus.round(0, block)
 
@@ -248,6 +249,7 @@ var p2p = {
                 
             case MessageType.NEW_TX:
                 // we received a new transaction from a peer
+                if (p2p.recovering) return
                 var tx = message.d
 
                 // if its already in the mempool, it means we already handled it
@@ -267,6 +269,7 @@ var p2p = {
             case MessageType.BLOCK_CONF_ROUND:
                 // we are receiving a consensus round confirmation
                 // it should come from one of the elected leaders, so let's verify signature
+                if (p2p.recovering) return
                 if (!message.s || !message.s.s || !message.s.n) return
                 logr.cons(message.s.n+' U-R'+message.d.r)
 
@@ -277,15 +280,16 @@ var p2p = {
                 }
 
                 for (let i = 0; i < consensus.processed.length; i++) {
-                    if (consensus.processed[i].d.b.ts + 2*config.blockTime < new Date().getTime()) {
+                    logr.warn(consensus.processed[i])
+                    if (consensus.processed[i][1] + 2*config.blockTime < new Date().getTime()) {
                         consensus.processed.splice(i, 1)
                         i--
                         continue
                     }
-                    if (consensus.processed[i].s.s === message.s.s)
+                    if (consensus.processed[i][0].s.s === message.s.s)
                         return
                 }
-                consensus.processed.push(message)
+                consensus.processed.push([message, new Date().getTime()])
 
                 consensus.verifySignature(message, function(isValid) {
                     if (!isValid && !p2p.recovering) {
@@ -375,7 +379,7 @@ var p2p = {
     addRecursive: (block) => {
         chain.validateAndAddBlock(block, true, function(err, newBlock) {
             if (err)
-                logr.error('Error Replay', newBlock)
+                logr.error('Error Replay', newBlock._id)
             else {
                 delete p2p.recoveredBlocks[newBlock._id]
                 p2p.recover()
