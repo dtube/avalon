@@ -700,10 +700,9 @@ chain = {
         }
     },
     cleanMemoryTx: () => {
-        for (const hash in chain.recentTxs) 
-            if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().ts)
+        for (const hash in chain.recentTxs)
+            if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
-        
     }
 }
 
