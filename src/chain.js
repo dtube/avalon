@@ -204,6 +204,10 @@ chain = {
             mineInMs += 20
             logr.debug('Trying to mine in '+mineInMs+'ms')
             consensus.observer = false
+            if (mineInMs < config.blockTime/2) {
+                logr.warn('Slow performance detected, will not try to mine next block')
+                return
+            }
             chain.worker = setTimeout(function(){
                 chain.mineBlock(function(error, finalBlock) {
                     if (error)
