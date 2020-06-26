@@ -534,7 +534,7 @@ chain = {
         series(executions, function(err, results) {
             var string = 'executed'
             if(revalidate) string = 'validated & '+string
-            logr.trace('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
+            logr.debug('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
             if (err) throw err
             var executedSuccesfully = []
             var distributedInBlock = 0
