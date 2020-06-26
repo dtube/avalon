@@ -15,7 +15,6 @@ var consensus = {
     queue: [],
     finalizing: false,
     possBlocks: [],
-    buffer: [],
     getActiveLeaderKey: (name) => {
         var shuffle = chain.schedule.shuffle
         for (let i = 0; i < shuffle.length; i++)
