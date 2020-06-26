@@ -280,7 +280,6 @@ var p2p = {
                 }
 
                 for (let i = 0; i < consensus.processed.length; i++) {
-                    logr.warn(consensus.processed[i])
                     if (consensus.processed[i][1] + 2*config.blockTime < new Date().getTime()) {
                         consensus.processed.splice(i, 1)
                         i--
