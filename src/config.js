@@ -2,7 +2,6 @@ var config = {
     history: {
         0: {
             // this is configuration for testnet2
-
             // the account pricing options
             // see: https://www.wolframalpha.com/input/?i=plot+10%2B100*(1.1%5E(14-x))+from+x%3D1+to+x%3D40
             accountPriceBase: 10000,
@@ -11,7 +10,6 @@ var config = {
             accountPriceMin: 1,
             accountMaxLength: 50,
             accountMinLength: 1,
-            activeUserMinBalance: 100, // 1.00 DTC to be counted as an active user and count towards inflation
             // allowed username chars
             allowedUsernameChars: 'abcdefghijklmnopqrstuvwxyz0123456789',
             allowedUsernameCharsOnlyMiddle: '-.',
@@ -26,14 +24,13 @@ var config = {
             // the number of ms needed for 0.01 DTC to generate 1 byte of bw
             bwGrowth: 36000000, // +10 bytes per hour per DTC (3600 * 1000 * 100 / 10)
             // the maximum bandwidth an account can have available
-            bwMax: 128000,
+            bwMax: 64000,
             // the number of rounds of consensus before block is valid (min 2)
             consensusRounds: 2,
             // base rentability of votes
             ecoBaseRent: 0.50,
             // the number of blocks from the past taken into consideration for econonomics
-            //ecoBlocks: 9600, // 8 hours
-            ecoBlocks: 200, // 1 min
+            ecoBlocks: 9600, // 8 hours
             // the precision of the claimable amounts
             ecoClaimPrecision: 3,
             // the required number of ms before a vote reward can be claimed
@@ -83,7 +80,7 @@ var config = {
             // the maximum time drift in ms before a block is invalid
             maxDrift: 200,
             // the maximum number of transactions in a single block
-            maxTxPerBlock: 5,
+            maxTxPerBlock: 20,
             // the max length of a transfer memo
             memoMaxLength: 250,
             // defines how long it takes for a notification to get deleted, and how often the purge happens
