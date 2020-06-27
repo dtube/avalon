@@ -33,11 +33,12 @@ var config = {
             ecoBaseRent: 0.50,
             // the number of blocks from the past taken into consideration for econonomics
             //ecoBlocks: 9600, // 8 hours
-            ecoBlocks: 20, // 1 min
+            ecoBlocks: 200, // 1 min
             // the precision of the claimable amounts
             ecoClaimPrecision: 3,
             // the required number of ms before a vote reward can be claimed
-            ecoClaimTime: 604800000,
+            ecoClaimTime: 1000,
+            // ecoClaimTime: 604800000,
             // the percentage of coins that are burnt when there are opposite votes with rewards
             ecoPunishPercent: 0.5,
             // the number of ms before a vote reaches 100% rentability
@@ -101,6 +102,8 @@ var config = {
             rewardPoolMult: 80, // 0.40 DTC / active user / cycle => 1.2 DTC / active user / day
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
+            // the estimated number of active users on the network
+            rewardPoolUsers: 30000,
             // the maximum length of tags (on votes)
             tagMaxLength: 25,
             tagMaxPerContent: 5,

@@ -19,7 +19,6 @@ var TransactionType = require('./transactions').Types
 // 6- Use weighted averages for rewardPool data to smooth it out
 
 var eco = {
-    activeUsers: null,
     startRewardPool: null,
     lastRewardPool: null,
     currentBlock: {
@@ -31,25 +30,13 @@ var eco = {
         eco.currentBlock.dist = 0
         eco.currentBlock.burn = 0
         eco.currentBlock.votes = 0
-        eco.activeUsers = null
-        eco.lastRewardPool = eco.startRewardPool
+        if (eco.startRewardPool)
+            eco.lastRewardPool = eco.startRewardPool
         eco.startRewardPool = null
     },
     inflation: (cb) => {
-        cb(config.rewardPoolMult * 30000 + config.rewardPoolMin)
+        cb(config.rewardPoolMult * config.rewardPoolUsers + config.rewardPoolMin)
         return
-        // if (eco.activeUsers) {
-        //     cb(config.rewardPoolMult * eco.activeUsers + config.rewardPoolMin)
-        //     return 
-        // }
-
-        // // we consider anyone with a non zero balance to be active
-        // db.collection('accounts').find({balance: {$gte: config.activeUserMinBalance}}).count(function(err, count) {
-        //     if (err) throw err
-        //     eco.activeUsers = count
-        //     logr.econ('Inflation for block is : '+(config.rewardPoolMult * count + config.rewardPoolMin))
-        //     cb(config.rewardPoolMult * count + config.rewardPoolMin)
-        // })
     },
     rewardPool: (cb) => {
         eco.inflation(function(theoricalPool){
