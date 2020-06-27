@@ -144,7 +144,7 @@ let cmds = {
 
     claimReward: (privKey, sender, author, link) => {
         var tx = '{"type":17,"data":{"author":"'+
-			author+'", link: "'+link+'"}}'
+			author+'", "link": "'+link+'"}}'
         return sign(privKey, sender, tx)
     },
 

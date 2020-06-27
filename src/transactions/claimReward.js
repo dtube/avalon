@@ -38,7 +38,7 @@ module.exports = {
         cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
             for (let i = 0; i < content.votes.length; i++)
                 if (content.votes[i].u === tx.sender) {
-                    var reward = content.votes[i].claimable
+                    var reward = Math.floor(content.votes[i].claimable)
                     content.votes[i].claimed = ts
                     cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link}, {
                         $set: {votes: content.votes}
@@ -52,7 +52,16 @@ module.exports = {
                                 ts: ts,
                                 _id: content.author+'/'+content.link+'/claim/'+tx.sender
                             }, function() {
-                                cb(true)
+                                cache.findOne('accounts', {name: tx.sender}, function(err, curator) {
+                                    if (err) throw err
+                                    // update his bandwidth
+                                    curator.balance -= reward
+                                    transaction.updateGrowInts(curator, ts, function() {
+                                        transaction.adjustNodeAppr(curator, reward, function() {
+                                            cb(true)
+                                        })
+                                    })
+                                })
                             })
                         })
                     })
