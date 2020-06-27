@@ -126,9 +126,6 @@ chain = {
                 if (distributed) newBlock.distributed = distributed
                 if (burned) newBlock.burned = burned
 
-                // remove all transactions from the pool (invalid ones too)
-                transaction.pool = []
-
                 // always record the failure of others
                 if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name !== process.env.NODE_OWNER)
                     newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name
