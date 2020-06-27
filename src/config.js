@@ -32,7 +32,8 @@ var config = {
             // base rentability of votes
             ecoBaseRent: 0.50,
             // the number of blocks from the past taken into consideration for econonomics
-            ecoBlocks: 9600, // 8 hours
+            //ecoBlocks: 9600, // 8 hours
+            ecoBlocks: 20, // 1 min
             // the precision of the claimable amounts
             ecoClaimPrecision: 3,
             // the required number of ms before a vote reward can be claimed
@@ -80,6 +81,8 @@ var config = {
             masterPubLeader: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
             // the maximum time drift in ms before a block is invalid
             maxDrift: 200,
+            // the maximum number of transactions in a single block
+            maxTxPerBlock: 5,
             // the max length of a transfer memo
             memoMaxLength: 250,
             // defines how long it takes for a notification to get deleted, and how often the purge happens
@@ -89,7 +92,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the sha256sum hash of block 0 (new origin hash -> new chain)
-            originHash: '1d76da9582163496ad4e3d5ce7460150efc805c41b74d1e9cd590efb7fffe0ad',
+            originHash: 'd046bd0d5af61e5adabf71ab87b23e4e43e8b69ca232c7330ea92f1d8453da90',
             // the default number of random bytes to use for new key generation
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)

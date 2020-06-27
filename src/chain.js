@@ -60,7 +60,29 @@ chain = {
         var nextIndex = previousBlock._id + 1
         var nextTimestamp = new Date().getTime()
         // grab all transactions and sort by ts
-        var txs = transaction.pool.sort(function(a,b){return a.ts-b.ts})
+        var txs = []
+        var mempool = transaction.pool.sort(function(a,b){return a.ts-b.ts})
+        loopOne:
+        for (let i = 0; i < mempool.length; i++) {
+            if (txs.length === config.maxTxPerBlock)
+                break
+            for (let y = 0; y < txs.length; y++)
+                if (txs[y].sender === mempool[i].sender)
+                    continue loopOne
+            txs.push(mempool[i])
+        }
+
+        loopTwo:
+        for (let i = 0; i < mempool.length; i++) {
+            if (txs.length === config.maxTxPerBlock)
+                break
+            for (let y = 0; y < txs.length; y++)
+                if (txs[y].hash === mempool[i].hash)
+                    continue loopTwo
+            txs.push(mempool[i])
+        }
+        txs = txs.sort(function(a,b){return a.ts-b.ts})
+        transaction.removeFromPool(txs)
         var miner = process.env.NODE_OWNER
         return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner)
     },
@@ -395,6 +417,10 @@ chain = {
         }
         if (!newBlock.txs || typeof newBlock.txs !== 'object' || !Array.isArray(newBlock.txs)) {
             logr.debug('invalid block txs')
+            cb(false); return
+        }
+        if (newBlock.txs.length > config.maxTxPerBlock) {
+            logr.debug('invalid block too many txs')
             cb(false); return
         }
         if (!newBlock.miner || typeof newBlock.miner !== 'string') {
