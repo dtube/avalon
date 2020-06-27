@@ -55,6 +55,11 @@ mongo.init(function() {
                     p2p.init()
                     // and connect to peers
                     p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
+
+                    // regularly clean up old txs from mempool
+                    setInterval(function() {
+                        transaction.cleanPool()
+                    }, config.blockTime*0.9)
                 })
             })
         })

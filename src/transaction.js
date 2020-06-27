@@ -4,10 +4,15 @@ const cloneDeep = require('clone-deep')
 
 var Transaction = require('./transactions')
 var TransactionType = Transaction.Types
+var max_mempool = process.env.MEMPOOL_SIZE || 200
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     addToPool: (txs) => {
+        if (transaction.pool.length >= max_mempool) {
+            logr.warn('Mempool is full ('+transaction.pool.length+'/'+max_mempool+' txs), ignoring tx')
+            return
+        }
         for (let y = 0; y < txs.length; y++) {
             var exists = false
             for (let i = 0; i < transaction.pool.length; i++)
@@ -26,6 +31,13 @@ transaction = {
                     transaction.pool.splice(i, 1)
                     break
                 }
+    },
+    cleanPool: () => {
+        for (let i = 0; i < transaction.pool.length; i++)
+            if (transaction.pool[i].ts + config.txExpirationTime < new Date().getTime()) {
+                transaction.pool.splice(i,1)
+                i--
+            }
     },
     isInPool: (tx) => {
         var isInPool = false
