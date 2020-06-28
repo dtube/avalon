@@ -75,9 +75,9 @@ var rankings = {
             content.ups = 0
             content.downs = 0
             content.dist = content.dist ? content.dist : 0
-            if (content.votes[0].vt > 0)
+            if (content.votes[0] && content.votes[0].vt > 0)
                 content.ups += Math.abs(content.votes[0].vt)
-            if (content.votes[0].vt < 0)
+            if (content.votes[0] && content.votes[0].vt < 0)
                 content.downs += Math.abs(content.votes[0].vt)
             rankings.contents[key].push(JSON.parse(JSON.stringify(content)))
         }
