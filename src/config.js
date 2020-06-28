@@ -48,7 +48,7 @@ var config = {
             followsMax: 2000,
             // the max size of a stringified json input (content / user profile)
             // best if kept slightly lower than bwMax
-            jsonMaxBytes: 120000,
+            jsonMaxBytes: 60000,
             // the max length of a key identifier
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
