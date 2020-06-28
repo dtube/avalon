@@ -117,6 +117,12 @@ var cache = {
                         cache[collection][obj[key]][s] = changes[c][s]
                     
                     break
+
+                case '$unset':
+                    for (var u in changes[c]) 
+                        delete cache[collection][obj[key]][u]
+                    
+                    break
                 
                 default:
                     break
@@ -170,7 +176,7 @@ var cache = {
         cache.distributed = {}
     },
     writeToDisk: function(cb) {
-        if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
+        // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
         var executions = []
         // executing the inserts (new comment / new account)
         for (let i = 0; i < cache.inserts.length; i++)
@@ -196,7 +202,7 @@ var cache = {
             docsToUpdate[collection][key] = cache[collection][key]
         }
 
-        if (cache.changes.length) logr.debug(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
+        // if (cache.changes.length) logr.debug(cache.changes.length+' Updates compressed to '+Object.keys(docsToUpdate.accounts).length+' accounts, '+Object.keys(docsToUpdate.contents).length+' contents')
 
         for (const col in docsToUpdate) 
             for (const i in docsToUpdate[col]) 
@@ -205,7 +211,7 @@ var cache = {
                     var newDoc = docsToUpdate[col][i]
                     var query = {}
                     query[key] = newDoc[key]
-                    db.collection(col).updateOne(query, {$set: newDoc}, function(err) {
+                    db.collection(col).replaceOne(query, newDoc, function(err) {
                         if (err) throw err
                         callback()
                     })
@@ -221,9 +227,9 @@ var cache = {
         //     })
         // }
         
-        //var timeBefore = new Date().getTime()
+        var timeBefore = new Date().getTime()
         series(executions, function(err, results) {
-            //logr.debug(executions.length+' mongo update executed in '+(new Date().getTime()-timeBefore)+'ms')
+            logr.debug(executions.length+' mongo queries executed in '+(new Date().getTime()-timeBefore)+'ms')
             cb(err, results)
             cache.changes = []
             cache.inserts = []
@@ -239,6 +245,41 @@ var cache = {
         
         default:
             return '_id'
+        }
+    },
+    warmup: function(collection, maxDoc, cb) {
+        if (!collection || !maxDoc || maxDoc === 0) {
+            cb(null)
+            return
+        }
+        switch (collection) {
+        case 'accounts':
+            db.collection(collection).find({}, {
+                sort: {node_appr: -1, name: -1},
+                limit: maxDoc
+            }).toArray(function(err, accounts) {
+                if (err) throw err
+                for (let i = 0; i < accounts.length; i++)
+                    cache[collection][accounts[i].name] = accounts[i]
+                cb(null)
+            })
+            break
+
+        case 'contents':
+            db.collection(collection).find({}, {
+                sort: {ts: -1},
+                limit: maxDoc
+            }).toArray(function(err, contents) {
+                if (err) throw err
+                for (let i = 0; i < contents.length; i++)
+                    cache[collection][contents[i]._id] = contents[i]
+                cb(null)
+            })
+            break
+    
+        default:
+            cb('Collection type not found')
+            break
         }
     }
 }

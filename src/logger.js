@@ -1,6 +1,11 @@
 var log4js = require('log4js')
 
 log4js.configure({
+    levels: {
+        CONS: { value: 9000, colour: 'magenta' },
+        ECON: { value: 8000, colour: 'blue' },
+        PERF: { value: 7000, colour: 'white' },
+    },
     appenders: {
         out: { type: 'stdout', layout: {
             type: 'pattern',

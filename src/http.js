@@ -39,9 +39,9 @@ var http = {
 
         // check econ data
         app.get('/rewardPool', (req, res) => {
-            eco.rewardPool(function(rp) {
-                res.send(rp)
-            })
+            if (eco.lastRewardPool)
+                res.send(eco.lastRewardPool)
+            else res.send({})
         })
 
         // generate a new key pair
@@ -88,6 +88,8 @@ var http = {
                 }
                 if (p2p.sockets[i].node_status)
                     peer.node_status = p2p.sockets[i].node_status
+                if (p2p.sockets[i].sentUs)
+                    peer.sentUs = p2p.sockets[i].sentUs
 
                 peers.push(peer)
             }
@@ -115,18 +117,24 @@ var http = {
             })
         })
 
-        // get possible next blocks
-        app.get('/nextblock', (req,res) => {
-            res.send(p2p.possibleNextBlocks)
-        })
-
         // get in-memory data (intensive)
-        app.get('/cache', (req,res) => {
-            //res.send(Object.keys(cache.accounts).length+' '+Object.keys(cache.contents).length)
-            res.send(cache)
-        })
-        app.get('/cacheb', (req,res) => {
-            res.send(chain.recentBlocks)
+        app.get('/debug', (req,res) => {
+            res.send({
+                mempool: transaction.pool,
+                consensus: {
+                    possBlocks: consensus.possBlocks,
+                    processed: consensus.processed,
+                    validating: consensus.validating,
+                },
+                p2p: {
+                    recoveringBlocks: p2p.recoveringBlocks,
+                    // recoveredBlocks: p2p.recoveredBlocks
+                },
+                chain: {
+                    recentBlocks: chain.recentBlocks,
+                    recentTxs: chain.recentTxs
+                }
+            })
         })
 
         // get hot
@@ -296,6 +304,40 @@ var http = {
                     blocks[b].txs = newTxs
                 }
                 res.send(blocks)
+            })
+        })
+
+        // get votes history of a user
+        app.get('/votes/:voter/:lastTs', (req, res) => {
+            var voter = req.params.voter
+            var query = {
+                $and: [{
+                    'votes.u': voter,
+                }]
+            }
+            var lastTs = parseInt(req.params.lastBlock)
+            if (lastTs > 0)
+                query['$and'].push({ts: {$lt: lastTs}})
+
+            db.collection('contents').find(query, {sort: {ts: -1}, limit: 50}).toArray(function(err, contents) {
+                if (err) throw err
+                var votes = []
+                for (let i = 0; i < contents.length; i++) {
+                    for (let y = 0; y < contents[i].votes.length; y++) {
+                        if (contents[i].votes[y].u === voter)
+                            votes.push({
+                                author: contents[i].author,
+                                link: contents[i].link,
+                                claimable: contents[i].votes[y].claimable,
+                                claimed: contents[i].votes[y].claimed,
+                                vt: contents[i].votes[y].vt,
+                                ts: contents[i].votes[y].ts,
+                                contentTs: contents[i].ts,
+                                burn: contents[i].votes[y].burn
+                            })
+                    }
+                }
+                res.send(votes)
             })
         })
 

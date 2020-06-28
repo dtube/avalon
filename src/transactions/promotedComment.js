@@ -40,7 +40,8 @@ module.exports = {
         var superVote = {
             u: tx.sender,
             ts: ts,
-            vt: tx.data.vt+(tx.data.burn * config.vtPerBurn) // we just add some extra VTs
+            vt: tx.data.vt+(tx.data.burn * config.vtPerBurn), // we just add some extra VTs
+            burn: tx.data.burn // add burn data for later
         }
         var newContent = {
             _id: tx.sender+'/'+tx.data.link,
@@ -66,17 +67,20 @@ module.exports = {
                     transaction.adjustNodeAppr(sender, -tx.data.burn, function() {
                         // insert content+vote into db
                         cache.insertOne('contents', newContent, function(){
-                            if (tx.data.pa && tx.data.pp) 
-                                cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
-                                    child: [tx.sender, tx.data.link]
-                                }}, function() {
-                                    cb(true, null, tx.data.burn)
-                                })
-                            else {
-                                // and report how much was burnt
-                                cb(true, null, tx.data.burn)
-                                rankings.new(newContent)
-                            }
+                            eco.curation(tx.sender, tx.data.link, function(distCurators, distMaster) {
+                                if (tx.data.pa && tx.data.pp) 
+                                    cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                        child: [tx.sender, tx.data.link]
+                                    }}, function() {
+                                        cb(true, distCurators+distMaster, tx.data.burn)
+                                    })
+                                else {
+                                    // and report how much was burnt
+                                    cb(true, distCurators+distMaster, tx.data.burn)
+                                    rankings.new(newContent)
+                                }
+                            }) 
+                            
                         })
                     })
                 })

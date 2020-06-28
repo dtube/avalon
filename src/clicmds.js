@@ -133,6 +133,26 @@ let cmds = {
 			parseInt(amount)+'}}'
         return sign(privKey, sender, tx)
     },
+
+    limitVt: (privKey, sender, amount) => {
+        amount = parseInt(amount)
+        if (amount === -1) amount = null
+        var tx = '{"type":16,"data":{"amount":'+
+			amount+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    claimReward: (privKey, sender, author, link) => {
+        var tx = '{"type":17,"data":{"author":"'+
+			author+'", "link": "'+link+'"}}'
+        return sign(privKey, sender, tx)
+    },
+
+    enableNode: (privKey, sender, pub) => {
+        var tx = '{"type":18,"data":{"pub":"'+
+			pub+'"}}'
+        return sign(privKey, sender, tx)
+    },
 }
 
 module.exports = cmds

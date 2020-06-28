@@ -1,11 +1,18 @@
 var GrowInt = require('growint')
+var CryptoJS = require('crypto-js')
+const cloneDeep = require('clone-deep')
 
 var Transaction = require('./transactions')
 var TransactionType = Transaction.Types
+var max_mempool = process.env.MEMPOOL_SIZE || 200
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     addToPool: (txs) => {
+        if (transaction.pool.length >= max_mempool) {
+            logr.warn('Mempool is full ('+transaction.pool.length+'/'+max_mempool+' txs), ignoring tx')
+            return
+        }
         for (let y = 0; y < txs.length; y++) {
             var exists = false
             for (let i = 0; i < transaction.pool.length; i++)
@@ -24,6 +31,13 @@ transaction = {
                     transaction.pool.splice(i, 1)
                     break
                 }
+    },
+    cleanPool: () => {
+        for (let i = 0; i < transaction.pool.length; i++)
+            if (transaction.pool[i].ts + config.txExpirationTime < new Date().getTime()) {
+                transaction.pool.splice(i,1)
+                i--
+            }
     },
     isInPool: (tx) => {
         var isInPool = false
@@ -81,6 +95,13 @@ transaction = {
         if (transaction.isPublished(tx)) {
             cb(false, 'transaction already in chain'); return
         }
+        // verify hash matches the transaction's payload
+        var newTx = cloneDeep(tx)
+        delete newTx.signature
+        delete newTx.hash
+        if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
+            cb(false, 'invalid tx hash does not match'); return
+        }
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser) {
             if (!legitUser) {
@@ -113,6 +134,17 @@ transaction = {
             cb(err, res)
         })
     },
+    hasEnoughVT: (amount, ts, legitUser) => {
+        // checking if user has enough power for a transaction requiring voting power
+        var vtGrowConfig = {
+            growth: legitUser.balance / config.vtGrowth,
+            max: legitUser.maxVt
+        }
+        var vtBefore = new GrowInt(legitUser.vt, vtGrowConfig).grow(ts)
+        if (vtBefore.v < Math.abs(amount))
+            return false
+        return true
+    },
     collectGrowInts: (tx, ts, cb) => {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             // collect bandwidth
@@ -128,16 +160,24 @@ transaction = {
 
             // collect voting power when needed
             var vt = null
+            var vtGrowConfig = {
+                growth: account.balance / config.vtGrowth,
+                max: account.maxVt
+            }
+
             switch (tx.type) {
             case TransactionType.COMMENT:
             case TransactionType.VOTE:
             case TransactionType.PROMOTED_COMMENT:
-                vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 vt.v -= Math.abs(tx.data.vt)
                 break
             case TransactionType.TRANSFER_VT:
-                vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+                vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 vt.v -= tx.data.amount
+                break
+            case TransactionType.LIMIT_VT:
+                vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 break
             default:
                 break

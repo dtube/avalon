@@ -1,5 +1,3 @@
-var GrowInt = require('growint')
-
 module.exports = {
     fields: ['link', 'pa', 'pp', 'json', 'vt', 'tag'],
     validate: (tx, ts, legitUser, cb) => {
@@ -29,9 +27,7 @@ module.exports = {
         if (tx.data.tag.indexOf('.') > -1 || tx.data.tag.indexOf('$') > -1) {
             cb(false, 'invalid tx invalid character'); return
         }
-        // checking if they have enough VTs
-        var vtBeforeComment = new GrowInt(legitUser.vt, {growth:legitUser.balance/(config.vtGrowth)}).grow(ts)
-        if (vtBeforeComment.v < Math.abs(tx.data.vt)) {
+        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser)) {
             cb(false, 'invalid tx not enough vt'); return
         }
 
@@ -47,8 +43,7 @@ module.exports = {
                         if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
                             cb(false, 'invalid tx parent comment cannot be edited'); return
                         } else {
-                            // TODO Next hardfork
-                            // cb(true)
+                            cb(true)
                         }
                     else
                         // it is a new comment
@@ -96,16 +91,20 @@ module.exports = {
                     newContent.tags[tx.data.tag] = vote.vt
                 }
                 cache.insertOne('contents', newContent, function(){
-                    if (tx.data.pa && tx.data.pp) 
-                        cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
-                            child: [tx.sender, tx.data.link]
-                        }}, function() {
-                            cb(true)
-                        })
-                    else {
-                        cb(true)
-                        rankings.new(newContent)
-                    }
+                    // monetary distribution (curation rewards)
+                    eco.curation(tx.sender, tx.data.link, function(distCurators, distMaster) {
+                        if (tx.data.pa && tx.data.pp) 
+                            cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
+                                child: [tx.sender, tx.data.link]
+                            }}, function() {
+                                cb(true, distCurators+distMaster, tx.data.burn)
+                            })
+                        else {
+                            // and report how much was burnt
+                            cb(true, distCurators+distMaster, tx.data.burn)
+                            rankings.new(newContent)
+                        }
+                    })                    
                 })
             }
         })

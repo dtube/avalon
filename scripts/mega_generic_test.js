@@ -1,39 +1,42 @@
 var javalon = require('javalon')
-javalon.init({api: 'http://35.240.225.163'})
+javalon.init({api: 'http://127.0.0.1:3001'})
 var Chance = require('chance')
 var chance = new Chance()
 var MongoClient = require('mongodb').MongoClient
 
 var start_account = 50
-var starting_dtc = 333
-var tpups = 0.15
-var wait = 3000
-var master_pub = 'x'
-var master_wif = 'x'
-var master_name = 'master'
+var starting_dtc = 33333333
+var tpups = 0.01
+var wait = 8000
+var master_pub = 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz'
+var master_wif = '34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5'
+var master_name = 'dtube'
 var accounts = []
 var contents = []
 var beggars = []
+var startTime = null
+var successes = 0
 
-// MongoClient.connect('mongodb://localhost:27017', { useNewUrlParser: true }, function(err, client) {
-//     this.db = client.db('avalon')
-//     db.collection('accounts').find({name: {'$ne': 'master'}, pub: master_pub, balance: {'$gt': 0}}).project({name: 1, _id: 0}).toArray(function(err, dbAccs) {
-//         accounts = dbAccs.map(o => o.name)
-//         foreverDo()
-//     })
-// })
+MongoClient.connect('mongodb://localhost:27017', { useNewUrlParser: true }, function(err, client) {
+    this.db = client.db('avalon')
+    db.collection('accounts').find({name: {'$ne': master_name}, pub: master_pub, balance: {'$gt': 999}}).project({name: 1, _id: 0}).toArray(function(err, dbAccs) {
+        accounts = dbAccs.map(o => o.name)
+        startTime = new Date().getTime()
+        foreverDo()
+    })
+})
 
 // wait a bit
-setTimeout(function() {
-    // create some accounts
-    accounts = createMassAccs(start_account)
-    // wait a bit more
-    setTimeout(function() {
-        // send them money
-        depositMoney(starting_dtc)
-        foreverDo()
-    }, wait)
-}, wait)
+// setTimeout(function() {
+//     // create some accounts
+//     accounts = createMassAccs(start_account)
+//     // wait a bit more
+//     setTimeout(function() {
+//         // send them money
+//         depositMoney(starting_dtc)
+//         foreverDo()
+//     }, wait)
+// }, wait)
 
 function foreverDo() {
     var time = 1000/(tpups*accounts.length)
@@ -217,7 +220,9 @@ function genericActivity() {
         if (err)
             console.log(err)
         else {
-            console.log(accounts.length, beggars.length)
+            successes++
+            var txps = successes/((new Date().getTime() - startTime)/1000)
+            console.log('Acc: '+accounts.length+'\tMaxTPS: '+tpups*accounts.length+'\tTPS: '+txps)
         } 
     })
 }

@@ -1,8 +1,26 @@
 const series = require('run-series')
 const one_day = 86400000
+const one_hour = 3600000
+const one_minute = 60000
 var TransactionType = require('./transactions').Types
 
+// List of potential community-breaking abuses:
+// 1- Multi accounts voting (cartoons)
+// 2- Bid-bots (selling votes)
+// 3- Self-voting whales (haejin)
+// 4- Curation trails (bots auto-voting tags or authors)
+
+// What we decided:
+// 1- Flat curation
+// 2- Money goes into content, claim button stops curation rewards
+// 3- People can claim curation rewards after X days. Time lock to allow downvotes to take away rewards
+// 4- Rentability curve: based on time since the vote was cast. Starts at X%, goes up to 100% at optimal voting time, then goes down to Y% at the payout time and after.
+// 5- Downvotes print the same DTC amount as an upvote would. But they also reduce upvote rewards by X% of that amount
+// 6- Use weighted averages for rewardPool data to smooth it out
+
 var eco = {
+    startRewardPool: null,
+    lastRewardPool: null,
     currentBlock: {
         dist: 0,
         burn: 0,
@@ -12,66 +30,72 @@ var eco = {
         eco.currentBlock.dist = 0
         eco.currentBlock.burn = 0
         eco.currentBlock.votes = 0
+        if (eco.startRewardPool)
+            eco.lastRewardPool = eco.startRewardPool
+        eco.startRewardPool = null
     },
-    activeUsersCount: (cb) => {
-        // we consider anyone with a non zero balance to be active, otherwise he loses out
-        db.collection('accounts').find({balance: {$gt: 0}}).count(function(err, count) {
-            if (err) throw err
-            cb(config.rewardPoolMult*count+config.rewardPoolMin)
-        })
-    },
-    totalSupply: (cb) => {
-        db.collection('accounts').aggregate([
-            {$match: {}},
-            {
-                $group: {
-                    _id: null,
-                    count: {
-                        $sum:'$balance'
-                    }
-                }
-            }
-        ]).toArray(function(err, res) {
-            if (err) throw err
-            cb(res)
-        })
-    },
-    theoricalRewardPool: (cb) => {
-        eco.activeUsersCount(function(activeUsers) {
-            // will need tuning for different experiments
-            cb(activeUsers)
-        })
+    inflation: (cb) => {
+        cb(config.rewardPoolMult * config.rewardPoolUsers + config.rewardPoolMin)
+        return
     },
     rewardPool: (cb) => {
-        // this might need to get reduced in the future as volume grows
-        eco.theoricalRewardPool(function(theoricalPool){
+        eco.inflation(function(theoricalPool){
             var burned = 0
             var distributed = 0
             var votes = 0
-            var firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
-            if (firstBlockIndex < 0) firstBlockIndex = 0
-            for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
-                const block = chain.recentBlocks[i]
-                if (block.burn)
-                    burned += block.burn
-                if (block.dist)
-                    distributed += block.dist
-                
-                for (let y = 0; y < block.txs.length; y++) {
-                    var tx = block.txs[y]
-                    if (tx.type === TransactionType.VOTE
-                        || tx.type === TransactionType.COMMENT
-                        || tx.type === TransactionType.PROMOTED_COMMENT)
-                        votes += Math.abs(tx.data.vt)
+            if (!eco.startRewardPool) {
+                var firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
+                if (firstBlockIndex < 0) firstBlockIndex = 0
+                var weight = 1
+                for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
+                    const block = chain.recentBlocks[i]
+                    if (block.burn)
+                        burned += block.burn
+                    if (block.dist)
+                        distributed += block.dist
+                    
+                    for (let y = 0; y < block.txs.length; y++) {
+                        var tx = block.txs[y]
+                        if (tx.type === TransactionType.VOTE
+                            || tx.type === TransactionType.COMMENT
+                            || tx.type === TransactionType.PROMOTED_COMMENT)
+                            votes += Math.abs(tx.data.vt)*weight
+                    }
+                    weight++
                 }
+    
+                // weighted average for votes
+                votes /= (weight+1)/2
+
+                eco.startRewardPool = {
+                    burn: burned,
+                    dist: distributed,
+                    votes: votes,
+                    theo: theoricalPool,
+                    avail: theoricalPool - distributed
+                }
+            } else {
+                burned = eco.startRewardPool.burn
+                distributed = eco.startRewardPool.dist
+                votes = eco.startRewardPool.votes
             }
+            
+
             var avail = theoricalPool - distributed - eco.currentBlock.dist
             if (avail < 0) avail = 0
+            burned += eco.currentBlock.burn
+            distributed += eco.currentBlock.dist
+            votes += eco.currentBlock.votes
+
+            avail = Math.round(avail*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            burned = Math.round(burned*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            distributed = Math.round(distributed*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            votes = Math.round(votes*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
             cb({
                 theo: theoricalPool,
-                burn: burned + eco.currentBlock.burn,
-                dist: distributed + eco.currentBlock.dist,
-                votes: votes + eco.currentBlock.votes,
+                burn: burned,
+                dist: distributed,
+                votes: votes,
                 avail: avail
             })
         })
@@ -84,81 +108,93 @@ var eco = {
     },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
-            // first loop to calculate the vp per day of each upvote
-            var sumVt = 0
-            for (let i = 0; i < content.votes.length; i++) {
-                // first voter advantage is real !
-                if (i === 0)
-                    content.votes[i].vpPerDayBefore = 0
-                // two similar votes at the same block/timestamp should be have equal earnings / vp per day
-                else if (content.votes[i].ts === content.votes[i-1].ts)
-                    content.votes[i].vpPerDayBefore = content.votes[i-1].vpPerDayBefore
-                else
-                    content.votes[i].vpPerDayBefore = one_day*sumVt/(content.votes[i].ts - content.votes[0].ts)
-            
-                sumVt += content.votes[i].vt
-            }
-
             var currentVote = content.votes[content.votes.length-1]
 
-            // second loop to filter winners
-            var winners = []
+            // first loop to calculate the VP of active votes
             var sumVtWinners = 0
-            for (let i = 0; i < content.votes.length-1; i++) {
-                // votes from the same block cant win
-                if (content.votes[i].ts === currentVote.ts)
-                    continue
-                
-                // winners voted in the same direction
-                if (content.votes[i].vt * currentVote.vt > 0) 
-                    // upvotes win if they were done at a lower vp per day, the opposite for downvotes
-                    if ((currentVote.vt > 0 && content.votes[i].vpPerDayBefore < currentVote.vpPerDayBefore)
-                        || (currentVote.vt < 0 && content.votes[i].vpPerDayBefore > currentVote.vpPerDayBefore)) {
+            for (let i = 0; i < content.votes.length; i++)
+                if (!content.votes[i].claimed)
+                    if (currentVote.vt*content.votes[i].vt > 0)
                         sumVtWinners += content.votes[i].vt
-                        winners.push(content.votes[i])
+
+            // second loop to calculate each active votes shares
+            var winners = []
+            for (let i = 0; i < content.votes.length; i++)
+                if (!content.votes[i].claimed)
+                    if (currentVote.vt*content.votes[i].vt > 0) {
+                        // same vote direction => winner
+                        var winner = content.votes[i]
+                        winner.share = winner.vt / sumVtWinners
+                        winners.push(winner)
                     }
-                
-            }
 
-            // third loop to calculate each winner shares
-            for (let i = 0; i < winners.length; i++)
-                winners[i].share = winners[i].vt / sumVtWinners
-
-            winners.sort(function(a,b) {
-                return b.share - a.share
-            })
-
-            //logr.trace(currentVote, winners.length+'/'+content.votes.length+' won')
-
-            // forth loop to pay out
-            var executions = []
-            for (let i = 0; i < winners.length; i++) 
-                executions.push(function(callback) {
-                    var payout = Math.floor(winners[i].share * Math.abs(currentVote.vt))
-                    if (payout < 0) 
-                        throw 'Fatal distribution error (negative payout)'
-                    
-                    if (payout === 0) {
-                        callback(null, 0)
-                        return
-                    }
-                    var memo = content.author+'/'+content.link+'/'+currentVote.u
-                    eco.distribute(winners[i].u, payout, currentVote.ts, memo, function(dist) {
-                        eco.currentBlock.dist += dist
-                        eco.currentBlock.votes += payout
-                        callback(null, dist)
-                    })
-                })
-            
-            series(executions, function(err, results) {
-                if (err) throw err
+            eco.print(currentVote.vt, function(thNewCoins) {
+                // share the new coins between winners
                 var newCoins = 0
-                for (let r = 0; r < results.length; r++)
-                    newCoins += results[r]
+                for (let i = 0; i < winners.length; i++) {
+                    if (!winners[i].claimable)
+                        winners[i].claimable = 0
+                    
+                    var won = thNewCoins * winners[i].share
+                    var rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
+                    won *= rentabilityWinner
+                    won = Math.floor(won*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                    winners[i].claimable += won
+                    newCoins += won
+                    delete winners[i].share
+
+                    // logr.econ(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
+                }
+                newCoins = Math.round(newCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+
+                // reconstruct the votes array
+                var newVotes = []
+                for (let i = 0; i < content.votes.length; i++)
+                    if (!content.votes[i].claimed && currentVote.vt*content.votes[i].vt > 0) {
+                        for (let y = 0; y < winners.length; y++)
+                            if (winners[y].u === content.votes[i].u)
+                                newVotes.push(winners[y])
+                    } else newVotes.push(content.votes[i])
+
+                // if there are opposite votes
+                // burn 50% of the printed DTC in anti-chronological order
+                var newBurn = 0
+                var takeAwayAmount = thNewCoins*config.ecoPunishPercent
+                var i = content.votes.length - 1
+                while (takeAwayAmount !== 0 && i>0) {
+                    if (!content.votes[i].claimed && content.votes[i].vt*currentVote.vt < 0)
+                        if (content.votes[i].claimable >= takeAwayAmount) {
+                            content.votes[i].claimable -= takeAwayAmount
+                            newBurn += takeAwayAmount
+                            takeAwayAmount = 0
+                        } else {
+                            takeAwayAmount -= content.votes[i].claimable
+                            newBurn += content.votes[i].claimable
+                            content.votes[i].claimable = 0
+                        }
+                    i--
+                }
+                newBurn = Math.round(newBurn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                
+                logr.econ(newCoins + ' dist from the vote')
+                logr.econ(newBurn + ' burn from the vote')
+
+                // add dist/burn/votes to currentBlock eco stats
+                eco.currentBlock.dist += newCoins
+                eco.currentBlock.dist = Math.round(eco.currentBlock.dist*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                eco.currentBlock.burn += newBurn
+                eco.currentBlock.burn = Math.round(eco.currentBlock.burn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                eco.currentBlock.votes += currentVote.vt
+
+                // updating the content
+                // increase the dist amount for display
+                // and update the votes array
                 cache.updateOne('contents', {_id: author+'/'+link}, {
-                    $inc: {dist: newCoins}
+                    $inc: {dist: newCoins},
+                    $set: {votes: newVotes}
                 }, function() {
                     if (config.masterFee > 0 && newCoins > 0) {
+                        // apply the master fee
                         var distBefore = content.dist
                         if (!distBefore) distBefore = 0
                         var distAfter = distBefore + newCoins
@@ -175,7 +211,7 @@ var eco = {
                                         masterAccount.balance -= benefReward
                                         transaction.updateGrowInts(masterAccount, currentVote.ts, function() {
                                             transaction.adjustNodeAppr(masterAccount, benefReward, function() {
-                                                cb(newCoins, benefReward)
+                                                cb(newCoins, benefReward, newBurn)
                                             })
                                         })
                                     })
@@ -187,84 +223,76 @@ var eco = {
             })
         })
     },
-    distribute: (name, vt, ts, memo, cb) => {
+    print: (vt, cb) => {
+        // loads current reward pool data
+        // and converts VP to DTC based on reward pool stats
         eco.rewardPool(function(stats) {
-            cache.findOne('accounts', {name: name}, function(err, account) {
-                if (err) throw err
-                if (!account.uv) account.uv = 0
+            // if reward pool is empty, print nothing
+            // (can only happen if witnesses freeze distribution in settings)
+            if (stats.avail === 0) {
+                cb(0)
+                return
+            }
 
-                if (stats.avail === 0) {
-                    cb(0)
-                    return
-                }
+            var thNewCoins = 0
 
-                //logr.trace('DIST:', name, vt, ts, account.uv, stats)
+            // if theres no vote in reward pool stats, we print 1 coin (minimum)
+            if (stats.votes === 0)
+                thNewCoins = 1
+            // otherwise we proportionally reduce based on recent votes weight
+            // and how much is available for printing
+            else
+                thNewCoins = stats.avail * Math.abs((vt) / stats.votes)
 
-                var thNewCoins = 0
-                if (stats.votes === 0)
-                    thNewCoins = 1
-                else
-                    thNewCoins = stats.avail * Math.abs((vt+account.uv) / stats.votes)
+            // rounding down
+            thNewCoins = Math.floor(thNewCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            
+            // and making sure one person cant empty the whole pool when network has been inactive
+            // e.g. when stats.votes close to 0
+            // then vote value will be capped to rewardPoolMaxShare %
+            if (thNewCoins > Math.floor(stats.avail*config.rewardPoolMaxShare))
+                thNewCoins = Math.floor(stats.avail*config.rewardPoolMaxShare)
 
-                var newCoins = Math.floor(thNewCoins)
-                
-                // make sure one person cant empty the whole pool
-                // eg stats.votes = 0
-                if (newCoins > Math.floor(stats.avail*config.rewardPoolMaxShare))
-                    newCoins = Math.floor(stats.avail*config.rewardPoolMaxShare)
-
-                if (vt<0) newCoins *= -1
-
-                // calculate unpaid votes and keep them for the next distribute()
-                var unpaidVotes = (thNewCoins-newCoins)
-                unpaidVotes /= stats.avail
-                unpaidVotes *= stats.votes
-                if (vt<0) unpaidVotes = Math.ceil(unpaidVotes)
-                else unpaidVotes = Math.floor(unpaidVotes)
-
-                // unpaid votes is meant for minnows who struggle to print 1 unit
-                // not the big whales where votes exceed the rewardPoolMaxShare
-                if (config.capUnpaidVotes && unpaidVotes > Math.floor(stats.votes/stats.avail))
-                    unpaidVotes = Math.floor(stats.votes/stats.avail)
-
-                //console.log(newCoins, unpaidVotes)
-                var changes = {
-                    uv: unpaidVotes
-                }
-
-                if (newCoins > 0) {
-                    // option 1: instant payments
-                    var newBalance = account.balance + newCoins
-                    changes.balance = newBalance
-
-                    // option 2: payment reservoir where its possible to 'take away' rewards unlike option 1
-                    // useful for models where downvotes should punish past upvoters
-                    // var newPr = new DecayInt(account.pr, {halflife:1000*60*60*24}).decay(ts)
-                    // var newBalance = account.balance + account.pr.v - newPr.v
-                    // newPr.v += newCoins
-                    // if (newPr.v < 0) newPr.v = 0
-                    // changes.balance = newBalance
-                    // changes.pr = newPr
-                }
-                
-                cache.updateOne('accounts', {name: name}, {$set: changes}, function(){
-                    if (newCoins > 0)
-                        cache.insertOne('distributed', {
-                            name: name,
-                            dist: newCoins,
-                            ts: ts,
-                            _id: memo+'/'+name
-                        }, function() {
-                            transaction.updateGrowInts(account, ts, function() {
-                                transaction.adjustNodeAppr(account, newCoins, function() {
-                                    cb(newCoins)
-                                })
-                            })
-                        })
-                    else cb(newCoins)
-                })
-            })
+            logr.econ('PRINT:'+vt+' VT => '+thNewCoins+' dist', stats.avail)
+            cb(thNewCoins)
         })
+    },
+    rentability: (ts1, ts2) => {
+        var ts = ts2 - ts1
+        if (ts < 0) throw 'Invalid timestamp in rentability calculation'
+
+        // https://imgur.com/a/GTLvs37
+        var startRentability = config.ecoStartRent
+        var baseRentability = config.ecoBaseRent
+        var rentabilityStartTime = config.ecoRentStartTime
+        var rentabilityEndTime = config.ecoRentEndTime
+        var claimRewardTime = config.ecoClaimTime
+
+        // requires that :
+        // rentabilityStartTime < rentabilityEndTime < claimRewardTime
+
+        // between rentStart and rentEnd => 100% max rentability
+        var rentability = 1
+
+        if (ts === 0)
+            rentability = startRentability
+        
+        else if (ts < rentabilityStartTime)
+            // less than one day, rentability grows from 50% to 100%
+            rentability = startRentability + (1-startRentability) * ts / rentabilityStartTime
+
+        else if (ts >= claimRewardTime)
+            // past 7 days, 50% base rentability
+            rentability = baseRentability
+
+        else if (ts > rentabilityEndTime)
+            // more than 3.5 days but less than 7 days
+            // decays from 100% to 50%
+            rentability = baseRentability + (1-baseRentability) * (claimRewardTime-ts) / (claimRewardTime-rentabilityEndTime)
+
+
+        rentability = Math.floor(rentability*Math.pow(10, config.ecoRentPrecision))/Math.pow(10, config.ecoRentPrecision)
+        return rentability
     }
 } 
 
