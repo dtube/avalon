@@ -89,7 +89,7 @@ var config = {
             // the maximum number of mentions triggering a notification
             notifMaxMentions: 10,
             // the sha256sum hash of block 0 (new origin hash -> new chain)
-            originHash: 'd046bd0d5af61e5adabf71ab87b23e4e43e8b69ca232c7330ea92f1d8453da90',
+            originHash: '8cca1ec6d023d0182cc1501ef62af9ba9b0e20499e218cf400805b6d8764182d',
             // the default number of random bytes to use for new key generation
             randomBytesLength: 32,
             // the minimum hourly reward pool (including leader rewards)
