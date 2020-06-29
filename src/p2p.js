@@ -234,17 +234,19 @@ var p2p = {
 
             case MessageType.NEW_BLOCK:
                 // we received a new block we didn't request from a peer
-                // we forward it to consensus
-                if (p2p.recovering) return
-                var block = message.d
-                consensus.round(0, block)
-
                 // we save the head_block of our peers
+                // and we forward the message to consensus if we are not replaying
+                if (!message.d) return
+                var block = message.d
+
                 var socket = p2p.sockets[p2p.sockets.indexOf(ws)]
                 if (!socket || !socket.node_status) return
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block = block._id
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.head_block_hash = block.hash
                 p2p.sockets[p2p.sockets.indexOf(ws)].node_status.previous_block_hash = block.phash
+
+                if (p2p.recovering) return
+                consensus.round(0, block)
                 break
                 
             case MessageType.NEW_TX:
@@ -368,7 +370,10 @@ var p2p = {
             for (let y = 0; y < p2p.sockets[i].sentUs.length; y++) 
                 if (p2p.sockets[i].sentUs[y][0] === d.s.s)
                     continue firstLoop
-            p2p.sendJSON(p2p.sockets[i], d)
+            setTimeout(function() {
+                p2p.sendJSON(p2p.sockets[i], d)
+            }, 550*Math.random())
+            
         }
     },
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
