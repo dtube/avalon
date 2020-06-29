@@ -62,13 +62,14 @@ module.exports = {
                 return
             }
 
-        transactions[tx.type].validate(tx, ts, legitUser, function(isValid) {
+        transactions[tx.type].validate(tx, ts, legitUser, function(isValid, error) {
             var timeDiff = performance.now()-startTime
             if (timeDiff > WARN_SLOW_VALID)
                 logr.warn('Slow tx type:'+tx.type+' validation took: '+timeDiff.toFixed(3)+'ms')
             else
                 logr.perf('tx:'+tx.type+' validation finish: '+timeDiff.toFixed(3)+'ms')
-            cb(isValid)
+
+            cb(isValid, error)
         })
     },
     execute: (tx, ts, cb) => {
