@@ -370,10 +370,7 @@ var p2p = {
             for (let y = 0; y < p2p.sockets[i].sentUs.length; y++) 
                 if (p2p.sockets[i].sentUs[y][0] === d.s.s)
                     continue firstLoop
-            setTimeout(function() {
-                p2p.sendJSON(p2p.sockets[i], d)
-            }, 550*Math.random())
-            
+            p2p.sendJSON(p2p.sockets[i], d)
         }
     },
     broadcast: (d) => p2p.sockets.forEach(ws => p2p.sendJSON(ws, d)),
