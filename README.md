@@ -41,10 +41,12 @@ mongodump -d avalon -o ~/avalon-backup/
 ```
 
 #### Declaring your public node in your account profile
-It is strongly recommended for all leaders to add a `node.ws` field to your profile as so:
+It is possible for all leaders to declare a `node.ws` field to your profile as so:
 ```
 node src/cli.js profile -K <key> -M <user> '{"node":{"ws":"ws://yourip:yourport"}}'
 ```
+
+This will make other nodes who have peer discovery enabled automatically connect to the declared node. The network needs a few of those, but it is **strongly discouraged** to produce blocks from a publicly declared node IP.
 
 ## Get helped
 We have a discord channel dedicated to node owners (aka leaders), where you can get support to get set up. Join [discorg.gg/dtube](https://discord.gg/dtube) and go to `DTube Chain -> #leader-candidates`
