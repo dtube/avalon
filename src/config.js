@@ -35,6 +35,8 @@ var config = {
             ecoClaimPrecision: 3,
             // the required number of ms before a vote reward can be claimed
             ecoClaimTime: 604800000, // 7 days
+            // can the first vote rewards be altered by downvotes like other votes
+            ecoPunishAuthor: false,
             // the percentage of coins that are burnt when there are opposite votes with rewards
             ecoPunishPercent: 0.5,
             // the number of ms before a vote reaches 100% rentability

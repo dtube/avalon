@@ -161,7 +161,9 @@ var eco = {
                 var newBurn = 0
                 var takeAwayAmount = thNewCoins*config.ecoPunishPercent
                 var i = content.votes.length - 1
-                while (takeAwayAmount !== 0 && i>0) {
+                while (takeAwayAmount !== 0 && i>=0) {
+                    if (i === 0 && !config.ecoPunishAuthor)
+                        break
                     if (!content.votes[i].claimed && content.votes[i].vt*currentVote.vt < 0)
                         if (content.votes[i].claimable >= takeAwayAmount) {
                             content.votes[i].claimable -= takeAwayAmount
