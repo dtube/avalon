@@ -189,6 +189,11 @@ chain = {
 
                     // process notifications (non blocking)
                     notifications.processBlock(newBlock)
+
+                    // emit event to confirm new transactions in the http api
+                    for (let i = 0; i < newBlock.txs.length; i++)
+                        transaction.eventConfirmation.emit(newBlock.txs[i].hash)
+
                     cb(null, newBlock)
                 })
             })

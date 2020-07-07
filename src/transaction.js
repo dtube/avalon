@@ -1,5 +1,6 @@
 var GrowInt = require('growint')
 var CryptoJS = require('crypto-js')
+const { EventEmitter } = require('events')
 const cloneDeep = require('clone-deep')
 
 var Transaction = require('./transactions')
@@ -8,6 +9,7 @@ var max_mempool = process.env.MEMPOOL_SIZE || 200
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
+    eventConfirmation: new EventEmitter(),
     addToPool: (txs) => {
         if (transaction.pool.length >= max_mempool) {
             logr.warn('Mempool is full ('+transaction.pool.length+'/'+max_mempool+' txs), ignoring tx')
