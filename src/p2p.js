@@ -1,3 +1,4 @@
+const version = '1.1'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
@@ -164,6 +165,7 @@ var p2p = {
                     head_block_hash: chain.getLatestBlock().hash,
                     previous_block_hash: chain.getLatestBlock().phash,
                     nodeId: p2p.nodeId.pub,
+                    version: version,
                     sign: sign
                 }
                 p2p.sendJSON(ws, {t: MessageType.NODE_STATUS, d:d})
