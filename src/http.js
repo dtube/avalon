@@ -345,7 +345,7 @@ var http = {
                     'votes.u': voter,
                 }]
             }
-            var lastTs = parseInt(req.params.lastBlock)
+            var lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ts: {$lt: lastTs}})
 
