@@ -2,7 +2,9 @@ var http_port = process.env.HTTP_PORT || 3001
 var express = require('express')
 var cors = require('cors')
 var bodyParser = require('body-parser')
-var fetchVideoInfo = require('youtube-info')
+const YT = require('simple-youtube-api')
+const yt_key = process.env.YT_API_KEY || 'NO_KEY'
+const yt = new YT(yt_key)
 const {extract} = require('oembed-parser')
 const ogs = require('open-graph-scraper')
 const series = require('run-series')
@@ -530,15 +532,19 @@ var http = {
             })
         })
 
-        // test api (should be separated)
+        // 3rd party video embed data
         // get youtube info
         app.get('/youtube/:videoId', (req, res) => {
             if (!req.params.videoId) {
                 res.sendStatus(500)
                 return
             }
-            fetchVideoInfo(req.params.videoId, function(err, videoInfo) {
-                res.send(videoInfo)
+            yt.getVideoByID(req.params.videoId).then(function(video) {
+                video.duration = video.durationSeconds
+                res.send(video)
+            }).catch(function(err) {
+                logr.warn('YouTube API error', err)
+                res.sendStatus(500)
             })
         })
 
