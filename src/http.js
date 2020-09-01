@@ -98,9 +98,8 @@ var http = {
                     transaction.addToPool([tx])
 
                     var transactTimeout = setTimeout(function() {
-                        transaction.eventConfirmation.removeListener(tx.hash,() => {
-                            res.status(408).send({error: 'transaction timeout'})
-                        })
+                        transaction.eventConfirmation.removeListener(tx.hash,() => {})
+                        res.status(408).send({error: 'transaction timeout'})
                     }, timeout_transact_async)
 
                     transaction.eventConfirmation.addListener(tx.hash, function() {
