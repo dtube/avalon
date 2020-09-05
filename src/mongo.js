@@ -148,6 +148,45 @@ var mongo = {
             if (err) throw err
             cb(block)
         })
+    },
+    restoreBlocks: (cb) => {
+        let dump_dir = process.cwd() + '/dump'
+        let dump_location = dump_dir + '/blocks.zip'
+        fs.stat(dump_location,(e) => {
+            if (e) return cb('blocks.zip file not found')
+
+            // Drop the existing blocks collection and replace with the dump
+            db.collection('blocks').drop((e,ok) => {
+                if (!ok) return cb('Failed to drop existing blocks data')
+
+                let zip = AdmZip(dump_location)
+                let zipEntries = zip.getEntries()
+                let mongoUri = db_url+'/'+db_name
+                for (let i = 0; i < zipEntries.length; i++) {
+                    let entry = zipEntries[i]
+                    zip.extractEntryTo(entry.name, dump_dir, false, true)
+                    logr.debug('Unzipped '+entry.name)
+                }
+
+                logr.info('Finished unzipping, importing blocks now...')
+
+                let mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, dump_dir])                         
+                mongorestore.stderr.on('data', (data) => {
+                    data = data.toString().split('\n')
+                    for (let i = 0; i < data.length; i++) {
+                        let line = data[i].split('\t')
+                        if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
+                            logr.debug(line[1])
+                    }
+                })
+                
+                mongorestore.on('close', () => mongo.fillInMemoryBlocks(() => {
+                    logr.info('Finished importing ' + chain.getLatestBlock()._id + ' blocks')
+                    cb(null)
+                }))
+            })
+            
+        })
     }
 } 
 

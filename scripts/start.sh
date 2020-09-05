@@ -31,6 +31,9 @@ export LOG_LEVEL=debug
 # groups blocks during replay output to lower screen spam
 export REPLAY_OUTPUT=1
 
+# Rebuild chain state from dump, verifying every block and transactions
+export REBUILD_STATE=1
+
 # default peers to connect with on startup
 export PEERS=
 export MAX_PEERS=20

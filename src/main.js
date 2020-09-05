@@ -11,6 +11,7 @@ validate = require('./validate')
 eco = require('./economics.js')
 rankings = require('./rankings.js')
 consensus = require('./consensus')
+rebuild = require('./rebuild')
 
 // verify node version
 const nodeV = 10
@@ -33,6 +34,16 @@ mongo.init(function() {
         cache.warmup('contents', parseInt(process.env.WARMUP_CONTENTS), function(err) {
             if (err) throw err
             logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+
+            // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
+            if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) {
+                logr.info('Chain state rebuild requested, unzipping blocks.zip...')
+                mongo.restoreBlocks((e)=>{
+                    if (e) return logr.error(e)
+
+                })
+                return
+            }
 
             mongo.lastBlock(function(block) {
                 logr.info('#' + block._id + ' is the latest block in our db')
