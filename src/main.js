@@ -11,7 +11,6 @@ validate = require('./validate')
 eco = require('./economics.js')
 rankings = require('./rankings.js')
 consensus = require('./consensus')
-rebuild = require('./rebuild')
 
 // verify node version
 const nodeV = 10
@@ -35,12 +34,21 @@ mongo.init(function() {
             if (err) throw err
             logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
 
+            // contents loaded, init hot/trending
+            rankings.init()
+
             // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
             if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) {
                 logr.info('Chain state rebuild requested, unzipping blocks.zip...')
                 mongo.restoreBlocks((e)=>{
                     if (e) return logr.error(e)
-
+                    let rebuildStartTime = new Date().getTime()
+                    chain.rebuildState(0,(e,headBlockNum) => {
+                        if (e)
+                            return logr.error('Error rebuilding chain at block',headBlockNum, e)
+                        logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
+                        startDaemon()
+                    })
                 })
                 return
             }
@@ -48,34 +56,33 @@ mongo.init(function() {
             mongo.lastBlock(function(block) {
                 logr.info('#' + block._id + ' is the latest block in our db')
                 config = require('./config.js').read(block._id)
-                mongo.fillInMemoryBlocks(function() {
-                    // start miner schedule
-                    db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
-                        if (err) throw err
-                        chain.minerSchedule(block, function(minerSchedule) {
-                            chain.schedule = minerSchedule
-                        })
-                    })
-            
-                    // init hot/trending
-                    rankings.init()
-            
-                    // start the http server
-                    http.init()
-                    // start the websocket server
-                    p2p.init()
-                    // and connect to peers
-                    p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
-
-                    // regularly clean up old txs from mempool
-                    setInterval(function() {
-                        transaction.cleanPool()
-                    }, config.blockTime*0.9)
-                })
+                mongo.fillInMemoryBlocks(startDaemon)
             })
         })
     })
 })
+
+function startDaemon() {
+    // start miner schedule
+    db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
+        if (err) throw err
+        chain.minerSchedule(block, function(minerSchedule) {
+            chain.schedule = minerSchedule
+        })
+    })
+
+    // start the http server
+    http.init()
+    // start the websocket server
+    p2p.init()
+    // and connect to peers
+    p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
+
+    // regularly clean up old txs from mempool
+    setInterval(function() {
+        transaction.cleanPool()
+    }, config.blockTime*0.9)
+}
 
 process.on('SIGINT', function() {
     if (typeof closing !== 'undefined') return

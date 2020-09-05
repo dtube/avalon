@@ -13,6 +13,10 @@ var mongo = {
             this.db = client.db(db_name)
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
+            // If a rebuild is specified, drop the database
+            // if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1)
+            //     db.dropDatabase()
+
             // check if genesis block exists or not
             db.collection('blocks').findOne({_id: 0}, function(err, genesis) {
                 if (err) throw err
@@ -180,8 +184,9 @@ var mongo = {
                     }
                 })
                 
-                mongorestore.on('close', () => mongo.fillInMemoryBlocks(() => {
-                    logr.info('Finished importing ' + chain.getLatestBlock()._id + ' blocks')
+                mongorestore.on('close', () => mongo.lastBlock((block) => {
+                    logr.info('Finished importing ' + block._id + ' blocks')
+                    chain.restoredBlocks = block._id
                     cb(null)
                 }))
             })

@@ -26,6 +26,7 @@ class Block {
 }
 
 chain = {
+    restoredBlocks: 0,
     schedule: null,
     recentBlocks: [],
     recentTxs: {},
@@ -294,15 +295,22 @@ chain = {
             }
         })
     },
-    output: (block) => {
+    output: (block,rebuilding) => {
         chain.nextOutput.txs += block.txs.length
         if (block.dist)
             chain.nextOutput.dist += block.dist
         if (block.burn)
             chain.nextOutput.burn += block.burn
 
-        if (!p2p.recovering || block._id%replay_output === 0) {
-            var output = '#'+block._id
+        if ((!p2p.recovering || block._id%replay_output === 0) && (!rebuilding || block._id%replay_output === 0)) {
+            var output = ''
+            if (rebuilding)
+                output += 'Rebuilt '
+
+            output += '#'+block._id
+
+            if (rebuilding)
+                output += '/' + chain.restoredBlocks
 
             output += '  by '+block.miner
 
@@ -735,6 +743,78 @@ chain = {
         for (const hash in chain.recentTxs)
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
+    },
+    rebuildState: (blockNum,cb) => {
+        // Genesis block is handled differently
+        if (blockNum === 0) {
+            chain.recentBlocks = [chain.getGenesisBlock()]
+            chain.minerSchedule(chain.getGenesisBlock(),(sch) => {
+                chain.schedule = sch
+                chain.rebuildState(blockNum+1,cb)
+            })
+            return
+        }
+
+        db.collection('blocks').findOne({ _id: blockNum },(e,blockToRebuild) => {
+            if (e)
+                return cb(e,blockNum)
+            if (!blockToRebuild)
+                // Rebuild is complete
+                return cb(null,blockNum)
+            
+            // Validate block and transactions, then execute them
+            chain.isValidNewBlock(blockToRebuild,true,true,(isValid) => {
+                if (!isValid)
+                    return cb(true, blockNum)
+                chain.executeBlockTransactions(blockToRebuild,false,true,(validTxs,dist,burn) => {
+                    // if any transaction is wrong, thats a fatal error
+                    // transactions should have been verified in isValidNewBlock
+                    if (blockToRebuild.txs.length !== validTxs.length) {
+                        logr.fatal('Invalid tx(s) in block found after starting execution')
+                        return cb('Invalid tx(s) in block found after starting execution', blockNum)
+                    }
+
+                    // error if distributed or burned computed amounts are different than the reported one
+                    let blockDist = blockToRebuild.dist || 0
+                    if (blockDist !== dist)
+                        return cb('Wrong dist amount ' + blockDist + ' ' + dist, blockNum)
+
+                    let blockBurn = blockToRebuild.burn || 0
+                    if (blockBurn !== burn) 
+                        return cb('Wrong burn amount ' + blockBurn + ' ' + burn, blockNum)
+                    
+                    // update the config if an update was scheduled
+                    config = require('./config.js').read(blockToRebuild._id)
+                    eco.nextBlock()
+                    chain.cleanMemory()
+
+                    cache.writeToDisk(() => {
+                        if (blockToRebuild._id % config.leaders === 0) 
+                            chain.minerSchedule(blockToRebuild, function(minerSchedule) {
+                                chain.schedule = minerSchedule
+                                chain.recentBlocks.push(blockToRebuild)
+                                chain.output(blockToRebuild, true)
+                                
+                                // process notifications (non blocking)
+                                notifications.processBlock(blockToRebuild)
+
+                                // next block
+                                chain.rebuildState(blockNum+1, cb)
+                            })
+                        else {
+                            chain.recentBlocks.push(blockToRebuild)
+                            chain.output(blockToRebuild, true)
+
+                            // process notifications (non blocking)
+                            notifications.processBlock(blockToRebuild)
+
+                            // next block
+                            chain.rebuildState(blockNum+1, cb)
+                        }
+                    })
+                })
+            })
+        })
     }
 }
 
