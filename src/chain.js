@@ -388,14 +388,14 @@ chain = {
         var theoreticalHash = chain.calculateHashForBlock(newBlock)
         if (theoreticalHash !== newBlock.hash) {
             logr.debug(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
-            logr.debug('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
+            logr.error('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
             cb(false); return
         }
 
         // finally, verify the signature of the miner
         chain.isValidSignature(newBlock.miner, null, newBlock.hash, newBlock.signature, function(legitUser) {
             if (!legitUser) {
-                logr.debug('invalid miner signature')
+                logr.error('invalid miner signature')
                 cb(false); return
             }
             cb(true)
@@ -405,7 +405,7 @@ chain = {
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
             if (validTxs.length !== newBlock.txs.length) {
-                logr.debug('invalid block transaction')
+                logr.error('invalid block transaction')
                 cb(false); return
             }
             cb(true)
@@ -414,50 +414,50 @@ chain = {
     isValidNewBlock: (newBlock, verifyHashAndSignature, verifyTxValidity, cb) => {
         // verify all block fields one by one
         if (!newBlock._id || typeof newBlock._id !== 'number') {
-            logr.debug('invalid block _id')
+            logr.error('invalid block _id')
             cb(false); return
         }
         if (!newBlock.phash || typeof newBlock.phash !== 'string') {
-            logr.debug('invalid block phash')
+            logr.error('invalid block phash')
             cb(false); return
         }
         if (!newBlock.timestamp || typeof newBlock.timestamp !== 'number') {
-            logr.debug('invalid block timestamp')
+            logr.error('invalid block timestamp')
             cb(false); return
         }
         if (!newBlock.txs || typeof newBlock.txs !== 'object' || !Array.isArray(newBlock.txs)) {
-            logr.debug('invalid block txs')
+            logr.error('invalid block txs')
             cb(false); return
         }
         if (newBlock.txs.length > config.maxTxPerBlock) {
-            logr.debug('invalid block too many txs')
+            logr.error('invalid block too many txs')
             cb(false); return
         }
         if (!newBlock.miner || typeof newBlock.miner !== 'string') {
-            logr.debug('invalid block miner')
+            logr.error('invalid block miner')
             cb(false); return
         }
         if (verifyHashAndSignature && (!newBlock.hash || typeof newBlock.hash !== 'string')) {
-            logr.debug('invalid block hash')
+            logr.error('invalid block hash')
             cb(false); return
         }
         if (verifyHashAndSignature && (!newBlock.signature || typeof newBlock.signature !== 'string')) {
-            logr.debug('invalid block signature')
+            logr.error('invalid block signature')
             cb(false); return
         }
         if (newBlock.missedBy && typeof newBlock.missedBy !== 'string') 
-            logr.debug('invalid block missedBy')
+            logr.error('invalid block missedBy')
            
 
         // verify that its indeed the next block
         var previousBlock = chain.getLatestBlock()
         if (previousBlock._id + 1 !== newBlock._id) {
-            logr.debug('invalid index')
+            logr.error('invalid index')
             cb(false); return
         }
         // from the same chain
         if (previousBlock.hash !== newBlock.phash) {
-            logr.debug('invalid phash')
+            logr.error('invalid phash')
             cb(false); return
         }
 
