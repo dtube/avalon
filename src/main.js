@@ -34,9 +34,6 @@ mongo.init(function() {
             if (err) throw err
             logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
 
-            // contents loaded, init hot/trending
-            rankings.init()
-
             // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
             if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) {
                 logr.info('Chain state rebuild requested, unzipping blocks.zip...')
@@ -71,6 +68,8 @@ function startDaemon() {
         })
     })
 
+    // init hot/trending
+    rankings.init()
     // start the http server
     http.init()
     // start the websocket server

@@ -464,7 +464,7 @@ chain = {
         // check if miner isnt trying to fast forward time
         // this might need to be tuned in the future to allow for network delay / clocks desync / etc
         if (newBlock.timestamp > new Date().getTime() + config.maxDrift) {
-            logr.debug('timestamp from the future', newBlock.timestamp, new Date().getTime())
+            logr.error('timestamp from the future', newBlock.timestamp, new Date().getTime())
             cb(false); return
         }
 
