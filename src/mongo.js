@@ -5,6 +5,7 @@ var fs = require('fs')
 var sha256File = require('sha256-file')
 var AdmZip = require('adm-zip')
 var spawn = require('child_process').spawn
+let isResumingRebuild = !isNaN(parseInt(process.env.REBUILD_RESUME_BLK)) && parseInt(process.env.REBUILD_RESUME_BLK) > 0
 
 var mongo = {
     init: (cb) => {
@@ -14,7 +15,7 @@ var mongo = {
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
             // If a rebuild is specified, drop the database
-            if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1)
+            if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild)
                 return db.dropDatabase(() => mongo.initGenesis(cb))
 
             // check if genesis block exists or not
@@ -142,8 +143,10 @@ var mongo = {
             })
         })
     },
-    fillInMemoryBlocks: (cb) => {
-        db.collection('blocks').find({}, {
+    fillInMemoryBlocks: (cb,headBlock) => {
+        let query = {}
+        if (headBlock) query._id = {$lt: headBlock}
+        db.collection('blocks').find(query, {
             sort: {_id: -1},
             limit: config.ecoBlocksIncreasesSoon ? config.ecoBlocksIncreasesSoon : config.ecoBlocks
         }).toArray(function(err, blocks) {

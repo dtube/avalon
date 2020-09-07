@@ -745,6 +745,10 @@ chain = {
                 delete chain.recentTxs[hash]
     },
     rebuildState: (blockNum,cb) => {
+        // If chain shutting down, stop rebuilding and output last number for resuming
+        if (chain.shuttingDown)
+            return cb(null,blockNum)
+            
         // Genesis block is handled differently
         if (blockNum === 0) {
             chain.recentBlocks = [chain.getGenesisBlock()]
