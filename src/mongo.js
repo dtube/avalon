@@ -14,8 +14,8 @@ var mongo = {
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
             // If a rebuild is specified, drop the database
-            // if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1)
-            //     db.dropDatabase()
+            if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1)
+                return db.dropDatabase(() => mongo.initGenesis(cb))
 
             // check if genesis block exists or not
             db.collection('blocks').findOne({_id: 0}, function(err, genesis) {
@@ -26,64 +26,71 @@ var mongo = {
                         process.exit(1)
                     }
                     cb()
-                    return
-                } else {
-                    logr.info('Block #0 not found. Starting genesis...')
-                    mongo.addMongoIndexes(function() {
-                        var genesisFolder = process.cwd()+'/genesis/'
-                        var genesisZip = genesisFolder+'genesis.zip'
-                        fs.readFile(genesisZip, function(err) {
-                            if (err) {
-                                logr.warn('No genesis.zip file found')
-                                // if no genesis file, we create only the master account and empty block 0
-                                mongo.insertMasterAccount(function() {
-                                    mongo.insertBlockZero(function() {
-                                        cb()
-                                    })
-                                })
-                            } else {
-                                // if there's a genesis file, we unzip and mongorestore it
-                                logr.info('Found genesis.zip file, checking sha256sum...')
-                                var fileHash = sha256File(genesisZip)
-                                logr.debug(config.originHash+'\t config.originHash')
-                                logr.debug(fileHash+'\t genesis.zip')
-                                if (fileHash !== config.originHash) {
-                                    logr.fatal('Existing genesis.zip file does not match block #0 hash')
-                                    process.exit(1)
-                                }
-                                
-                                logr.info('OK sha256sum, unzipping genesis.zip...')
-                                var zip = new AdmZip(genesisZip)
-                                var zipEntries = zip.getEntries()
-                                var mongoUri = db_url+'/'+db_name
-                                for (let i = 0; i < zipEntries.length; i++) {
-                                    var entry = zipEntries[i]
-                                    zip.extractEntryTo(entry.name, genesisFolder, false, true)
-                                    logr.debug('Unzipped '+entry.name)
-                                }
-    
-                                logr.info('Finished unzipping, importing data now...')
-    
-                                var mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
-                                mongorestore.stderr.on('data', (data) => {
-                                    data = data.toString().split('\n')
-                                    for (let i = 0; i < data.length; i++) {
-                                        var line = data[i].split('\t')
-                                        if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
-                                            logr.debug(line[1])
-                                    }
-                                })
-                                
-                                mongorestore.on('close', () => {
-                                    logr.info('Finished importing genesis data')
-                                    mongo.insertBlockZero(cb)
-                                })
-                            }
-                        })
+                } else mongo.initGenesis(cb)
+            })
+            
+        })
+    },
+    initGenesis: (cb) => {
+        if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1)
+            logr.info('Starting genesis for rebuild...')
+        else
+            logr.info('Block #0 not found. Starting genesis...')
+
+        mongo.addMongoIndexes(function() {
+            var genesisFolder = process.cwd()+'/genesis/'
+            var genesisZip = genesisFolder+'genesis.zip'
+
+            // Check if genesis.zip exists
+            try {
+                fs.statSync(genesisZip)
+            } catch {
+                logr.warn('No genesis.zip file found')
+                // if no genesis file, we create only the master account and empty block 0
+                mongo.insertMasterAccount(function() {
+                    mongo.insertBlockZero(function() {
+                        cb()
                     })
+                })
+                return
+            }
+            
+            // if there's a genesis file, we unzip and mongorestore it
+            logr.info('Found genesis.zip file, checking sha256sum...')
+            var fileHash = sha256File(genesisZip)
+            logr.debug(config.originHash+'\t config.originHash')
+            logr.debug(fileHash+'\t genesis.zip')
+            if (fileHash !== config.originHash) {
+                logr.fatal('Existing genesis.zip file does not match block #0 hash')
+                process.exit(1)
+            }
+            
+            logr.info('OK sha256sum, unzipping genesis.zip...')
+            var zip = new AdmZip(genesisZip)
+            var zipEntries = zip.getEntries()
+            var mongoUri = db_url+'/'+db_name
+            for (let i = 0; i < zipEntries.length; i++) {
+                var entry = zipEntries[i]
+                zip.extractEntryTo(entry.name, genesisFolder, false, true)
+                logr.debug('Unzipped '+entry.name)
+            }
+
+            logr.info('Finished unzipping, importing data now...')
+
+            var mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
+            mongorestore.stderr.on('data', (data) => {
+                data = data.toString().split('\n')
+                for (let i = 0; i < data.length; i++) {
+                    var line = data[i].split('\t')
+                    if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
+                        logr.debug(line[1])
                 }
             })
             
+            mongorestore.on('close', () => {
+                logr.info('Finished importing genesis data')
+                mongo.insertBlockZero(cb)
+            })
         })
     },
     insertMasterAccount: (cb) => {
@@ -156,41 +163,47 @@ var mongo = {
     restoreBlocks: (cb) => {
         let dump_dir = process.cwd() + '/dump'
         let dump_location = dump_dir + '/blocks.zip'
-        fs.stat(dump_location,(e) => {
-            if (e) return cb('blocks.zip file not found')
 
-            // Drop the existing blocks collection and replace with the dump
-            db.collection('blocks').drop((e,ok) => {
-                if (!ok) return cb('Failed to drop existing blocks data')
+        try {
+            fs.statSync(dump_location)
+        } catch {
+            return cb('blocks.zip file not found')
+        }
 
-                let zip = AdmZip(dump_location)
-                let zipEntries = zip.getEntries()
-                let mongoUri = db_url+'/'+db_name
-                for (let i = 0; i < zipEntries.length; i++) {
-                    let entry = zipEntries[i]
-                    zip.extractEntryTo(entry.name, dump_dir, false, true)
-                    logr.debug('Unzipped '+entry.name)
+        // Drop the existing blocks collection and replace with the dump
+        db.collection('blocks').drop((e,ok) => {
+            if (!ok) return cb('Failed to drop existing blocks data')
+
+            let zip = AdmZip(dump_location)
+            let zipEntries = zip.getEntries()
+            let mongoUri = db_url+'/'+db_name
+            for (let i = 0; i < zipEntries.length; i++) {
+                let entry = zipEntries[i]
+                zip.extractEntryTo(entry.name, dump_dir, false, true)
+                logr.debug('Unzipped '+entry.name)
+            }
+
+            logr.info('Finished unzipping, importing blocks now...')
+
+            let mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, dump_dir])                         
+            mongorestore.stderr.on('data', (data) => {
+                data = data.toString().split('\n')
+                for (let i = 0; i < data.length; i++) {
+                    let line = data[i].split('\t')
+                    if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
+                        logr.debug(line[1])
                 }
-
-                logr.info('Finished unzipping, importing blocks now...')
-
-                let mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, dump_dir])                         
-                mongorestore.stderr.on('data', (data) => {
-                    data = data.toString().split('\n')
-                    for (let i = 0; i < data.length; i++) {
-                        let line = data[i].split('\t')
-                        if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
-                            logr.debug(line[1])
-                    }
-                })
-                
-                mongorestore.on('close', () => mongo.lastBlock((block) => {
-                    logr.info('Finished importing ' + block._id + ' blocks')
-                    chain.restoredBlocks = block._id
-                    cb(null)
-                }))
             })
             
+            mongorestore.on('close', () => db.collection('blocks').findOne({_id: 0}, (gError,gBlock) => mongo.lastBlock((block) => {
+                if (gError) throw gError
+                if (!gBlock) return cb('Genesis block not found in dump')
+                if (gBlock.hash !== config.originHash)return cb('Genesis block hash in dump does not match config.originHash')
+
+                logr.info('Finished importing ' + block._id + ' blocks')
+                chain.restoredBlocks = block._id
+                cb(null)
+            })))
         })
     }
 } 
