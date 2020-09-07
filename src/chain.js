@@ -302,7 +302,7 @@ chain = {
         if (block.burn)
             chain.nextOutput.burn += block.burn
 
-        if ((!p2p.recovering || block._id%replay_output === 0) && (!rebuilding || block._id%replay_output === 0)) {
+        if (block._id%replay_output === 0 || (!rebuilding && !p2p.recovering)) {
             var output = ''
             if (rebuilding)
                 output += 'Rebuilt '
