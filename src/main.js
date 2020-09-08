@@ -13,7 +13,7 @@ rankings = require('./rankings.js')
 consensus = require('./consensus')
 
 // verify node version
-const nodeV = 10
+const nodeV = 14
 const versionRegex = new RegExp(`^${nodeV}\\..*`)
 const versionCorrect = process.versions.node.match(versionRegex)
 if (!versionCorrect) {

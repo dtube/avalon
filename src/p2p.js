@@ -156,7 +156,7 @@ var p2p = {
                     nodeId: message.d.nodeId
                 }
 
-                var sign = secp256k1.sign(Buffer.from(message.d.random, 'hex'), bs58.decode(p2p.nodeId.priv))
+                var sign = secp256k1.ecdsaSign(Buffer.from(message.d.random, 'hex'), bs58.decode(p2p.nodeId.priv))
                 sign = bs58.encode(sign.signature)
 
                 var d = {
@@ -181,9 +181,9 @@ var p2p = {
                     if (!challengeHash)
                         return
                     try {
-                        var isValidSignature = secp256k1.verify(
-                            Buffer.from(challengeHash, 'hex'),
+                        var isValidSignature = secp256k1.ecdsaVerify(
                             bs58.decode(message.d.sign),
+                            Buffer.from(challengeHash, 'hex'),
                             bs58.decode(nodeId))
                         if (!isValidSignature) {
                             logr.warn('Wrong NODE_STATUS signature, disconnecting')
