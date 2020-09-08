@@ -166,7 +166,7 @@ var consensus = {
                             i--
                             continue
                         }
-                        if (consensus.queue[i].d.b.ts + 2*config.blockTime < new Date().getTime()) {
+                        if (consensus.queue[i].d.ts + 2*config.blockTime < new Date().getTime()) {
                             consensus.queue.splice(i, 1)
                             i--
                         }
@@ -196,7 +196,7 @@ var consensus = {
             }
             if (block.miner === process.env.NODE_OWNER && round === 0)
                 onlyBlockHash = block
-            var signed = consensus.signMessage({t:6, d:{r:round, b: onlyBlockHash}})
+            var signed = consensus.signMessage({t:6, d:{r:round, b: onlyBlockHash, ts: new Date().getTime()}})
             p2p.broadcast(signed)
         }
 
