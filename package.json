@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.4.14",
-    "base-x": "^3.0.5",
+    "base-x": "^3.0.8",
     "body-parser": "^1.15.2",
     "clone-deep": "^4.0.1",
     "commander": "^2.20.0",
