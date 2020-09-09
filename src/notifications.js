@@ -5,15 +5,16 @@ notifications = {
     processBlock: (block) => {
         if (!isEnabled) return
 
-        if (block._id % config.notifPurge)
+        if (block._id % config.notifPurge === 0)
             notifications.purgeOld(block)
 
         for (let i = 0; i < block.txs.length; i++)
             notifications.processTx(block.txs[i], block.timestamp)
     },
     purgeOld: (block) => {
+        var threshold = block.timestamp - config.notifPurge * config.notifPurgeAfter * config.blockTime
         db.collection('notifications').deleteMany({
-            blockId: {$lt: block._id-(config.notifPurge*config.notifPurgeAfter)}
+            ts: {$lt: threshold}
         })
     },
     processTx: (tx, ts) => {
