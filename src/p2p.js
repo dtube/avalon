@@ -275,10 +275,13 @@ var p2p = {
                 // it should come from one of the elected leaders, so let's verify signature
                 if (p2p.recovering) return
                 if (!message.s || !message.s.s || !message.s.n) return
-                if (!message.d || !message.d.ts || 
-                    typeof message.d.ts != 'number' ||
-                    message.d.ts + 2*config.blockTime < new Date().getTime() ||
-                    message.d.ts - 2*config.blockTime > new Date().getTime()) return
+                if (config.tmpForceTs) {
+                    if (!message.d || !message.d.ts || 
+                        typeof message.d.ts != 'number' ||
+                        message.d.ts + 2*config.blockTime < new Date().getTime() ||
+                        message.d.ts - 2*config.blockTime > new Date().getTime()) return
+                }
+
                 logr.cons(message.s.n+' U-R'+message.d.r)
 
                 if (p2p.sockets[p2p.sockets.indexOf(ws)]) {
