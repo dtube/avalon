@@ -17,7 +17,7 @@ var rankings = {
         }
     },
     init: function() {
-        if (!isEnabled) return
+        if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         rankings.contents = {
             hot: [],
             trending: []
@@ -29,7 +29,7 @@ var rankings = {
         logr.trace('Rankings initialized')
     },
     generate: function() {
-        if (!isEnabled) return
+        if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         for (const key in rankings.types) {
             var minTs = new Date().getTime() - rankings.types[key].halfLife*expireFactor
             db.collection('contents').find({pa: null, ts: {'$gt': minTs}}, {sort: {ts: -1}}).toArray(function(err, contents) {
@@ -57,7 +57,7 @@ var rankings = {
         
     },
     new: function(content) {
-        if (!isEnabled) return
+        if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         content = cloneDeep(content)
         for (const key in rankings.types) {
             var alreadyAdded = false
@@ -83,7 +83,7 @@ var rankings = {
         }
     },
     update: function(author, link, vote, dist) {
-        if (!isEnabled) return
+        if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         for (const key in rankings.types)
             for (let i = 0; i < rankings.contents[key].length; i++)
                 if (rankings.contents[key][i].author === author && rankings.contents[key][i].link === link) {
@@ -110,7 +110,7 @@ var rankings = {
                 }
     },
     rescore: function() {
-        if (!isEnabled) return
+        if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         logr.trace('Regenerating rankings')
         for (const key in rankings.types) {
             for (let i = 0; i < rankings.contents[key].length; i++)

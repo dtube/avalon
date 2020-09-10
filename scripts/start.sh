@@ -29,7 +29,12 @@ export WARN_SLOW_EXEC=5
 export LOG_LEVEL=debug
 
 # groups blocks during replay output to lower screen spam
-export REPLAY_OUTPUT=1
+export REPLAY_OUTPUT=1000
+
+# Rebuild chain state from dump, verifying every block and transactions
+# Do not forget to comment this out after rebuild
+#export REBUILD_STATE=1
+#export REBUILD_RESUME_BLK=
 
 # default peers to connect with on startup
 export PEERS=
