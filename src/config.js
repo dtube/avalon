@@ -122,7 +122,7 @@ var config = {
         350000: {
             ecoPunishAuthor: true
         },
-        2000000: {
+        2050000: {
             tmpForceTs: true
         }
     },
