@@ -6,6 +6,8 @@ var outPath = 'bin'
 var platform = process.platform
 if (platform === 'win32')
     platform = 'win'
+if (platform === 'darwin')
+    platform = 'macos'
 
 var arch = process.arch
 if (arch === 'x32')
