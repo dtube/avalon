@@ -26,8 +26,7 @@ module.exports = {
             if (err) throw err
             if (account)
                 cb(false, 'invalid tx data.name already exists')
-            else if (tx.data.name !== tx.data.pub) 
-                // if it's not a free account, check tx sender balance
+            else
                 cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                     if (err) throw err
                     if (account.balance < eco.accountPrice(lowerUser))
@@ -35,7 +34,6 @@ module.exports = {
                     else
                         cb(true)
                 })
-            else cb(true)
         })
     },
     execute: (tx, ts, cb) => {
@@ -53,23 +51,21 @@ module.exports = {
                 ts: ts
             }
         }, function(){
-            if (tx.data.name !== tx.data.pub.toLowerCase()) 
-                if (tx.sender !== config.masterName || config.masterPaysForUsernames) {
-                    cache.updateOne('accounts', 
-                        {name: tx.sender},
-                        {$inc: {balance: -eco.accountPrice(tx.data.name)}}, function() {
-                            cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
-                                if (err) throw err
-                                // update his bandwidth
-                                acc.balance += eco.accountPrice(tx.data.name)
-                                transaction.updateGrowInts(acc, ts, function() {
-                                    transaction.adjustNodeAppr(acc, -eco.accountPrice(tx.data.name), function() {
-                                        cb(true, null, eco.accountPrice(tx.data.name))
-                                    })
+            if (tx.sender !== config.masterName || config.masterPaysForUsernames)
+                cache.updateOne('accounts', 
+                    {name: tx.sender},
+                    {$inc: {balance: -eco.accountPrice(tx.data.name)}}, function() {
+                        cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
+                            if (err) throw err
+                            // update his bandwidth
+                            acc.balance += eco.accountPrice(tx.data.name)
+                            transaction.updateGrowInts(acc, ts, function() {
+                                transaction.adjustNodeAppr(acc, -eco.accountPrice(tx.data.name), function() {
+                                    cb(true, null, eco.accountPrice(tx.data.name))
                                 })
                             })
                         })
-                } else cb(true)
+                    })
             else cb(true)
         })
     }
