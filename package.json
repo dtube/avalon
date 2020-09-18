@@ -5,9 +5,7 @@
   "scripts": {
     "start": "node src/main.js",
     "cli": "node src/cli.js",
-    "lint": "eslint 'src/*.js'",
-    "compile_cli": "pkg src/cli.js --out-path bin --targets node10-linux-x64,node10-linux-x86,node10-macos-x64,node10-macos-x86",
-    "compile_daemon": "pkg src/main.js --options stack-size=65500 --out-path bin --targets node10-linux-x64,node10-linux-x86,node10-macos-x64,node10-macos-x86"
+    "lint": "eslint 'src/*.js'"
   },
   "dependencies": {
     "adm-zip": "^0.4.14",
@@ -52,6 +50,7 @@
   "devDependencies": {
     "chance": "^1.0.18",
     "eslint": "^5.16.0",
-    "javalon": "^1.0.7"
+    "javalon": "^1.0.7",
+    "pkg": "^4.4.9"
   }
 }
