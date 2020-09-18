@@ -50,10 +50,10 @@ module.exports = {
                     for (let y = 0; y < topTags.length; y++)
                         if (topTags[y].tag === content.votes[i].tag) {
                             exists = true
-                            topTags[y].vt += content.votes[i].vt
+                            topTags[y].vt += Math.abs(content.votes[i].vt)
                         }
                     if (!exists && content.votes[i].tag)
-                        topTags.push({tag: content.votes[i].tag, vt: content.votes[i].vt})
+                        topTags.push({tag: content.votes[i].tag, vt: Math.abs(content.votes[i].vt)})
                 }
 
                 topTags = topTags.sort(function(a,b) {
