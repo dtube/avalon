@@ -101,10 +101,11 @@ var eco = {
         })
     },
     accountPrice: (username) => {
-        var charDiff = config.accountPriceChars - username.length
-        var multiplier = Math.pow(config.accountPriceCharMult, charDiff)
-        var price = Math.ceil(multiplier * config.accountPriceBase)
-        return price + config.accountPriceMin
+        var price = config.accountPriceMin
+        var extra = config.accountPriceBase - config.accountPriceMin
+        var mult = Math.pow(config.accountPriceChars / username.length, config.accountPriceCharMult)
+        price += Math.round(extra*mult)
+        return price
     },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
