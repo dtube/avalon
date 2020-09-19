@@ -225,7 +225,7 @@ var consensus = {
     },
     signMessage: (message) => {
         var hash = CryptoJS.SHA256(JSON.stringify(message)).toString()
-        var signature = secp256k1.sign(Buffer.from(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
+        var signature = secp256k1.ecdsaSign(Buffer.from(hash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
         message.s = {
             n: process.env.NODE_OWNER,
@@ -244,9 +244,9 @@ var consensus = {
         delete tmpMess.s
         var hash = CryptoJS.SHA256(JSON.stringify(tmpMess)).toString()
         var pub = consensus.getActiveLeaderKey(name)
-        if (pub && secp256k1.verify(
-            Buffer.from(hash, 'hex'),
+        if (pub && secp256k1.ecdsaVerify(
             bs58.decode(sign),
+            Buffer.from(hash, 'hex'),
             bs58.decode(pub))) {
             cb(true)
             return

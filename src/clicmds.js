@@ -18,7 +18,7 @@ let sign = (privKey, sender, tx) => {
     var rawPriv = bs58.decode(privKey)
 
     // sign the tx
-    var signature = secp256k1.sign(Buffer.from(tx.hash, 'hex'), rawPriv)
+    var signature = secp256k1.ecdsaSign(Buffer.from(tx.hash, 'hex'), rawPriv)
 
     // convert signature to base58
     tx.signature = bs58.encode(signature.signature)

@@ -13,11 +13,10 @@ rankings = require('./rankings.js')
 consensus = require('./consensus')
 
 // verify node version
-const nodeV = 10
-const versionRegex = new RegExp(`^${nodeV}\\..*`)
-const versionCorrect = process.versions.node.match(versionRegex)
-if (!versionCorrect) {
-    logr.fatal('Wrong NodeJS version. v10 is required.')
+const minNodeV = 10
+const currentNodeV = parseInt(process.versions.node.split('.')[0])
+if (currentNodeV < minNodeV) {
+    logr.fatal('Wrong NodeJS version. Minimum v10 is required.')
     process.exit(1)
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
