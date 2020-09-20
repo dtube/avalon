@@ -45,7 +45,7 @@ var mongo = {
             // Check if genesis.zip exists
             try {
                 fs.statSync(genesisZip)
-            } catch {
+            } catch (err) {
                 logr.warn('No genesis.zip file found')
                 // if no genesis file, we create only the master account and empty block 0
                 mongo.insertMasterAccount(function() {
@@ -169,7 +169,7 @@ var mongo = {
 
         try {
             fs.statSync(dump_location)
-        } catch {
+        } catch (err) {
             return cb('blocks.zip file not found')
         }
 
