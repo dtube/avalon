@@ -13,10 +13,10 @@ rankings = require('./rankings.js')
 consensus = require('./consensus')
 
 // verify node version
-const minNodeV = 10
+var allowNodeV = [10, 12, 14]
 const currentNodeV = parseInt(process.versions.node.split('.')[0])
-if (currentNodeV < minNodeV) {
-    logr.fatal('Wrong NodeJS version. Minimum v10 is required.')
+if (allowNodeV.indexOf(currentNodeV) === -1) {
+    logr.fatal('Wrong NodeJS version. Allowed versions: v'+allowNodeV.join(', v'))
     process.exit(1)
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
