@@ -1,3 +1,4 @@
+```
 #new node install procedure from debian 10:
 
 sudo apt-get update
@@ -5,7 +6,6 @@ sudo apt-get upgrade
 sudo apt-get install git wget tmux htop jq
 git clone https://github.com/dtube/avalon.git
 cd avalon/
-git checkout develop
 
 #node+npm
 sudo apt-get install nodejs npm
@@ -23,3 +23,4 @@ sudo apt-get install -y mongodb-org
 
 #npm packages
 npm install
+```
