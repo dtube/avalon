@@ -96,7 +96,7 @@ var config = {
             // the minimum hourly reward pool (including leader rewards)
             rewardPoolMin: 1,
             // the multiplier for the reward pool, modifying it is a bad practise
-            rewardPoolMult: 80, // 0.40 DTC / active user / cycle => 1.2 DTC / active user / day
+            rewardPoolMult: 5, // 0.05 DTC / user / cycle => 1.05 DTC / user / week
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
             // the estimated number of active users on the network
@@ -111,7 +111,6 @@ var config = {
             // key: transaction id (see transaction.js:TransactionType)
             // value: null/0 (default): enabled, 1: disabled, 2: master-only
             txLimits: {
-                0: 2,
                 14: 2,
                 15: 2,
             },
