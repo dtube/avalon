@@ -51,7 +51,7 @@ var http = {
         app.get('/supply', (req,res) => {
             let executions = [
                 (cb) => db.collection('accounts').aggregate([{$group:{_id: 0, total: {$sum: "$balance"}}}]).toArray((e,r) => cb(e,r)),
-                (cb) => db.collection('contents').aggregate([{$unwind: "$votes"},{$group:{_id: 0, total: {$sum: "$votes.claimable"}}}]).toArray((e,r) => cb(e,r))
+                (cb) => db.collection('contents').aggregate([{$unwind: "$votes"},{$match:{"votes.claimed":{$exists:false}}},{$group:{_id: 0, total: {$sum: "$votes.claimable"}}}]).toArray((e,r) => cb(e,r))
             ]
 
             series(executions,(e,r) => {
