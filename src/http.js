@@ -47,6 +47,24 @@ var http = {
             else res.send({})
         })
 
+        // get supply info
+        app.get('/supply', (req,res) => {
+            let executions = [
+                (cb) => db.collection('accounts').aggregate([{$group:{_id: 0, total: {$sum: "$balance"}}}]).toArray((e,r) => cb(e,r)),
+                (cb) => db.collection('contents').aggregate([{$unwind: "$votes"},{$match:{"votes.claimed":{$exists:false}}},{$group:{_id: 0, total: {$sum: "$votes.claimable"}}}]).toArray((e,r) => cb(e,r))
+            ]
+
+            series(executions,(e,r) => {
+                if (e)
+                    return res.sendStatus(500)
+                res.send({
+                    circulating: r[0][0].total,
+                    unclaimed: r[1][0].total,
+                    total: r[0][0].total + r[1][0].total
+                })
+            })
+        })
+
         // generate a new key pair
         app.get('/newKeyPair', (req, res) => {
             res.send(chain.getNewKeyPair())
