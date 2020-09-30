@@ -57,11 +57,15 @@ var http = {
             series(executions,(e,r) => {
                 if (e)
                     return res.sendStatus(500)
-                res.send({
-                    circulating: r[0][0].total,
-                    unclaimed: r[1][0].total,
-                    total: r[0][0].total + r[1][0].total
-                })
+
+                var reply = {
+                    circulating: r[0][0].total
+                }
+                if (r[1].length > 0) {
+                    reply.unclaimed = r[1][0].total
+                    reply.total = r[0][0].total + r[1][0].total
+                }
+                res.send(reply)
             })
         })
 
