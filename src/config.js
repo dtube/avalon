@@ -1,8 +1,7 @@
 var config = {
     history: {
         0: {
-            // this is configuration for mainnet
-            // wip
+            // this is the block 0 configuration for mainnet
             accountPriceBase: 20000,
             accountPriceCharMult: 4,
             accountPriceChars: 5,
@@ -16,8 +15,8 @@ var config = {
             allowRevotes: false,
             // the base58 encoding alphabet
             b58Alphabet: '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',
-            // the start time of the chain
-            block0ts: 1590862621000,
+            // the block #0 genesis timestamp
+            block0ts: 1601477849000,
             // the block time in ms
             blockTime: 3000,
             // the number of ms needed for 0.01 DTC to generate 1 byte of bw
@@ -73,9 +72,9 @@ var config = {
             masterName: 'dtube',
             // if false master can create accounts with usernames without burning tokens
             masterPaysForUsernames: false,
-            // the master account public original key
+            // the master account public original key (irrelevant if using genesis)
             masterPub: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
-            // the master account public leader key (for block production)
+            // the master account public leader key  (irrelevant if using genesis)
             masterPubLeader: 'dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz',
             // the maximum time drift in ms before a block is invalid
             maxDrift: 200,
