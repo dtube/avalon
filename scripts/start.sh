@@ -26,10 +26,10 @@ export WARN_SLOW_VALID=5
 export WARN_SLOW_EXEC=5
 
 # trace / perf / econ / cons / debug / info / warn
-export LOG_LEVEL=debug
+export LOG_LEVEL=info
 
 # groups blocks during replay output to lower screen spam
-export REPLAY_OUTPUT=1000
+export REPLAY_OUTPUT=100
 
 # Rebuild chain state from dump, verifying every block and transactions
 # Do not forget to comment this out after rebuild

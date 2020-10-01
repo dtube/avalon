@@ -88,7 +88,7 @@ module.exports = {
                 if (tx.data.tag)  {
                     if (tx.data.tag) vote.tag = tx.data.tag
                     newContent.tags = {}
-                    newContent.tags[tx.data.tag] = vote.vt
+                    newContent.tags[tx.data.tag] = Math.abs(vote.vt)
                 }
                 cache.insertOne('contents', newContent, function(){
                     // monetary distribution (curation rewards)

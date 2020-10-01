@@ -9,7 +9,10 @@ let isResumingRebuild = !isNaN(parseInt(process.env.REBUILD_RESUME_BLK)) && pars
 
 var mongo = {
     init: (cb) => {
-        MongoClient.connect(db_url, { useNewUrlParser: true }, function(err, client) {
+        MongoClient.connect(db_url, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        }, function(err, client) {
             if (err) throw err
             this.db = client.db(db_name)
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
@@ -45,7 +48,7 @@ var mongo = {
             // Check if genesis.zip exists
             try {
                 fs.statSync(genesisZip)
-            } catch {
+            } catch (err) {
                 logr.warn('No genesis.zip file found')
                 // if no genesis file, we create only the master account and empty block 0
                 mongo.insertMasterAccount(function() {
@@ -131,11 +134,11 @@ var mongo = {
         })
     },
     addMongoIndexes: (cb) => {
-        db.collection('accounts').createIndex( {name:1}, function(err, result) {
-            db.collection('accounts').createIndex( {balance:1}, function(err, result) {
-                db.collection('accounts').createIndex( {node_appr:1}, function(err, result) {
-                    db.collection('contents').createIndex( {ts:1}, function(err, result) {
-                        db.collection('contents').createIndex( {author:1}, function(err, result) {
+        db.collection('accounts').createIndex( {name:1}, function() {
+            db.collection('accounts').createIndex( {balance:1}, function() {
+                db.collection('accounts').createIndex( {node_appr:1}, function() {
+                    db.collection('contents').createIndex( {ts:1}, function() {
+                        db.collection('contents').createIndex( {author:1}, function() {
                             cb()
                         })
                     })
@@ -169,7 +172,7 @@ var mongo = {
 
         try {
             fs.statSync(dump_location)
-        } catch {
+        } catch (err) {
             return cb('blocks.zip file not found')
         }
 
