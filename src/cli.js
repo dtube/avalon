@@ -267,7 +267,7 @@ program.command('sign <transaction>')
         writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
     })
 
-program.command('transfer <receiver> <amount> [memo]')
+program.command('transfer <receiver> <amount>')
     .alias('xfer')
     .option('--memo [text]', 'add a short message to the transfer')    
     .description('transfer coins')
@@ -279,7 +279,8 @@ program.command('transfer <receiver> <amount> [memo]')
     }).on('--help', function(){
         writeLine('')
         writeLine('Example:')
-        writeLine('  $ transfer bob 777 "thank you" -F key.json -M alice')
+        writeLine('  $ transfer alice 1000 -F key.json -M bob')
+        writeLine('  $ transfer bob 777 --memo "thank you" -F key.json -M alice')
     })
 
 program.command('transfer-bw <receiver> <amount>')
