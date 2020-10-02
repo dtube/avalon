@@ -3,15 +3,13 @@ const http = require('http')
 
 var apis = [
     'http://localhost:3001',
-    'http://ec2-18-191-134-93.us-east-2.compute.amazonaws.com:3001',
-    'http://157.230.108.138:3001',
     'https://avalon.d.tube',
     'https://avalon.oneloved.tube',
 ]
 
 var leaders = [
-    'hightouch', 'tibfox', 'tokyo', 'brishtiteveja0595', 'exnihilo.witness',
-    'teamhumble', 'dtube', 'zurich', 'techcoderx', 'los-angeles'
+    'dtube', 'zurich', 'tokyo', 'techcoderx', 'birdinc33', 'fasolo97',
+    'exnihilo.witness', 'teamhumble', 'hightouch', 'tibfox', 'brishtiteveja0595'
 ]
 
 var results = []
