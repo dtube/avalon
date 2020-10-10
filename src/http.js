@@ -29,6 +29,18 @@ var http = {
                 res.send(block)
             })
         })
+
+        // query single transaction by hash
+        app.get('/tx/:txhash',(req,res) => {
+            db.collection('blocks').findOne({ "txs.hash": req.params.txhash }, { projection: { _id: 0, txs: { $elemMatch: { hash: req.params.txhash}}}},(error,tx) => {
+                if (error)
+                    res.status(500).send(error)
+                else if (tx && tx.txs)
+                    res.send(tx.txs[0])
+                else
+                    res.status(404).send({error: 'transaction not found'})
+            })
+        })
         
         // count how many blocks are in the node
         app.get('/count', (req, res) => {
