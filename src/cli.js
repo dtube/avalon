@@ -259,6 +259,7 @@ program.command('remove-key <id>')
 program.command('sign <transaction>')
     .description('sign a tx w/o broadcasting')
     .action(function(transaction) {
+        readKeyFromFile()
         writeLine(JSON.stringify(cmds.sign(program.key, program.me, transaction)))
     }).on('--help', function(){
         writeLine('')
@@ -400,14 +401,7 @@ function sendTx(tx) {
 }
 
 function verifyKeyAndUser() {
-    if (program.file) {
-        var file = fs.readFileSync(program.file, 'utf8')
-        try {
-            program.key = JSON.parse(file).priv
-        } catch (error) {
-            program.key = file.trim()
-        }
-    }
+    readKeyFromFile()
     if (!program.key) {
         writeLine('no key?')
         process.exit(1)
@@ -433,4 +427,15 @@ function verifyKeyAndUser() {
                 process.exit(1)
             }
         })
+}
+
+function readKeyFromFile() {
+    if (program.file) {
+        var file = fs.readFileSync(program.file, 'utf8')
+        try {
+            program.key = JSON.parse(file).priv
+        } catch (error) {
+            program.key = file.trim()
+        }
+    }
 }
