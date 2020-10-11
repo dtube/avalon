@@ -16,6 +16,7 @@ program
     .option('-F, --file [file_key]', 'file private key')
     .option('-M, --me [my_username]', 'username of the transactor')
     .option('-A, --api [api_url]', 'avalon api url')
+    .option('-W, --wait', 'wait for transaction confirmation')
     .option('-S, --spam [delay_in_ms]', 'repeats the tx every delay')
 
 program.command('account <pub_key> <new_user>')
@@ -377,6 +378,8 @@ function sendTx(tx) {
     var url = protocol+'://'+ip+':'+port+'/transact'
     if (program.api)
         url = program.api+'/transact'
+    if (program.wait)
+        url += 'WaitConfirm'
     fetch(url, {
         method: 'post',
         headers: {
