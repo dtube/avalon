@@ -245,6 +245,18 @@ program.command('promote <link> <pa> <pp> <json> <vt> <tag> <burn>')
         writeLine('  $ promote big-video \'\' \'\' \'{"title": "Check this out"}\' 777 my-tag 10 -F key.json -M alice')
     })
 
+program.command('public')
+    .description('get public key from private key')
+    .action(function() {
+        readKeyFromFile()
+        writeLine(bs58.encode(secp256k1.publicKeyCreate(bs58.decode(program.key))))
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ public -K 34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5')
+        writeLine('  $ public -F key.json')
+    })
+
 program.command('remove-key <id>')
     .description('remove a previously added key')
     .action(function(id) {
