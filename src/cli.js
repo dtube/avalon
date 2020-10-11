@@ -422,7 +422,10 @@ function verifyKeyAndUser() {
     let port = process.env.API_PORT || defaultPort
     let ip = process.env.API_IP || '[::1]'
     let protocol = process.env.API_PROTOCOL || 'http'
-    let getAccUrl = protocol + '://' + ip + ':' + port + '/accounts/' + program.me
+    let apiUrl = protocol + '://' + ip + ':' + port
+    if (program.api)
+        apiUrl = program.api
+    let getAccUrl = apiUrl + '/accounts/' + program.me
     fetch(getAccUrl)
         .then((res) => {return res.json()})
         .then((json) => {
