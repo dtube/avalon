@@ -259,7 +259,6 @@ program.command('remove-key <id>')
 program.command('sign <transaction>')
     .description('sign a tx w/o broadcasting')
     .action(function(transaction) {
-        verifyKeyAndUser()
         writeLine(JSON.stringify(cmds.sign(program.key, program.me, transaction)))
     }).on('--help', function(){
         writeLine('')
