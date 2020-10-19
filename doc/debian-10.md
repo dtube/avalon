@@ -1,26 +1,37 @@
-```
-#new node install procedure from debian 10:
+# Avalon install procedure from debian 10:
 
+Make sure debian is up-to-date and download git and a few other packages from the debian repos.
+```bash
 sudo apt-get update
 sudo apt-get upgrade
 sudo apt-get install git wget tmux htop jq
 git clone https://github.com/dtube/avalon.git
 cd avalon/
+```
 
-#node+npm
+Install NodeJS + NPM
+```bash
 sudo apt-get install nodejs npm
+```
 
-#if not on node v10, use nvm
+Check node version with `node -v`. Avalon runs with node v10, v12 and v14 only. If needed, install NVM and install and use other node versions:
+```bash
 wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-nvm install v10
-nvm use v10
+nvm install v14
+nvm use v14
+```
 
-#mongo
+Now download MongoDB:
+```bash
 wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
 echo "deb http://repo.mongodb.org/apt/debian buster/mongodb-org/4.2 main" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
 sudo apt-get update
 sudo apt-get install -y mongodb-org
+```
 
-#npm packages
+And install NPM modules that Avalon uses.
+```bash
 npm install
 ```
+
+Then, you should be able to launch an avalon development chain by running the node with `./scripts/start.sh`. If you want to connect to an existing network, check [Syncing your node](./syncing-your-node.md) doc
