@@ -43,13 +43,13 @@ Examples:
 
 This lists all the available API endpoints for Avalon. We also have recommended security practises if you want to open your node's API to the world. You can do it easily with nginx and [avalon-nginx-config](https://github.com/dtube/avalon-nginx-config).
 
-### Transacting (POST /transact)
+### Sending Transactions to the network (POST /transact)
 Once you have an account and balance (if you don't, you can create one on [https://signup.d.tube](https://signup.d.tube), your account will start generating bandwidth and voting power (respectively the bw and vt fields in your account data). You can consume those ressources by transacting.
 
-Every transactions will have a bandwidth cost, calculated based on the number of bytes required for the storage of fyour transaction in a block.
+Every transaction will have a bandwidth cost, calculated based on the number of bytes required for the storage of your transaction inside a block.
 Certain transaction types will require you to spend voting power, such as publishing a content, voting or tagging a content.
 
-To transact, you need to use the /transact POST call of the Avalon API.
+To transact, you need to use the /transact POST call of the Avalon API. All the examples here are for the CLI tool, but the same can be achieved with [Javalon](https://npmjs.org/javalon) in Javascript.
 
 Necessary for all transactions:
 * *key*: your private key
