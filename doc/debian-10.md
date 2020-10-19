@@ -29,6 +29,12 @@ sudo apt-get update
 sudo apt-get install -y mongodb-org
 ```
 
+Enable and start MongoDB deamon:
+```
+sudo systemctl enable mongod
+sudo systemctl start mongod
+```
+
 And install NPM modules that Avalon uses.
 ```bash
 npm install
