@@ -1,4 +1,4 @@
-# Avalon install procedure from debian 10:
+# Avalon install procedure for debian 10:
 
 Make sure debian is up-to-date and download git and a few other packages from the debian repos.
 ```bash
