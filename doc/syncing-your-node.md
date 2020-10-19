@@ -52,6 +52,9 @@ rm -rf ./dump
 
 ## Creating your own dumps for quick replays
 Alternatively, if you do not want to have to trust our backups (coming from d.tube domain), you can create your own:
+
+First, shut-down your node to avoid any new incoming data contaminating your backup. Then just run:
 ```
 mongodump -d avalon -o ~/avalon-backup/
 ```
+And restart your node
