@@ -10,7 +10,15 @@ wget https://backup.d.tube/genesis.zip
 cd ..
 ```
 
-To do so, you have multiple options:
+Secondly, you will need to add some default peers to use to connect to the network.
+Near the bottom of the `scripts/start.sh` script:
+```bash
+export PEERS=ws://34.65.228.228:6001,ws://techcoderx.com:6001
+export MAX_PEERS=20
+```
+If you need a bigger peer list, come to our [discord server](https://discord.gg/dtube) and look at the pinned messages of the #leader-candidates channel.
+
+Then finally you want to start replaying the blocks. To do so, you have multiple options:
 
 ## 1- Natural replay
 This is the easiest method. Just start the node with `./scripts/start.sh` and you should see your node unzipping the genesis data, and then starting to download blocks from the peers. This method can be very slow, and probably not scalable in the long term.
