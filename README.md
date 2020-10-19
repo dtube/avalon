@@ -9,9 +9,6 @@
 
 ## Install and run an Avalon node
 * `npm install` to install nodejs dependencies
-* Get your own keys with `node src/cli.js keypair`
-* Save your keys
-* Add your keys to `scripts/start.sh`
 * `chmod +x scripts/start.sh`
 * `./scripts/start.sh`
 
@@ -19,22 +16,22 @@
 The `start.sh` shows the list of available environment variables you can set to make avalon behave slightly differently from the default install.
 
 ## [Syncing your node](./doc/syncing-your-node.md)
-
 ## [Become a leader and produce blocks](./doc/leader-101.md)
+## [Debian 10 quick install procedure](./doc/debian-10.md)
 
 ## Get helped
 We have a discord channel dedicated to node owners (aka leaders), where you can get support to get set up. Join [discorg.gg/dtube](https://discord.gg/dtube) and go to `DTube Chain -> #leader-candidates`
 
 ## Using Avalon
+Once you have a node running, there are many ways to interact with Avalon:
 
-### With CLI
-You can use the CLI tool to transact with avalon. Simply try `node src/cli --help` or `node src/cli <command> --help` for a full help.
+### With the CLI tool
+You can use the CLI tool to transact with Avalon. Simply try `node src/cli --help` or `node src/cli <command> --help` for a full help.
 
 ### Using Javalon
-[Javalon](https://www.npmjs.com/package/javalon) is the javascript wrapper for avalon's API. Working on both browser and nodejs.
+[Javalon](https://www.npmjs.com/package/javalon) is the javascript wrapper for Avalon's API. Working on both browser and nodejs.
 
 ### HTTP API
-
 Avalon's API uses 100% JSON. The GET calls will allow you to fetch the public information which is already available through the d.tube UI.
 
 Examples:
@@ -44,10 +41,10 @@ Examples:
 ### Full list of API endpoints
 [https://docs.google.com/spreadsheets/d/1ORoHjrdq5V5OkTChijTUOEYRzTujVXTzCyNYt-ysVhw/edit?usp=drive_web&ouid=109732502499946497195](https://docs.google.com/spreadsheets/d/1ORoHjrdq5V5OkTChijTUOEYRzTujVXTzCyNYt-ysVhw/edit?usp=drive_web&ouid=109732502499946497195)
 
-This lists all the available API endpoints for Avalon. We also have recommended security practises if you want to open your node's API to the world. You can do it easily with nginx and [avalon-nginx-config](https://github.com/dtube/avalon-nginx-config)
+This lists all the available API endpoints for Avalon. We also have recommended security practises if you want to open your node's API to the world. You can do it easily with nginx and [avalon-nginx-config](https://github.com/dtube/avalon-nginx-config).
 
 ### Transacting (POST /transact)
-Once you have an account and balance, your account will start generating bandwidth and voting power (respectively the bw and vt fields in your account data). You can consume those ressources by transacting.
+Once you have an account and balance (if you don't, you can create one on [https://signup.d.tube](https://signup.d.tube), your account will start generating bandwidth and voting power (respectively the bw and vt fields in your account data). You can consume those ressources by transacting.
 
 Every transactions will have a bandwidth cost, calculated based on the number of bytes required for the storage of fyour transaction in a block.
 Certain transaction types will require you to spend voting power, such as publishing a content, voting or tagging a content.
