@@ -22,6 +22,7 @@ mkdir dump
 cd dump
 wget https://backup.d.tube/blocks.zip
 cd ..
+./scripts/start.sh
 ```
 ## 3- Replay from database snapshot
 This is the fastest method (takes <5 mins). You will download the latest hourly snapshot and import the data in your node, without any verification.
@@ -34,6 +35,7 @@ tar xfvz ./*
 mongorestore -d avalon ./
 cd ..
 rm -rf ./dump
+./scripts/start.sh
 ```
 
 ## Warning: Don't forget to wipe the MongoDB data before doing a replay
