@@ -22,3 +22,6 @@ node src/cli.js profile -K <key> -M <user> '{"node":{"ws":"ws://yourip:yourport"
 ```
 
 Make sure to have `MAX_PEERS` set to a high number (50+ recommended). The network needs a few of those public nodes, but it is strongly discouraged to produce blocks from a publicly declared node IP.
+
+## Do a video to announce your leader node
+You will need to get a lot of votes from the stake holders in order to produce blocks. A good idea for new leaders is to create a video to explain who they are, and why they run an Avalon node, and why they want to be elected. Most of the elected leaders have went through this process, and it's an easy way to gather organic votes at the beggining.
