@@ -35,3 +35,6 @@ mongorestore -d avalon ./
 cd ..
 rm -rf ./dump
 ```
+
+## Warning: Don't forget to wipe the MongoDB data before doing a replay
+You can wipe the mongodb by doing `mongo avalon` (assuming you are using the default 'avalon' db name) and then `db.dropDatabase()`
