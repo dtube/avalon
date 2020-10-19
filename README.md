@@ -18,7 +18,7 @@
 ### Environment Variables
 The `start.sh` shows the list of available environment variables you can set to make avalon behave slightly differently from the default install.
 
-### [Syncing your node](./syncing-your-node.md)
+### [Syncing your node](./doc/syncing-your-node.md)
 
 #### Declaring your public node in your account profile
 It is possible for all leaders to declare a `node.ws` field to your profile as so:
