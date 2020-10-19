@@ -18,7 +18,11 @@ export MAX_PEERS=20
 ```
 If you need a bigger peer list, come to our [discord server](https://discord.gg/dtube) and look at the pinned messages of the #leader-candidates channel.
 
-Then finally you want to start replaying the blocks. To do so, you have multiple options:
+Then finally you want to start replaying the blocks. Unless this is a brand new node install, your avalon database will probably contain data. You will need to wipe it before starting a replay.
+
+You can wipe the mongodb by doing `mongo avalon` (assuming you are using the default 'avalon' db name) and then `db.dropDatabase()` once inside the mongo cli tool.
+
+Finally, to replay the blocks and transactions, you have 3 options:
 
 ## 1- Natural replay
 This is the easiest method. Just start the node with `./scripts/start.sh` and you should see your node unzipping the genesis data, and then starting to download blocks from the peers. This method can be very slow, and probably not scalable in the long term.
@@ -46,7 +50,8 @@ rm -rf ./dump
 ./scripts/start.sh
 ```
 
-## Warning: Don't forget to wipe the MongoDB data before doing a replay
-Unless this is a brand new node install, your avalon database will probably contain data. You will need to wipe it before starting a replay.
-
-You can wipe the mongodb by doing `mongo avalon` (assuming you are using the default 'avalon' db name) and then `db.dropDatabase()` once inside the mongo cli tool.
+## Creating your own dumps for quick replays
+Alternatively, if you do not want to have to trust our backups (coming from d.tube domain), you can create your own:
+```
+mongodump -d avalon -o ~/avalon-backup/
+```
