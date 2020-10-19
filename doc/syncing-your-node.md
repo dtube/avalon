@@ -37,4 +37,6 @@ rm -rf ./dump
 ```
 
 ## Warning: Don't forget to wipe the MongoDB data before doing a replay
+Unless this is a brand new node install, your avalon database will probably contain data if you want to replay. You will need to wipe it before starting a replay.
+
 You can wipe the mongodb by doing `mongo avalon` (assuming you are using the default 'avalon' db name) and then `db.dropDatabase()`
