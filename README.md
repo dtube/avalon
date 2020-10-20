@@ -7,13 +7,23 @@
 * [NodeJS](https://nodejs.org/en/download/) **v10** (LTS)
 * [ntpd](https://linux.die.net/man/8/ntpd) or any NTP alternative for your system. ntpd comes pre-installed on most linux distributions
 
-## Install and run an Avalon node
+## Install and run an Avalon node for Linux
 * `npm install` to install nodejs dependencies
 * `chmod +x scripts/start.sh`
 * `./scripts/start.sh`
 
 ### Environment Variables
 The `start.sh` shows the list of available environment variables you can set to make avalon behave slightly differently from the default install.
+
+## Install and run an Avalon node for Windows
+* `npm install` to install nodejs dependencies
+* Get your own keys with `node src/cli.js keypair`
+* Save your keys
+* Add your keys to `scripts/start.bat`
+* Define the path to your directory in `scripts/start.bat`
+* Run `scripts/start.bat`
+* Note: to restore a genesis.zip file you may need to download the mongo databasetools[https://www.mongodb.com/try/download/database-tools?tck=docs_databasetools] and put the mongorestore.exe binary into your main directory.
+
 
 ## [Syncing your node](./doc/syncing-your-node.md)
 ## [Become a leader and produce blocks](./doc/leader-101.md)
