@@ -498,7 +498,7 @@ var http = {
             var claimableDate = new Date().getTime() - config.ecoClaimTime;
             var query =
             {
-                $and: [{}],
+                $and: [],
                 votes:
                 {
                     $elemMatch: {
@@ -539,7 +539,7 @@ var http = {
             var claimableDate = new Date().getTime() - config.ecoClaimTime;
             var query =
             {
-                $and: [{}],
+                $and: [],
                 votes:
                 {
                     $elemMatch: {
