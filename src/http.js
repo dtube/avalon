@@ -496,12 +496,16 @@ var http = {
         app.get('/votes/pending/:voter/:lastTs', (req, res) => {
             var voter = req.params.voter
             var claimableDate = new Date().getTime() - config.ecoClaimTime;
-            var query = {
-                $and: [{
-                    "votes.ts": { $lt: claimableDate },
-                    "votes.u": voter,
-                    "votes.claimed": { $exists: false }
-                }]
+            var query =
+            {
+                $and: [{}],
+                votes:
+                {
+                    $elemMatch: {
+                        u: voter,
+                        ts: { $gt: claimableDate }
+                    }
+                }
             }
             var lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
@@ -533,14 +537,19 @@ var http = {
         app.get('/votes/claimable/:voter/:lastTs', (req, res) => {
             var voter = req.params.voter
             var claimableDate = new Date().getTime() - config.ecoClaimTime;
-            var query = { votes: 
-                            { $elemMatch: { 
-                                u: voter, 
-                                claimable: { $gte:1 }, 
-                                claimed: { $exists: false }, 
-                                ts: { $lt: claimableDate } 
-                            } } 
-                        }            
+            var query =
+            {
+                $and: [{}],
+                votes:
+                {
+                    $elemMatch: {
+                        u: voter,
+                        claimable: { $gte: 1 },
+                        claimed: { $exists: false },
+                        ts: { $lt: claimableDate }
+                    }
+                }
+            }
             var lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
@@ -569,14 +578,18 @@ var http = {
         // get claimed votes history of a user
         app.get('/votes/claimed/:voter/:lastTs', (req, res) => {
             var voter = req.params.voter
-            var query = { votes: 
-                            { $elemMatch: { 
-                                u: voter, 
-                                claimable: { $gte:1 }, 
-                                claimed: { $exists: true }
-                                } 
-                            } 
-                        }
+            var query =
+            {
+                $and: [{}],
+                votes:
+                {
+                    $elemMatch: {
+                        u: voter,
+                        claimable: { $gte: 1 },
+                        claimed: { $exists: true }
+                    }
+                }
+            }
             var lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
