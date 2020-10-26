@@ -22,7 +22,7 @@ The `start.sh` shows the list of available environment variables you can set to 
 * Add your keys to `scripts/start.bat`
 * Define the path to your directory in `scripts/start.bat`
 * Run `scripts/start.bat`
-* Note: to restore a genesis.zip file you may need to download the mongo databasetools[https://www.mongodb.com/try/download/database-tools?tck=docs_databasetools] and put the mongorestore.exe binary into your main directory.
+* Note: to restore a genesis.zip file you may need to download the [mongo databasetools](https://www.mongodb.com/try/download/database-tools?tck=docs_databasetools) and put the mongorestore.exe binary into your main directory.
 
 
 ## [Syncing your node](./doc/syncing-your-node.md)
