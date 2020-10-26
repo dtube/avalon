@@ -75,14 +75,16 @@ var http = {
                 res.sendStatus(500)
                 return
             }
+            var claimableDate = new Date().getTime() - config.ecoClaimTime;
             db.collection('contents').aggregate([
                 { $unwind: "$votes" },
                 {
                     $match: {
+                        "votes.ts": { $gte: claimableDate },
                         "votes.u": req.params.name,
                         "votes.claimed": { $exists: false }
                     }
-                }, { $group: { _id: 0, total: { $sum: "$votes.claimable" } } }
+                }, { $group: { _id: 0, total: { $sum: {$floor: "$votes.claimable" } } } }
             ]).toArray(function (err, result) {
                 if (err) {
                     console.log(err)
@@ -113,7 +115,7 @@ var http = {
                         "votes.u": req.params.name,
                         "votes.claimed": { $exists: false }
                     }
-                }, { $group: { _id: 0, total: { $sum: "$votes.claimable" } } }
+                }, { $group: { _id: 0, total: { $sum: {$floor: "$votes.claimable" } } } }
             ]).toArray(function (err, result) {
                 if (err) {
                     console.log(err)
@@ -141,7 +143,7 @@ var http = {
                         "votes.u": req.params.name,
                         "votes.claimed": { $exists: true }
                     }
-                }, { $group: { _id: 0, total: { $sum: "$votes.claimable" } } }
+                }, { $group: { _id: 0, total: { $sum: {$floor: "$votes.claimable" } } } }
             ]).toArray(function (err, result) {
                 if (err) {
                     console.log(err)
