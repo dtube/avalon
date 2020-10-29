@@ -116,6 +116,11 @@ var config = {
             // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 360000000, // +1 vt per hour per DTC (3600 * 1000 * 100)
             vtPerBurn: 6 // can be updated in the future to modify incentives
+        },
+        1000090: {
+            leaders: 13,
+            leaderRewardVT: 100,
+            vtPerBurn: 44
         }
     },
     read: (blockNum) => {
