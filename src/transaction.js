@@ -11,10 +11,9 @@ transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     eventConfirmation: new EventEmitter(),
     addToPool: (txs) => {
-        if (transaction.pool.length >= max_mempool) {
-            logr.warn('Mempool is full ('+transaction.pool.length+'/'+max_mempool+' txs), ignoring tx')
+        if (transaction.isPoolFull())
             return
-        }
+
         for (let y = 0; y < txs.length; y++) {
             var exists = false
             for (let i = 0; i < transaction.pool.length; i++)
@@ -25,6 +24,13 @@ transaction = {
                 transaction.pool.push(txs[y])
         }
         
+    },
+    isPoolFull: () => {
+        if (transaction.pool.length >= max_mempool) {
+            logr.warn('Mempool is full ('+transaction.pool.length+'/'+max_mempool+' txs), ignoring tx')
+            return true
+        }
+        return false
     },
     removeFromPool: (txs) => {
         for (let y = 0; y < txs.length; y++)
