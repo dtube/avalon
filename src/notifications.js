@@ -3,7 +3,7 @@ var isEnabled = process.env.NOTIFICATIONS || false
 
 notifications = {
     processBlock: (block) => {
-        if (!isEnabled) return
+        if (!isEnabled || (chain.restoredBlocks && chain.getLatestBlock()._id + config.notifPurge * config.notifPurgeAfter < chain.restoredBlocks)) return
 
         if (block._id % config.notifPurge === 0)
             notifications.purgeOld(block)
