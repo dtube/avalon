@@ -1,4 +1,4 @@
-const series = require('run-series')
+const parallel = require('run-parallel')
 const cloneDeep = require('clone-deep')
 var cache = {
     copy: {
@@ -153,7 +153,7 @@ var cache = {
                 })
             })
         
-        series(executions, function(err, results) {
+        parallel(executions, function(err, results) {
             cb(err, results)
         })
     },
@@ -228,7 +228,7 @@ var cache = {
         // }
         
         var timeBefore = new Date().getTime()
-        series(executions, function(err, results) {
+        parallel(executions, function(err, results) {
             logr.debug(executions.length+' mongo queries executed in '+(new Date().getTime()-timeBefore)+'ms')
             cache.changes = []
             cache.inserts = []
