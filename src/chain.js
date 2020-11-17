@@ -303,6 +303,7 @@ chain = {
             chain.nextOutput.burn += block.burn
 
         if (block._id%replay_output === 0 || (!rebuilding && !p2p.recovering)) {
+            let currentOutTime = new Date().getTime()
             var output = ''
             if (rebuilding)
                 output += 'Rebuilt '
@@ -311,20 +312,23 @@ chain = {
 
             if (rebuilding)
                 output += '/' + chain.restoredBlocks
-
-            output += '  by '+block.miner
+            else
+                output += '  by '+block.miner
 
             output += '  '+chain.nextOutput.txs+' tx'
             if (chain.nextOutput.txs>1)
                 output += 's'
-            
 
             output += '  dist: '+chain.nextOutput.dist
             output += '  burn: '+chain.nextOutput.burn
-            output += '  delay: '+ (new Date().getTime() - block.timestamp)
+            output += '  delay: '+ (currentOutTime - block.timestamp)
 
-            if (block.missedBy)
+            if (block.missedBy && !rebuilding)
                 output += '  MISS: '+block.missedBy
+            else if (rebuilding) {
+                output += '  Performance: ' + Math.floor((currentOutTime-chain.lastRebuildOutput)/replay_output) + 'b/s'
+                chain.lastRebuildOutput = currentOutTime
+            }
 
             logr.info(output)
             chain.nextOutput = {
@@ -340,6 +344,7 @@ chain = {
         dist: 0,
         burn: 0
     },
+    lastRebuildOutput: 0,
     isValidPubKey: (key) => {
         try {
             return secp256k1.publicKeyVerify(bs58.decode(key))

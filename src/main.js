@@ -69,6 +69,7 @@ mongo.init(function() {
 
 function startRebuild(startBlock) {
     let rebuildStartTime = new Date().getTime()
+    chain.lastRebuildOutput = rebuildStartTime
     chain.rebuildState(startBlock,(e,headBlockNum) => {
         if (e)
             return logr.error('Error rebuilding chain at block',headBlockNum, e)
