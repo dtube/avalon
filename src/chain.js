@@ -9,6 +9,7 @@ const notifications = require('./notifications.js')
 var GrowInt = require('growint')
 var default_replay_output = 100
 var replay_output = process.env.REPLAY_OUTPUT || default_replay_output
+const max_batch_blocks = 1000
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
@@ -26,6 +27,7 @@ class Block {
 }
 
 chain = {
+    blocksToRebuild: [],
     restoredBlocks: 0,
     schedule: null,
     recentBlocks: [],
@@ -749,6 +751,18 @@ chain = {
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
     },
+    batchLoadBlocks: (blockNum,cb) => {
+        if (chain.blocksToRebuild.length == 0) {
+            let batchBlockRange = []
+            for (let i = blockNum; i < blockNum+max_batch_blocks; i++)
+                batchBlockRange.push(i)
+            db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
+                if (e) throw e
+                if (blocks) chain.blocksToRebuild = blocks
+                cb(chain.blocksToRebuild.shift())
+            })
+        } else cb(chain.blocksToRebuild.shift())
+    },
     rebuildState: (blockNum,cb) => {
         // If chain shutting down, stop rebuilding and output last number for resuming
         if (chain.shuttingDown)
@@ -765,9 +779,7 @@ chain = {
         }
 
         // OPTIMIZATION: Load blocks in parallel
-        db.collection('blocks').findOne({ _id: blockNum },(e,blockToRebuild) => {
-            if (e)
-                return cb(e,blockNum)
+        chain.batchLoadBlocks(blockNum,(blockToRebuild) => {
             if (!blockToRebuild)
                 // Rebuild is complete
                 return cb(null,blockNum)
