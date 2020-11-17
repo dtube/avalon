@@ -326,7 +326,7 @@ chain = {
             if (block.missedBy && !rebuilding)
                 output += '  MISS: '+block.missedBy
             else if (rebuilding) {
-                output += '  Performance: ' + Math.floor((currentOutTime-chain.lastRebuildOutput)/replay_output) + 'b/s'
+                output += '  Performance: ' + Math.floor(replay_output/(currentOutTime-chain.lastRebuildOutput)*1000) + 'b/s'
                 chain.lastRebuildOutput = currentOutTime
             }
 
@@ -764,6 +764,7 @@ chain = {
             return
         }
 
+        // OPTIMIZATION: Load blocks in parallel
         db.collection('blocks').findOne({ _id: blockNum },(e,blockToRebuild) => {
             if (e)
                 return cb(e,blockNum)
@@ -772,6 +773,7 @@ chain = {
                 return cb(null,blockNum)
             
             // Validate block and transactions, then execute them
+            // OPTIMIZATION: Validate blocks and block transactions in parallel
             chain.isValidNewBlock(blockToRebuild,true,true,(isValid) => {
                 if (!isValid)
                     return cb(true, blockNum)
@@ -797,6 +799,7 @@ chain = {
                     eco.nextBlock()
                     chain.cleanMemory()
 
+                    // OPTIMIZATION: Write to disk on interruption/completion
                     cache.writeToDisk(() => {
                         if (blockToRebuild._id % config.leaders === 0) 
                             chain.minerSchedule(blockToRebuild, function(minerSchedule) {
