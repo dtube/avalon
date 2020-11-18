@@ -42,7 +42,14 @@ module.exports = {
         cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$push: {
             votes: vote
         }}, function(){
-            if (process.env.CONTENT == '1') cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
+            cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
+                if (process.env.CONTENT != '1') {
+                    return eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster, burnCurator) {
+                        if (!content.pa && !content.pp)
+                            rankings.update(tx.data.author, tx.data.link, vote, distCurators)
+                        cb(true, distCurators+distMaster, burnCurator)
+                    })
+                }
                 // update top tags
                 var topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
@@ -73,11 +80,6 @@ module.exports = {
                         cb(true, distCurators+distMaster, burnCurator)
                     })
                 })
-            })
-            else eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster, burnCurator) {
-                if (!content.pa && !content.pp)
-                    rankings.update(tx.data.author, tx.data.link, vote, distCurators)
-                cb(true, distCurators+distMaster, burnCurator)
             })
         })
     }
