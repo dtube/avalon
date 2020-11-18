@@ -43,7 +43,7 @@ module.exports = {
             votes: vote
         }}, function(){
             cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
-                if (process.env.CONTENT != '1') {
+                if (process.env.CONTENTS != '1') {
                     return eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster, burnCurator) {
                         if (!content.pa && !content.pp)
                             rankings.update(tx.data.author, tx.data.link, vote, distCurators)
