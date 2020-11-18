@@ -778,14 +778,12 @@ chain = {
             return
         }
 
-        // OPTIMIZATION: Load blocks in parallel
         chain.batchLoadBlocks(blockNum,(blockToRebuild) => {
             if (!blockToRebuild)
                 // Rebuild is complete
                 return cb(null,blockNum)
             
             // Validate block and transactions, then execute them
-            // OPTIMIZATION: Validate blocks and block transactions in parallel
             chain.isValidNewBlock(blockToRebuild,true,true,(isValid) => {
                 if (!isValid)
                     return cb(true, blockNum)

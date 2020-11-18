@@ -16,6 +16,7 @@
 # Enable more modules
 #export NOTIFICATIONS=1
 #export RANKINGS=1
+#export CONTENTS=1
 
 # Cache warmup option
 export WARMUP_ACCOUNTS=100000
