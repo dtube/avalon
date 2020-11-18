@@ -24,6 +24,7 @@
     "oembed-parser": "^1.2.2",
     "open-graph-scraper": "^3.6.1",
     "run-parallel": "^1.1.10",
+    "run-series": "^1.1.9",
     "secp256k1": "^4.0.2",
     "sha256-file": "^1.0.0",
     "signale": "^1.4.0",

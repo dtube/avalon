@@ -2,13 +2,13 @@ var CryptoJS = require('crypto-js')
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
-const parallel = require('run-parallel')
+const series = require('run-series')
 const cloneDeep = require('clone-deep')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
-var GrowInt = require('growint')
-var default_replay_output = 100
-var replay_output = process.env.REPLAY_OUTPUT || default_replay_output
+const GrowInt = require('growint')
+const default_replay_output = 100
+const replay_output = process.env.REPLAY_OUTPUT || default_replay_output
 const max_batch_blocks = 10000
 
 class Block {
@@ -574,7 +574,7 @@ chain = {
             })
         
         var blockTimeBefore = new Date().getTime()
-        parallel(executions, function(err, results) {
+        series(executions, function(err, results) {
             var string = 'executed'
             if(revalidate) string = 'validated & '+string
             logr.debug('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
