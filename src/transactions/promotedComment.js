@@ -54,12 +54,10 @@ module.exports = {
             votes: [superVote],
             ts: ts
         }
-        if (tx.data.tag)  {
+        if (tx.data.tag && process.env.CONTENTS == '1')  {
             superVote.tag = tx.data.tag
-            if (process.env.CONTENTS == '1') {
-                newContent.tags = {}
-                newContent.tags[tx.data.tag] = Math.abs(superVote.vt)
-            }
+            newContent.tags = {}
+            newContent.tags[tx.data.tag] = Math.abs(superVote.vt)
         }
         // and burn some coins, update bw/vt and leader vote scores as usual
         cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -tx.data.burn}}, function() {

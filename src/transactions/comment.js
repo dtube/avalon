@@ -88,12 +88,10 @@ module.exports = {
                     votes: [vote],
                     ts: ts
                 }
-                if (tx.data.tag)  {
+                if (tx.data.tag && process.env.CONTENTS == '1')  {
                     vote.tag = tx.data.tag
-                    if (process.env.CONTENTS == '1') {
-                        newContent.tags = {}
-                        newContent.tags[tx.data.tag] = Math.abs(vote.vt)
-                    }
+                    newContent.tags = {}
+                    newContent.tags[tx.data.tag] = Math.abs(vote.vt)
                 }
                 cache.insertOne('contents', newContent, function(){
                     // monetary distribution (curation rewards)
