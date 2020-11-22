@@ -3,7 +3,7 @@ module.exports = {
         // get full list of ranked miners
         app.get('/allminers', (req, res) => {
             db.collection('accounts').find({ node_appr: { $gt: 0 } }, {
-                sort: { node_appr: -1 }
+                sort: { node_appr: -1 }, fields: { followers:0, follows:0 }
             }).toArray(function (err, accounts) {
                 if (err) throw err
                 res.send(accounts)
