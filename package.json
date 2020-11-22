@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node src/main.js",
     "cli": "node src/cli.js",
-    "lint": "eslint 'src/*.js'"
+    "lint": "eslint ./src/*"
   },
   "dependencies": {
     "adm-zip": "^0.4.14",
