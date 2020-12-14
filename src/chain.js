@@ -753,9 +753,6 @@ chain = {
     },
     batchLoadBlocks: (blockNum,cb) => {
         if (chain.blocksToRebuild.length == 0) {
-            let batchBlockRange = []
-            for (let i = blockNum; i < blockNum+max_batch_blocks; i++)
-                batchBlockRange.push(i)
             db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
                 if (e) throw e
                 if (blocks) chain.blocksToRebuild = blocks
