@@ -20,6 +20,7 @@ if (allowNodeV.indexOf(currentNodeV) === -1) {
     process.exit(1)
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
+erroredRebuild = false
 
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {
@@ -71,13 +72,20 @@ function startRebuild(startBlock) {
     let rebuildStartTime = new Date().getTime()
     chain.lastRebuildOutput = rebuildStartTime
     chain.rebuildState(startBlock,(e,headBlockNum) => {
-        if (e)
+        if (e) {
+            erroredRebuild = true
             return logr.error('Error rebuilding chain at block',headBlockNum, e)
-        else if (headBlockNum <= chain.restoredBlocks)
-            return logr.info('Rebuild interrupted, so far it took ' + (new Date().getTime() - rebuildStartTime) + ' ms. To resume, start Avalon with REBUILD_RESUME_BLK=' + headBlockNum)
-
-        logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
-        startDaemon()
+        } else if (headBlockNum <= chain.restoredBlocks)
+            logr.info('Rebuild interrupted, so far it took ' + (new Date().getTime() - rebuildStartTime) + ' ms. To resume, start Avalon with REBUILD_RESUME_BLK=' + headBlockNum)
+        else
+            logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
+        logr.info('Writing rebuild data to disk...')
+        let cacheWriteStart = new Date().getTime()
+        cache.writeToDisk(() => {
+            logr.info('Rebuild data written to disk in ' + (new Date().getTime() - cacheWriteStart) + ' ms')
+            if (chain.shuttingDown) return process.exit(0)
+            startDaemon()
+        })
     })
 }
 
@@ -108,8 +116,9 @@ function startDaemon() {
 process.on('SIGINT', function() {
     if (typeof closing !== 'undefined') return
     closing = true
-    logr.warn('Waiting '+config.blockTime+' ms before shut down...')
     chain.shuttingDown = true
+    if (!erroredRebuild || chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) return
+    logr.warn('Waiting '+config.blockTime+' ms before shut down...')
     setTimeout(function() {
         logr.info('Avalon exitted safely')
         process.exit(0)

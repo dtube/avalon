@@ -409,6 +409,33 @@ chain = {
         })
     },
     isValidBlockTxs: (newBlock, cb) => {
+        // Validate txs only when rebuilding
+        if (chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) {
+            let validations = []
+            for (let i in newBlock.txs) validations.push((callback) => {
+                let tx = newBlock.txs[i]
+                transaction.isValid(tx, newBlock.timestamp, function(isValid, e) {
+                    if (isValid)
+                        callback(null,true)
+                    else {
+                        logr.error(e,tx)
+                        callback(null,false)
+                    }
+                })
+            })
+            series(validations,(errs,results) => {
+                if (errs) throw errs
+                let success = 0
+                for (let i in results)
+                    if (results[i])
+                        success++
+                if (success !== newBlock.txs.length) {
+                    logr.error('invalid block transaction')
+                    cb(false)
+                } else cb(true)
+            })
+            return
+        }
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
             if (validTxs.length !== newBlock.txs.length) {
@@ -806,30 +833,28 @@ chain = {
                     eco.nextBlock()
                     chain.cleanMemory()
 
-                    cache.writeToDisk(() => {
-                        if (blockToRebuild._id % config.leaders === 0) 
-                            chain.minerSchedule(blockToRebuild, function(minerSchedule) {
-                                chain.schedule = minerSchedule
-                                chain.recentBlocks.push(blockToRebuild)
-                                chain.output(blockToRebuild, true)
-                                
-                                // process notifications (non blocking)
-                                notifications.processBlock(blockToRebuild)
-
-                                // next block
-                                chain.rebuildState(blockNum+1, cb)
-                            })
-                        else {
+                    if (blockToRebuild._id % config.leaders === 0)
+                        chain.minerSchedule(blockToRebuild, function(minerSchedule) {
+                            chain.schedule = minerSchedule
                             chain.recentBlocks.push(blockToRebuild)
                             chain.output(blockToRebuild, true)
-
+                            
                             // process notifications (non blocking)
                             notifications.processBlock(blockToRebuild)
 
                             // next block
                             chain.rebuildState(blockNum+1, cb)
-                        }
-                    })
+                        })
+                    else {
+                        chain.recentBlocks.push(blockToRebuild)
+                        chain.output(blockToRebuild, true)
+
+                        // process notifications (non blocking)
+                        notifications.processBlock(blockToRebuild)
+
+                        // next block
+                        chain.rebuildState(blockNum+1, cb)
+                    }
                 })
             })
         })
