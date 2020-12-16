@@ -117,7 +117,7 @@ process.on('SIGINT', function() {
     if (typeof closing !== 'undefined') return
     closing = true
     chain.shuttingDown = true
-    if (!erroredRebuild || chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) return
+    if (!erroredRebuild && chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) return
     logr.warn('Waiting '+config.blockTime+' ms before shut down...')
     setTimeout(function() {
         logr.info('Avalon exitted safely')
