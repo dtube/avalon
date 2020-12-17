@@ -833,28 +833,35 @@ chain = {
                     eco.nextBlock()
                     chain.cleanMemory()
 
-                    if (blockToRebuild._id % config.leaders === 0)
-                        chain.minerSchedule(blockToRebuild, function(minerSchedule) {
-                            chain.schedule = minerSchedule
+                    function proceedNext() {
+                        if (blockToRebuild._id % config.leaders === 0)
+                            chain.minerSchedule(blockToRebuild, function(minerSchedule) {
+                                chain.schedule = minerSchedule
+                                chain.recentBlocks.push(blockToRebuild)
+                                chain.output(blockToRebuild, true)
+                                
+                                // process notifications (non blocking)
+                                notifications.processBlock(blockToRebuild)
+
+                                // next block
+                                chain.rebuildState(blockNum+1, cb)
+                            })
+                        else {
                             chain.recentBlocks.push(blockToRebuild)
                             chain.output(blockToRebuild, true)
-                            
+
                             // process notifications (non blocking)
                             notifications.processBlock(blockToRebuild)
 
                             // next block
                             chain.rebuildState(blockNum+1, cb)
-                        })
-                    else {
-                        chain.recentBlocks.push(blockToRebuild)
-                        chain.output(blockToRebuild, true)
-
-                        // process notifications (non blocking)
-                        notifications.processBlock(blockToRebuild)
-
-                        // next block
-                        chain.rebuildState(blockNum+1, cb)
+                        }
                     }
+
+                    if (process.env.REBUILD_IN_MEMORY === '1' || process.env.REBUILD_IN_MEMORY === 1)
+                        proceedNext()
+                    else
+                        cache.writeToDisk(proceedNext)
                 })
             })
         })
