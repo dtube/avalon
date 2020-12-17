@@ -409,33 +409,6 @@ chain = {
         })
     },
     isValidBlockTxs: (newBlock, cb) => {
-        // Validate txs only when rebuilding
-        if (chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) {
-            let validations = []
-            for (let i in newBlock.txs) validations.push((callback) => {
-                let tx = newBlock.txs[i]
-                transaction.isValid(tx, newBlock.timestamp, function(isValid, e) {
-                    if (isValid)
-                        callback(null,true)
-                    else {
-                        logr.error(e,tx)
-                        callback(null,false)
-                    }
-                })
-            })
-            series(validations,(errs,results) => {
-                if (errs) throw errs
-                let success = 0
-                for (let i in results)
-                    if (results[i])
-                        success++
-                if (success !== newBlock.txs.length) {
-                    logr.error('invalid block transaction')
-                    cb(false)
-                } else cb(true)
-            })
-            return
-        }
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
             if (validTxs.length !== newBlock.txs.length) {
@@ -833,7 +806,9 @@ chain = {
                     eco.nextBlock()
                     chain.cleanMemory()
 
-                    function proceedNext() {
+                    let writeOp = (process.env.REBUILD_IN_MEMORY === '1' || process.env.REBUILD_IN_MEMORY === 1) ? 'processRebuildOps' : 'writeToDisk'
+
+                    cache[writeOp](() => {
                         if (blockToRebuild._id % config.leaders === 0)
                             chain.minerSchedule(blockToRebuild, function(minerSchedule) {
                                 chain.schedule = minerSchedule
@@ -856,12 +831,7 @@ chain = {
                             // next block
                             chain.rebuildState(blockNum+1, cb)
                         }
-                    }
-
-                    if (process.env.REBUILD_IN_MEMORY === '1' || process.env.REBUILD_IN_MEMORY === 1)
-                        proceedNext()
-                    else
-                        cache.writeToDisk(proceedNext)
+                    })
                 })
             })
         })

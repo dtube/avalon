@@ -11,6 +11,10 @@ var cache = {
     distributed: {},
     changes: [],
     inserts: [],
+    rebuild: {
+        changes: [],
+        inserts: []
+    },
     rollback: function() {
         // rolling back changes from copied documents
         for (const key in cache.copy.accounts)
@@ -175,13 +179,14 @@ var cache = {
         cache.contents = {}
         cache.distributed = {}
     },
-    writeToDisk: function(cb) {
+    writeToDisk: function(cb, rebuild) {
         // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
-        var executions = []
+        let executions = []
         // executing the inserts (new comment / new account)
-        for (let i = 0; i < cache.inserts.length; i++)
+        let insertArr = rebuild ? cache.rebuild.inserts : cache.inserts
+        for (let i = 0; i < insertArr.length; i++)
             executions.push(function(callback) {
-                var insert = cache.inserts[i]
+                let insert = insertArr[i]
                 db.collection(insert.collection).insertOne(insert.document, function(err) {
                     if (err) throw err
                     callback()
@@ -190,13 +195,14 @@ var cache = {
 
         // then the update with simple operation compression
         // 1 update per document concerned (even if no real change)
-        var docsToUpdate = {
+        let docsToUpdate = {
             accounts: {},
             contents: {},
             distributed: {}
         }
-        for (let i = 0; i < cache.changes.length; i++) {
-            var change = cache.changes[i]
+        let changesArr = rebuild ? cache.rebuild.changes : cache.changes
+        for (let i = 0; i < changesArr.length; i++) {
+            var change = changesArr[i]
             var collection = change.collection
             var key = change.query[cache.keyByCollection(collection)]
             docsToUpdate[collection][key] = cache[collection][key]
@@ -232,11 +238,25 @@ var cache = {
             logr.debug(executions.length+' mongo queries executed in '+(new Date().getTime()-timeBefore)+'ms')
             cache.changes = []
             cache.inserts = []
+            cache.rebuild.changes = []
+            cache.rebuild.inserts = []
             cache.copy.accounts = {}
             cache.copy.contents = {}
             cache.copy.distributed = {}
             cb(err, results)
         })
+    },
+    processRebuildOps: (cb) => {
+        for (let i in cache.inserts)
+            cache.rebuild.inserts.push(cache.inserts[i])
+        for (let i in cache.changes)
+            cache.rebuild.changes.push(cache.changes[i])
+        cache.inserts = []
+        cache.changes = []
+        cache.copy.accounts = {}
+        cache.copy.contents = {}
+        cache.copy.distributed = {}
+        cb()
     },
     keyByCollection: function(collection) {
         switch (collection) {

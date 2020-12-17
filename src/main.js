@@ -85,7 +85,7 @@ function startRebuild(startBlock) {
             logr.info('Rebuild data written to disk in ' + (new Date().getTime() - cacheWriteStart) + ' ms')
             if (chain.shuttingDown) return process.exit(0)
             startDaemon()
-        })
+        },true)
     })
 }
 
