@@ -15,6 +15,8 @@ var cache = {
         changes: [],
         inserts: []
     },
+    leaders: {},
+    leaderChanges: [],
     rollback: function() {
         // rolling back changes from copied documents
         for (const key in cache.copy.accounts)
@@ -35,6 +37,15 @@ var cache = {
             delete cache[toRemove.collection][toRemove.document[key]]
         }
         cache.inserts = []
+
+        // reset leader changes
+        for (let i in cache.leaderChanges) {
+            if (cache.leaderChanges[i][1] === 0)
+                cache.addLeader(cache.leaderChanges[i][0])
+            else if (cache.leaderChanges[i][1] === 1)
+                cache.removeLeader(cache.leaderChanges[i][1])
+        }
+        cache.leaderChanges = []
 
         // and reset the econ data for nextBlock
         eco.nextBlock()
@@ -174,6 +185,18 @@ var cache = {
 
         cb(null, true)
     },
+    addLeader: (leader,isRollback) => {
+        if (!cache.leaders[leader])
+            cache.leaders[leader] = 1
+        if (!isRollback)
+            cache.leaderChanges.push([leader,1])
+    },
+    removeLeader: (leader,isRollback) => {
+        if (cache.leaders[leader])
+            delete cache.leaders[leader]
+        if (!isRollback)
+            cache.leaderChanges.push([leader,0])
+    },
     clear: function() {
         cache.accounts = {}
         cache.contents = {}
@@ -301,6 +324,17 @@ var cache = {
             cb('Collection type not found')
             break
         }
+    },
+    warmupLeaders: (cb) => {
+        db.collection('accounts').find(
+            {pub_leader: {$exists:true}},
+            {projection: {_id: 0, name: 1}}
+        ).toArray((e,accs) => {
+            if (e) throw e
+            for (let i in accs)
+                cache.leaders[accs[i].name] = 1
+            cb(accs.length)
+        })
     }
 }
 

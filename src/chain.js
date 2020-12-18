@@ -494,13 +494,13 @@ chain = {
                 
 
         if (minerPriority === 0) {
-            logr.debug('unauthorized miner')
+            logr.error('unauthorized miner')
             cb(false); return
         }
 
         // check if new block isnt too early
         if (newBlock.timestamp - previousBlock.timestamp < minerPriority*config.blockTime) {
-            logr.debug('block too early for miner with priority #'+minerPriority)
+            logr.error('block too early for miner with priority #'+minerPriority)
             cb(false); return
         }
 
@@ -631,7 +631,8 @@ chain = {
     },
     generateLeaders: (withLeaderPub, limit, start) => {
         var leaders = []
-        for (const key in cache.accounts) {
+        let leaderAccs = withLeaderPub ? cache.leaders : cache.accounts
+        for (const key in leaderAccs) {
             if (!cache.accounts[key].node_appr || cache.accounts[key].node_appr <= 0)
                 continue
             if (withLeaderPub && !cache.accounts[key].pub_leader)
@@ -651,32 +652,6 @@ chain = {
             return b.node_appr - a.node_appr
         })
         return leaders.slice(start, limit)
-
-        // the old mongodb query used instead
-        // var query = {
-        //     $and: [{
-        //         pub_leader: {$exists: true}
-        //     }, {
-        //         node_appr: {$gt: 0}
-        //     }]
-        // }
-        // if (!withLeaderPub)
-        //     query['$and'].splice(0,1)
-        // db.collection('accounts').find(query,{
-        //     sort: {node_appr: -1, name: -1},
-        //     limit: limit
-        // }).project({
-        //     name: 1,
-        //     pub: 1,
-        //     pub_leader: 1,
-        //     balance: 1,
-        //     approves: 1,
-        //     node_appr: 1,
-        //     json: 1,
-        // }).toArray(function(err, accounts) {
-        //     if (err) throw err
-        //     cb(accounts)
-        // })
     },
     leaderRewards: (name, ts, cb) => {
         // rewards leaders with 'free' voting power in the network
