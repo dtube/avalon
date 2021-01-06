@@ -756,10 +756,10 @@ chain = {
                 return cb(null,blockNum)
             
             // Validate block and transactions, then execute them
-            chain.isValidNewBlock(blockToRebuild,true,true,(isValid) => {
+            chain.isValidNewBlock(blockToRebuild,true,false,(isValid) => {
                 if (!isValid)
                     return cb(true, blockNum)
-                chain.executeBlockTransactions(blockToRebuild,false,true,(validTxs,dist,burn) => {
+                chain.executeBlockTransactions(blockToRebuild,true,true,(validTxs,dist,burn) => {
                     // if any transaction is wrong, thats a fatal error
                     // transactions should have been verified in isValidNewBlock
                     if (blockToRebuild.txs.length !== validTxs.length) {
