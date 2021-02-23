@@ -269,7 +269,7 @@ var cache = {
             cb(err, results)
         })
     },
-    processRebuildOps: (cb) => {
+    processRebuildOps: (cb,writeToDisk) => {
         for (let i in cache.inserts)
             cache.rebuild.inserts.push(cache.inserts[i])
         for (let i in cache.changes)
@@ -279,7 +279,10 @@ var cache = {
         cache.copy.accounts = {}
         cache.copy.contents = {}
         cache.copy.distributed = {}
-        cb()
+        if (writeToDisk)
+            cache.writeToDisk(cb,true)
+        else
+            cb()
     },
     keyByCollection: function(collection) {
         switch (collection) {

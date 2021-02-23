@@ -782,7 +782,8 @@ chain = {
                     chain.cleanMemory()
 
                     let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
-                    let writeOp = (!isNaN(writeInterval) && writeInterval > 1 && blockToRebuild._id % writeInterval === 0) ? 'processRebuildOps' : 'writeToDisk'
+                    let writeOp = (!isNaN(writeInterval) && writeInterval > 1) ? 'processRebuildOps' : 'writeToDisk'
+                    let writeBool = (writeOp === 'processRebuildOps' && blockToRebuild._id % writeInterval === 0) ? true : false
 
                     cache[writeOp](() => {
                         if (blockToRebuild._id % config.leaders === 0)
@@ -807,7 +808,7 @@ chain = {
                             // next block
                             chain.rebuildState(blockNum+1, cb)
                         }
-                    })
+                    },writeBool)
                 })
             })
         })
