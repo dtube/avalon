@@ -35,7 +35,7 @@ export REPLAY_OUTPUT=10000
 # Rebuild chain state from dump, verifying every block and transactions
 # Do not forget to comment this out after rebuild
 #export REBUILD_STATE=1
-#export REBUILD_IN_MEMORY=1
+#export REBUILD_WRITE_INTERVAL=
 #export REBUILD_RESUME_BLK=
 
 # default peers to connect with on startup

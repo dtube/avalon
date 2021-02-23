@@ -781,7 +781,8 @@ chain = {
                     eco.nextBlock()
                     chain.cleanMemory()
 
-                    let writeOp = (process.env.REBUILD_IN_MEMORY === '1' || process.env.REBUILD_IN_MEMORY === 1) ? 'processRebuildOps' : 'writeToDisk'
+                    let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
+                    let writeOp = (!isNaN(writeInterval) && writeInterval > 1 && blockToRebuild._id % writeInterval === 0) ? 'processRebuildOps' : 'writeToDisk'
 
                     cache[writeOp](() => {
                         if (blockToRebuild._id % config.leaders === 0)
