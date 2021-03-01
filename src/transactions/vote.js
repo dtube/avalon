@@ -69,7 +69,7 @@ module.exports = {
                 topTags = topTags.slice(0, config.tagMaxPerContent)
                 var tags = {}
                 for (let i = 0; i < topTags.length; i++)
-                    tags[topTags[i].tag] = topTags[i].vt
+                    tags[topTags[i].tag.replace(/\$/g,'').replace(/\./g,'')] = topTags[i].vt
                 cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$set: {
                     tags: tags
                 }}, function(){
