@@ -782,10 +782,10 @@ chain = {
                     chain.cleanMemory()
 
                     let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
-                    let writeOp = (!isNaN(writeInterval) && writeInterval > 1) ? 'processRebuildOps' : 'writeToDisk'
-                    let writeBool = (writeOp === 'processRebuildOps' && blockToRebuild._id % writeInterval === 0) ? true : false
+                    if (isNaN(writeInterval) || writeInterval < 1)
+                        writeInterval = 10000
 
-                    cache[writeOp](() => {
+                    cache.processRebuildOps(() => {
                         if (blockToRebuild._id % config.leaders === 0)
                             chain.minerSchedule(blockToRebuild, function(minerSchedule) {
                                 chain.schedule = minerSchedule
@@ -808,7 +808,7 @@ chain = {
                             // next block
                             chain.rebuildState(blockNum+1, cb)
                         }
-                    },writeBool)
+                    }, blockToRebuild._id % writeInterval === 0)
                 })
             })
         })
