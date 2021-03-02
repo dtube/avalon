@@ -1,10 +1,10 @@
-var db_name = process.env.DB_NAME || 'avalon'
-var db_url = process.env.DB_URL || 'mongodb://localhost:27017'
-var MongoClient = require('mongodb').MongoClient
-var fs = require('fs')
-var sha256File = require('sha256-file')
-var AdmZip = require('adm-zip')
-var spawn = require('child_process').spawn
+const db_name = process.env.DB_NAME || 'avalon'
+const db_url = process.env.DB_URL || 'mongodb://localhost:27017'
+const MongoClient = require('mongodb').MongoClient
+const fs = require('fs')
+const sha256File = require('sha256-file')
+const spawn = require('child_process').spawn
+const spawnSync = require('child_process').spawnSync
 let isResumingRebuild = !isNaN(parseInt(process.env.REBUILD_RESUME_BLK)) && parseInt(process.env.REBUILD_RESUME_BLK) > 0
 
 var mongo = {
@@ -42,8 +42,9 @@ var mongo = {
             logr.info('Block #0 not found. Starting genesis...')
 
         mongo.addMongoIndexes(function() {
-            var genesisFolder = process.cwd()+'/genesis/'
-            var genesisZip = genesisFolder+'genesis.zip'
+            let genesisFolder = process.cwd()+'/genesis/'
+            let genesisZip = genesisFolder+'genesis.zip'
+            let mongoUri = db_url+'/'+db_name
 
             // Check if genesis.zip exists
             try {
@@ -70,15 +71,7 @@ var mongo = {
             }
             
             logr.info('OK sha256sum, unzipping genesis.zip...')
-            var zip = new AdmZip(genesisZip)
-            var zipEntries = zip.getEntries()
-            var mongoUri = db_url+'/'+db_name
-            for (let i = 0; i < zipEntries.length; i++) {
-                var entry = zipEntries[i]
-                zip.extractEntryTo(entry.name, genesisFolder, false, true)
-                logr.debug('Unzipped '+entry.name)
-            }
-
+            spawnSync('unzip',[genesisZip,'-d',genesisFolder])
             logr.info('Finished unzipping, importing data now...')
 
             var mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
@@ -169,6 +162,7 @@ var mongo = {
     restoreBlocks: (cb) => {
         let dump_dir = process.cwd() + '/dump'
         let dump_location = dump_dir + '/blocks.zip'
+        let mongoUri = db_url+'/'+db_name
 
         try {
             fs.statSync(dump_location)
@@ -180,15 +174,7 @@ var mongo = {
         db.collection('blocks').drop((e,ok) => {
             if (!ok) return cb('Failed to drop existing blocks data')
 
-            let zip = AdmZip(dump_location)
-            let zipEntries = zip.getEntries()
-            let mongoUri = db_url+'/'+db_name
-            for (let i = 0; i < zipEntries.length; i++) {
-                let entry = zipEntries[i]
-                zip.extractEntryTo(entry.name, dump_dir, false, true)
-                logr.debug('Unzipped '+entry.name)
-            }
-
+            spawnSync('unzip',[dump_location,'-d',dump_dir])
             logr.info('Finished unzipping, importing blocks now...')
 
             let mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, dump_dir])                         
