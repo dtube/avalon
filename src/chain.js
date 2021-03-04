@@ -6,9 +6,10 @@ const series = require('run-series')
 const cloneDeep = require('clone-deep')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
-var GrowInt = require('growint')
-var default_replay_output = 100
-var replay_output = process.env.REPLAY_OUTPUT || default_replay_output
+const GrowInt = require('growint')
+const default_replay_output = 100
+const replay_output = process.env.REPLAY_OUTPUT || default_replay_output
+const max_batch_blocks = 10000
 
 class Block {
     constructor(index, phash, timestamp, txs, miner, missedBy, dist, burn, signature, hash) {
@@ -26,6 +27,7 @@ class Block {
 }
 
 chain = {
+    blocksToRebuild: [],
     restoredBlocks: 0,
     schedule: null,
     recentBlocks: [],
@@ -303,6 +305,7 @@ chain = {
             chain.nextOutput.burn += block.burn
 
         if (block._id%replay_output === 0 || (!rebuilding && !p2p.recovering)) {
+            let currentOutTime = new Date().getTime()
             var output = ''
             if (rebuilding)
                 output += 'Rebuilt '
@@ -311,20 +314,23 @@ chain = {
 
             if (rebuilding)
                 output += '/' + chain.restoredBlocks
-
-            output += '  by '+block.miner
+            else
+                output += '  by '+block.miner
 
             output += '  '+chain.nextOutput.txs+' tx'
             if (chain.nextOutput.txs>1)
                 output += 's'
-            
 
             output += '  dist: '+chain.nextOutput.dist
             output += '  burn: '+chain.nextOutput.burn
-            output += '  delay: '+ (new Date().getTime() - block.timestamp)
+            output += '  delay: '+ (currentOutTime - block.timestamp)
 
-            if (block.missedBy)
+            if (block.missedBy && !rebuilding)
                 output += '  MISS: '+block.missedBy
+            else if (rebuilding) {
+                output += '  Performance: ' + Math.floor(replay_output/(currentOutTime-chain.lastRebuildOutput)*1000) + 'b/s'
+                chain.lastRebuildOutput = currentOutTime
+            }
 
             logr.info(output)
             chain.nextOutput = {
@@ -340,6 +346,7 @@ chain = {
         dist: 0,
         burn: 0
     },
+    lastRebuildOutput: 0,
     isValidPubKey: (key) => {
         try {
             return secp256k1.publicKeyVerify(bs58.decode(key))
@@ -487,13 +494,13 @@ chain = {
                 
 
         if (minerPriority === 0) {
-            logr.debug('unauthorized miner')
+            logr.error('unauthorized miner')
             cb(false); return
         }
 
         // check if new block isnt too early
         if (newBlock.timestamp - previousBlock.timestamp < minerPriority*config.blockTime) {
-            logr.debug('block too early for miner with priority #'+minerPriority)
+            logr.error('block too early for miner with priority #'+minerPriority)
             cb(false); return
         }
 
@@ -624,7 +631,8 @@ chain = {
     },
     generateLeaders: (withLeaderPub, limit, start) => {
         var leaders = []
-        for (const key in cache.accounts) {
+        let leaderAccs = withLeaderPub ? cache.leaders : cache.accounts
+        for (const key in leaderAccs) {
             if (!cache.accounts[key].node_appr || cache.accounts[key].node_appr <= 0)
                 continue
             if (withLeaderPub && !cache.accounts[key].pub_leader)
@@ -644,32 +652,6 @@ chain = {
             return b.node_appr - a.node_appr
         })
         return leaders.slice(start, limit)
-
-        // the old mongodb query used instead
-        // var query = {
-        //     $and: [{
-        //         pub_leader: {$exists: true}
-        //     }, {
-        //         node_appr: {$gt: 0}
-        //     }]
-        // }
-        // if (!withLeaderPub)
-        //     query['$and'].splice(0,1)
-        // db.collection('accounts').find(query,{
-        //     sort: {node_appr: -1, name: -1},
-        //     limit: limit
-        // }).project({
-        //     name: 1,
-        //     pub: 1,
-        //     pub_leader: 1,
-        //     balance: 1,
-        //     approves: 1,
-        //     node_appr: 1,
-        //     json: 1,
-        // }).toArray(function(err, accounts) {
-        //     if (err) throw err
-        //     cb(accounts)
-        // })
     },
     leaderRewards: (name, ts, cb) => {
         // rewards leaders with 'free' voting power in the network
@@ -744,6 +726,15 @@ chain = {
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
     },
+    batchLoadBlocks: (blockNum,cb) => {
+        if (chain.blocksToRebuild.length == 0) {
+            db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
+                if (e) throw e
+                if (blocks) chain.blocksToRebuild = blocks
+                cb(chain.blocksToRebuild.shift())
+            })
+        } else cb(chain.blocksToRebuild.shift())
+    },
     rebuildState: (blockNum,cb) => {
         // If chain shutting down, stop rebuilding and output last number for resuming
         if (chain.shuttingDown)
@@ -759,18 +750,16 @@ chain = {
             return
         }
 
-        db.collection('blocks').findOne({ _id: blockNum },(e,blockToRebuild) => {
-            if (e)
-                return cb(e,blockNum)
+        chain.batchLoadBlocks(blockNum,(blockToRebuild) => {
             if (!blockToRebuild)
                 // Rebuild is complete
                 return cb(null,blockNum)
             
             // Validate block and transactions, then execute them
-            chain.isValidNewBlock(blockToRebuild,true,true,(isValid) => {
+            chain.isValidNewBlock(blockToRebuild,true,false,(isValid) => {
                 if (!isValid)
                     return cb(true, blockNum)
-                chain.executeBlockTransactions(blockToRebuild,false,true,(validTxs,dist,burn) => {
+                chain.executeBlockTransactions(blockToRebuild,true,true,(validTxs,dist,burn) => {
                     // if any transaction is wrong, thats a fatal error
                     // transactions should have been verified in isValidNewBlock
                     if (blockToRebuild.txs.length !== validTxs.length) {
@@ -792,8 +781,12 @@ chain = {
                     eco.nextBlock()
                     chain.cleanMemory()
 
-                    cache.writeToDisk(() => {
-                        if (blockToRebuild._id % config.leaders === 0) 
+                    let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
+                    if (isNaN(writeInterval) || writeInterval < 1)
+                        writeInterval = 10000
+
+                    cache.processRebuildOps(() => {
+                        if (blockToRebuild._id % config.leaders === 0)
                             chain.minerSchedule(blockToRebuild, function(minerSchedule) {
                                 chain.schedule = minerSchedule
                                 chain.recentBlocks.push(blockToRebuild)
@@ -815,7 +808,7 @@ chain = {
                             // next block
                             chain.rebuildState(blockNum+1, cb)
                         }
-                    })
+                    }, blockToRebuild._id % writeInterval === 0)
                 })
             })
         })

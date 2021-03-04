@@ -12,6 +12,7 @@ module.exports = {
             },{ $set: {
                 pub_leader: tx.data.pub
             }}, function(){
+                cache.addLeader(tx.sender)
                 cb(true)
             })
         else
@@ -20,6 +21,7 @@ module.exports = {
             },{ $unset: {
                 pub_leader: ''
             }}, function(){
+                cache.removeLeader(tx.sender)
                 cb(true)
             })
     }

@@ -43,6 +43,13 @@ module.exports = {
             votes: vote
         }}, function(){
             cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
+                if (process.env.CONTENTS != '1') {
+                    return eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster, burnCurator) {
+                        if (!content.pa && !content.pp)
+                            rankings.update(tx.data.author, tx.data.link, vote, distCurators)
+                        cb(true, distCurators+distMaster, burnCurator)
+                    })
+                }
                 // update top tags
                 var topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
@@ -59,10 +66,18 @@ module.exports = {
                 topTags = topTags.sort(function(a,b) {
                     return b.vt - a.vt
                 })
-                topTags = topTags.slice(0, config.tagMaxPerContent)
-                var tags = {}
-                for (let i = 0; i < topTags.length; i++)
-                    tags[topTags[i].tag] = topTags[i].vt
+                let tags = {}
+                let tagKeys = 0
+                let tagLoop = 0
+                while (tagKeys < config.tagMaxPerContent && tagLoop < topTags.length) {
+                    let t = topTags[tagLoop].tag.replace(/\$/g,'').replace(/\./g,'')
+                    // tag must not be empty after filtering
+                    if (t) {
+                        tags[t] = topTags[tagLoop].vt
+                        tagKeys++
+                    }
+                    tagLoop++
+                }
                 cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$set: {
                     tags: tags
                 }}, function(){

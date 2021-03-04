@@ -1,4 +1,3 @@
-const series = require('run-series')
 const one_day = 86400000
 const one_hour = 3600000
 const one_minute = 60000

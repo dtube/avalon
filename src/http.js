@@ -7,7 +7,7 @@ const yt_key = process.env.YT_API_KEY || 'NO_KEY'
 const yt = new YT(yt_key)
 const { extract } = require('oembed-parser')
 const ogs = require('open-graph-scraper')
-const series = require('run-series')
+const parallel = require('run-parallel')
 const transaction = require('./transaction.js')
 const timeout_transact_async = 7500
 
@@ -54,7 +54,7 @@ var http = {
                 (cb) => db.collection('contents').aggregate([{ $unwind: "$votes" }, { $match: { "votes.claimed": { $exists: false } } }, { $group: { _id: 0, total: { $sum: "$votes.claimable" } } }]).toArray((e, r) => cb(e, r))
             ]
 
-            series(executions, (e, r) => {
+            parallel(executions, (e, r) => {
                 if (e)
                     return res.sendStatus(500)
 
@@ -691,7 +691,7 @@ var http = {
                             i++
                         })
 
-                    series(executions, function (err, results) {
+                    parallel(executions, function (err, results) {
                         if (err) throw err
                         cb(null, results)
                     })

@@ -16,6 +16,7 @@
 # Enable more modules
 #export NOTIFICATIONS=1
 #export RANKINGS=1
+#export CONTENTS=1
 
 # Cache warmup option
 export WARMUP_ACCOUNTS=100000
@@ -29,11 +30,12 @@ export WARN_SLOW_EXEC=5
 export LOG_LEVEL=info
 
 # groups blocks during replay output to lower screen spam
-export REPLAY_OUTPUT=100
+export REPLAY_OUTPUT=10000
 
 # Rebuild chain state from dump, verifying every block and transactions
 # Do not forget to comment this out after rebuild
 #export REBUILD_STATE=1
+#export REBUILD_WRITE_INTERVAL=10000
 #export REBUILD_RESUME_BLK=
 
 # default peers to connect with on startup
@@ -44,5 +46,8 @@ export MAX_PEERS=20
 export NODE_OWNER=dtube
 export NODE_OWNER_PUB=dTuBhkU6SUx9JEx1f4YEt34X9sC7QGso2dSrqE8eJyfz
 export NODE_OWNER_PRIV=34EpMEDFJwKbxaF7FhhLyEe3AhpM4dwHMLVfs4JyRto5
+
+# Memory limit for in-memory rebuild (in MB)
+export NODE_OPTIONS=--max_old_space_size=8192
 
 node --stack-size=65500 src/main
