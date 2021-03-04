@@ -199,10 +199,10 @@ var eco = {
                             newVotes[v].totalTip = tipAmt / precisionMulti
                             newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - tipAmt) / precisionMulti
                         } else
-                            newVotes[v].claimable = (newVotes[v].gross * precisionMulti) - (newVotes[v].totalTip * precisionMulti) / precisionMulti
-                    } else
+                            newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - (newVotes[v].totalTip * precisionMulti)) / precisionMulti
+                    } else if (newVotes[v].u !== content.author)
                         newVotes[v].claimable = newVotes[v].gross
-                if (authorVote >= 0)
+                if (authorVote >= 0 && !authorVoteClaimed)
                     newVotes[authorVote].claimable = ((newVotes[authorVote].gross * precisionMulti) + totalAuthorTip) / precisionMulti
 
                 // add dist/burn/votes to currentBlock eco stats
