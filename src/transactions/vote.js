@@ -9,7 +9,7 @@ module.exports = {
             cb(false, 'invalid tx data.link'); return
         }
         if (!validate.integer(tx.data.vt, false, true)) {
-            cb(false, 'invalid tx data.vt'); return
+            cb(false, 'invalid tx data.vt must be a non-zero integer'); return
         }
         if (!validate.string(tx.data.tag, config.tagMaxLength)) {
             cb(false, 'invalid tx data.tag'); return
