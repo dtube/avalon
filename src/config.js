@@ -103,6 +103,9 @@ var config = {
             // the maximum length of tags (on votes)
             tagMaxLength: 25,
             tagMaxPerContent: 5,
+            // precision of author tip percentage
+            // 1 => 10% step, 2 => 1% step, 3 => 0.1% step, 4 => 0.01% step
+            tippedVotePrecision: 2,
             tmpForceTs: true,
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
@@ -124,11 +127,6 @@ var config = {
             vtPerBurn: 44
         },
         6000000: {
-            // maximum scale of author tip percentage
-            // 100 => 1% step
-            // 1000 => 0.1% step
-            // 10000 => 0.01% step
-            tippedVotePrecision: 2,
             txLimits: {
                 14: 2,
                 15: 2,
