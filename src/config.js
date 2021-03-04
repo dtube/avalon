@@ -112,6 +112,7 @@ var config = {
             txLimits: {
                 14: 2,
                 15: 2,
+                19: 1
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 360000000, // +1 vt per hour per DTC (3600 * 1000 * 100)
@@ -121,6 +122,18 @@ var config = {
             leaders: 13,
             leaderRewardVT: 100,
             vtPerBurn: 44
+        },
+        6000000: {
+            // maximum scale of author tip percentage
+            // 100 => 1% step
+            // 1000 => 0.1% step
+            // 10000 => 0.01% step
+            tippedVotePrecision: 2,
+            txLimits: {
+                14: 2,
+                15: 2,
+                19: 0
+            }
         }
     },
     read: (blockNum) => {
