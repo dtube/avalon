@@ -34,6 +34,7 @@ module.exports = {
                     authorVote = true
                     if (content.votes[v].claimed)
                         authorVoteClaimed = true
+                    break
                 }
             }
 

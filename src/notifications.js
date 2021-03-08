@@ -88,6 +88,7 @@ notifications = {
             break
 
         case TransactionType.VOTE:
+        case TransactionType.TIPPED_VOTE:
             notif = {
                 u: tx.data.author,
                 tx: tx,
