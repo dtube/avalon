@@ -190,6 +190,7 @@ var eco = {
                     if (newVotes[v].u === content.author) {
                         authorVote = v
                         if (newVotes[v].claimed) authorVoteClaimed = true
+                        if (!config.allowRevotes) break
                     }
                 for (let v = 0; v < newVotes.length; v++)
                     if (authorVote >= 0 && newVotes[v].u !== content.author && newVotes[v].tip) {
