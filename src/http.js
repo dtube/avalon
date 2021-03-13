@@ -1,3 +1,4 @@
+var http_host = process.env.HTTP_HOST || '::'
 var http_port = process.env.HTTP_PORT || 3001
 var express = require('express')
 var cors = require('cors')
@@ -851,7 +852,7 @@ var http = {
             })
         })
 
-        app.listen(http_port, () => logr.info('Listening http on port: ' + http_port))
+        app.listen(http_port, http_host, () => logr.info('Listening http on port: ' + http_port))
     }
 }
 
