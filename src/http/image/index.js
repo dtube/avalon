@@ -139,7 +139,7 @@ function resizeImage(buf,width,height) {
     return new Promise((rs,rj) => {
         sharp(buf)
             .resize(width,height)
-            .toFormat('jpg',{quality: QUALITY})
+            .toFormat('png',{quality: QUALITY})
             .toBuffer((err, data) => {
                 if (err) return rj(err)
                 rs(data)
