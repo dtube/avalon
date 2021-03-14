@@ -12,7 +12,7 @@ module.exports = {
             },{ $set: {
                 pub_leader: tx.data.pub
             }}, function(){
-                cb(true)
+                cache.addLeader(tx.sender,false,() => cb(true))
             })
         else
             cache.updateOne('accounts', {
@@ -20,6 +20,7 @@ module.exports = {
             },{ $unset: {
                 pub_leader: ''
             }}, function(){
+                cache.removeLeader(tx.sender)
                 cb(true)
             })
     }

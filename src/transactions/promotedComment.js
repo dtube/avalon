@@ -49,13 +49,13 @@ module.exports = {
             link: tx.data.link,
             pa: tx.data.pa,
             pp: tx.data.pp,
-            json: tx.data.json,
+            json: process.env.CONTENTS == '1' ? tx.data.json : {},
             child: [],
             votes: [superVote],
             ts: ts
         }
-        if (tx.data.tag)  {
-            if (tx.data.tag) superVote.tag = tx.data.tag
+        if (tx.data.tag && process.env.CONTENTS == '1')  {
+            superVote.tag = tx.data.tag
             newContent.tags = {}
             newContent.tags[tx.data.tag] = Math.abs(superVote.vt)
         }
@@ -68,7 +68,7 @@ module.exports = {
                         // insert content+vote into db
                         cache.insertOne('contents', newContent, function(){
                             eco.curation(tx.sender, tx.data.link, function(distCurators, distMaster) {
-                                if (tx.data.pa && tx.data.pp) 
+                                if (tx.data.pa && tx.data.pp && process.env.CONTENTS == '1')
                                     cache.updateOne('contents', {_id: tx.data.pa+'/'+tx.data.pp}, { $push: {
                                         child: [tx.sender, tx.data.link]
                                     }}, function() {
@@ -77,7 +77,7 @@ module.exports = {
                                 else {
                                     // and report how much was burnt
                                     cb(true, distCurators+distMaster, tx.data.burn)
-                                    rankings.new(newContent)
+                                    if (!tx.data.pa || !tx.data.pp) rankings.new(newContent)
                                 }
                             }) 
                             

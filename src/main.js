@@ -20,6 +20,7 @@ if (allowNodeV.indexOf(currentNodeV) === -1) {
     process.exit(1)
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
+erroredRebuild = false
 
 // init the database and load most recent blocks in memory directly
 mongo.init(function() {
@@ -32,36 +33,41 @@ mongo.init(function() {
         cache.warmup('contents', parseInt(process.env.WARMUP_CONTENTS), function(err) {
             if (err) throw err
             logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+            timeStart = new Date().getTime()
 
-            // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
-            let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
-            let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
-            if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
-                logr.info('Chain state rebuild requested, unzipping blocks.zip...')
-                mongo.restoreBlocks((e)=>{
-                    if (e) return logr.error(e)
-                    startRebuild(0)
-                })
-                return
-            }
-
-            mongo.lastBlock(function(block) {
-                // Resuming an interrupted rebuild
-                if (isResumingRebuild) {
-                    logr.info('Resuming interrupted rebuild from block ' + rebuildResumeBlock)
-                    config = require('./config').read(rebuildResumeBlock - 1)
-                    chain.restoredBlocks = block._id
-                    mongo.fillInMemoryBlocks(() => 
-                        db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => 
-                            chain.minerSchedule(b,(sch) => {
-                                chain.schedule = sch
-                                startRebuild(rebuildResumeBlock)
-                            })),rebuildResumeBlock)
+            cache.warmupLeaders((leaderCount)=>{
+                logr.info(leaderCount+' leaders loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+                
+                // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
+                let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
+                let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
+                if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
+                    logr.info('Chain state rebuild requested, unzipping blocks.zip...')
+                    mongo.restoreBlocks((e)=>{
+                        if (e) return logr.error(e)
+                        startRebuild(0)
+                    })
                     return
                 }
-                logr.info('#' + block._id + ' is the latest block in our db')
-                config = require('./config.js').read(block._id)
-                mongo.fillInMemoryBlocks(startDaemon)
+
+                mongo.lastBlock(function(block) {
+                    // Resuming an interrupted rebuild
+                    if (isResumingRebuild) {
+                        logr.info('Resuming interrupted rebuild from block ' + rebuildResumeBlock)
+                        config = require('./config').read(rebuildResumeBlock - 1)
+                        chain.restoredBlocks = block._id
+                        mongo.fillInMemoryBlocks(() => 
+                            db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => 
+                                chain.minerSchedule(b,(sch) => {
+                                    chain.schedule = sch
+                                    startRebuild(rebuildResumeBlock)
+                                })),rebuildResumeBlock)
+                        return
+                    }
+                    logr.info('#' + block._id + ' is the latest block in our db')
+                    config = require('./config.js').read(block._id)
+                    mongo.fillInMemoryBlocks(startDaemon)
+                })
             })
         })
     })
@@ -69,14 +75,22 @@ mongo.init(function() {
 
 function startRebuild(startBlock) {
     let rebuildStartTime = new Date().getTime()
+    chain.lastRebuildOutput = rebuildStartTime
     chain.rebuildState(startBlock,(e,headBlockNum) => {
-        if (e)
+        if (e) {
+            erroredRebuild = true
             return logr.error('Error rebuilding chain at block',headBlockNum, e)
-        else if (headBlockNum <= chain.restoredBlocks)
-            return logr.info('Rebuild interrupted, so far it took ' + (new Date().getTime() - rebuildStartTime) + ' ms. To resume, start Avalon with REBUILD_RESUME_BLK=' + headBlockNum)
-
-        logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
-        startDaemon()
+        } else if (headBlockNum <= chain.restoredBlocks)
+            logr.info('Rebuild interrupted, so far it took ' + (new Date().getTime() - rebuildStartTime) + ' ms. To resume, start Avalon with REBUILD_RESUME_BLK=' + headBlockNum)
+        else
+            logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
+        logr.info('Writing rebuild data to disk...')
+        let cacheWriteStart = new Date().getTime()
+        cache.writeToDisk(() => {
+            logr.info('Rebuild data written to disk in ' + (new Date().getTime() - cacheWriteStart) + ' ms')
+            if (chain.shuttingDown) return process.exit(0)
+            startDaemon()
+        },true)
     })
 }
 
@@ -107,8 +121,9 @@ function startDaemon() {
 process.on('SIGINT', function() {
     if (typeof closing !== 'undefined') return
     closing = true
-    logr.warn('Waiting '+config.blockTime+' ms before shut down...')
     chain.shuttingDown = true
+    if (!erroredRebuild && chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) return
+    logr.warn('Waiting '+config.blockTime+' ms before shut down...')
     setTimeout(function() {
         logr.info('Avalon exitted safely')
         process.exit(0)
