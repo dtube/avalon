@@ -1,8 +1,5 @@
-const request = [
-    require('http'),
-    require('https')
-]
 const sharp = require('sharp')
+const fetch = require('node-fetch')
 const QUALITY = 95
 const AVATAR_WIDTH = {
     small: 64,
@@ -113,23 +110,13 @@ module.exports = {
     }
 }
 
-function fetchAndRespondImage(imageUrl,res,width,height,cacher) {
+async function fetchAndRespondImage(imageUrl,res,width,height,cacher) {
     try {
-        let pIndex = 0
-        if (imageUrl.startsWith('https://'))
-            pIndex = 1
-
-        request[pIndex].get(imageUrl, function(resImg) {
-            let data = []
-            resImg.on('data', function(chunk) {
-                data.push(chunk)
-            }).on('end', async () => {
-                let buffer = Buffer.concat(data)
-                let img = await resizeImage(buffer,width,height)
-                imageResponse(res,img)
-                cacher(img.toJSON())
-            }).on('error', () => res.status(500).send({error: 'could not fetch avatar from upstream url'}))
-        })
+        let imgFetch = await fetch(imageUrl)
+        let buffer = await imgFetch.buffer()
+        let img = await resizeImage(buffer,width,height)
+        imageResponse(res,img)
+        cacher(img.toJSON())
     } catch {
         res.status(500).send({error: 'errored while retrieving avatar'})
     }
