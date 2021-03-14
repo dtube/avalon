@@ -59,7 +59,7 @@ module.exports = {
             if (!req.params.name)
                 return res.status(400).send({error: 'username is required'})
             if (imageCache.cover[req.params.name] && imageCache.cover[req.params.name].d) {
-                cache.cover[req.params.name].t = new Date().getTime()
+                imageCache.cover[req.params.name].t = new Date().getTime()
                 return imageResponse(res,Buffer.from(imageCache.cover[req.params.name].d))
             }
             db.collection('accounts').findOne({ name: req.params.name }, function (err, account) {
