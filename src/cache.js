@@ -41,9 +41,9 @@ var cache = {
         // reset leader changes
         for (let i in cache.leaderChanges) {
             if (cache.leaderChanges[i][1] === 0)
-                cache.addLeader(cache.leaderChanges[i][0])
+                cache.addLeader(cache.leaderChanges[i][0],true,()=>{})
             else if (cache.leaderChanges[i][1] === 1)
-                cache.removeLeader(cache.leaderChanges[i][1])
+                cache.removeLeader(cache.leaderChanges[i][0],true)
         }
         cache.leaderChanges = []
 
@@ -185,11 +185,13 @@ var cache = {
 
         cb(null, true)
     },
-    addLeader: (leader,isRollback) => {
+    addLeader: (leader,isRollback,cb) => {
         if (!cache.leaders[leader])
             cache.leaders[leader] = 1
         if (!isRollback)
             cache.leaderChanges.push([leader,1])
+        // make sure account is cached
+        cache.findOne('accounts',{name:leader},() => cb())
     },
     removeLeader: (leader,isRollback) => {
         if (cache.leaders[leader])
@@ -263,6 +265,7 @@ var cache = {
             cache.inserts = []
             cache.rebuild.changes = []
             cache.rebuild.inserts = []
+            cache.leaderChanges = []
             cache.copy.accounts = {}
             cache.copy.contents = {}
             cache.copy.distributed = {}
@@ -276,6 +279,7 @@ var cache = {
             cache.rebuild.changes.push(cache.changes[i])
         cache.inserts = []
         cache.changes = []
+        cache.leaderChanges = []
         cache.copy.accounts = {}
         cache.copy.contents = {}
         cache.copy.distributed = {}
@@ -330,12 +334,14 @@ var cache = {
     },
     warmupLeaders: (cb) => {
         db.collection('accounts').find(
-            {pub_leader: {$exists:true}},
-            {projection: {_id: 0, name: 1}}
+            {pub_leader: {$exists:true}}
         ).toArray((e,accs) => {
             if (e) throw e
-            for (let i in accs)
+            for (let i in accs) {
                 cache.leaders[accs[i].name] = 1
+                if (!cache.accounts[accs[i].name])
+                    cache.accounts[accs[i].name] = accs[i]
+            }
             cb(accs.length)
         })
     }
