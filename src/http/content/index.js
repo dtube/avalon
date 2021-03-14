@@ -1,4 +1,4 @@
-const series = require('run-series')
+const parallel = require('run-parallel')
 
 module.exports = {
     init: (app) => {
@@ -42,7 +42,7 @@ module.exports = {
                             i++
                         })
 
-                    series(executions, function (err, results) {
+                    parallel(executions, function (err, results) {
                         if (err) throw err
                         cb(null, results)
                     })

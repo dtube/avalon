@@ -1,4 +1,4 @@
-const series = require('run-series')
+const parallel = require('run-parallel')
 
 module.exports = {
     init: (app) => {
@@ -9,7 +9,7 @@ module.exports = {
                 (cb) => db.collection('contents').aggregate([{ $unwind: "$votes" }, { $match: { "votes.claimed": { $exists: false } } }, { $group: { _id: 0, total: { $sum: "$votes.claimable" } } }]).toArray((e, r) => cb(e, r))
             ]
 
-            series(executions, (e, r) => {
+            parallel(executions, (e, r) => {
                 if (e)
                     return res.sendStatus(500)
 
