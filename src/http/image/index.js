@@ -9,6 +9,7 @@ const AVATAR_WIDTH = {
     medium: 128, // default
     large: 512
 }
+const DEFAULT_AVATAR = 'https://steemitimages.com/DQmb2HNSGKN3pakguJ4ChCRjgkVuDN9WniFRPmrxoJ4sjR4'
 const CACHE_SIZE = parseInt(process.env.IMG_CACHE_SIZE) || -1
 const CACHE_TIME = parseInt(process.env.IMG_CACHE_TIME) || 900000 // 15 minutes default
 
@@ -28,11 +29,16 @@ module.exports = {
             if (!req.params.name)
                 return res.status(400).send({error: 'username is required'})
             let size = req.params.size || 'medium'
+            if (!imageCache.avatar[size] || size.startsWith('default_'))
+                size = 'medium'
 
             // Return cached image if available
-            if (imageCache.avatar[size][req.params.name] && imageCache.avatar[size][req.params.name].d) {
+            if (imageCache.avatar[size][req.params.name] && imageCache.avatar[size][req.params.name].t) {
                 imageCache.avatar[size][req.params.name].t = new Date().getTime()
-                return imageResponse(res,Buffer.from(imageCache.avatar[size][req.params.name].d))
+                if (!imageCache.avatar[size][req.params.name].d && imageCache.avatar['default_'+size])
+                    return imageResponse(res,Buffer.from(imageCache.avatar['default_'+size]))
+                else if (imageCache.avatar[size][req.params.name].d)
+                    return imageResponse(res,Buffer.from(imageCache.avatar[size][req.params.name].d))
             }
 
             // If not look for image url and fetch
@@ -40,14 +46,24 @@ module.exports = {
                 if (err) return res.status(400).send({error: 'could not retrieve account info'})
                 if (!account) return res.status(404).send({error: 'username does not exist'})
                 // todo return default avatar if no avatar url in metadata
-                if (!account.json || !account.json.profile || !account.json.profile.avatar)
-                    return res.sendStatus(404)
-                const imageUrl = account.json.profile.avatar
-                if (!imageUrl.startsWith('http'))
-                    return res.sendStatus(404)
+                let isDefault = false
+                let imageUrl = ''
+                if (!account.json || !account.json.profile || !account.json.profile.avatar) {
+                    isDefault = true
+                    imageUrl = DEFAULT_AVATAR
+                } else {
+                    imageUrl = account.json.profile.avatar
+                    if (!imageUrl.startsWith('http')) {
+                        isDefault = true
+                        imageUrl = DEFAULT_AVATAR
+                    }
+                }
 
                 fetchAndRespondImage(imageUrl,res,AVATAR_WIDTH[size],AVATAR_WIDTH[size],(imgJson) => {
-                    if (JSON.stringify(imageCache).length < CACHE_SIZE) imageCache.avatar[size][req.params.name] = {
+                    if (isDefault) {
+                        imageCache.avatar[size][req.params.name] = { t: new Date().getTime() }
+                        imageCache.avatar['default_'+size] = imgJson
+                    } else if (JSON.stringify(imageCache).length < CACHE_SIZE) imageCache.avatar[size][req.params.name] = {
                         t: new Date().getTime(),
                         d: imgJson
                     }
@@ -66,10 +82,10 @@ module.exports = {
                 if (err) return res.status(400).send({error: 'could not retrieve account info'})
                 if (!account) return res.status(404).send({error: 'username does not exist'})
                 if (!account.json || !account.json.profile || !account.json.profile.cover_image)
-                    return res.sendStatus(404)
+                    return res.status(404).send({error: 'cover image url not available'})
                 const imageUrl = account.json.profile.cover_image
                 if (!imageUrl.startsWith('http'))
-                    return res.sendStatus(404)
+                    return res.status(404).send({error: 'invalid cover image url'})
 
                 fetchAndRespondImage(imageUrl,res,2048,512,(imgJson) => {
                     if (JSON.stringify(imageCache).length < CACHE_SIZE) imageCache.cover[req.params.name] = {
@@ -87,7 +103,7 @@ module.exports = {
         // cleanup cache
         setInterval(() => {
             let timeNow = new Date().getTime()
-            for (let s in imageCache.avatar) for (let u in imageCache.avatar[s])
+            for (let s in imageCache.avatar) if (!s.startsWith('default_')) for (let u in imageCache.avatar[s])
                 if (timeNow - imageCache.avatar[s][u].t > CACHE_TIME)
                     delete imageCache.avatar[s][u]
             for (let u in imageCache.cover)
