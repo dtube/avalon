@@ -19,7 +19,7 @@ module.exports = {
         }
         // users need to vote the content at the same time with vt and tag field
         if (!validate.integer(tx.data.vt, false, true)) {
-            cb(false, 'invalid tx data.vt'); return
+            cb(false, 'invalid tx data.vt must be a non-zero integer'); return
         }
         if (!validate.string(tx.data.tag, config.tagMaxLength)) {
             cb(false, 'invalid tx data.tag'); return

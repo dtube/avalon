@@ -153,6 +153,15 @@ let cmds = {
 			pub+'"}}'
         return sign(privKey, sender, tx)
     },
+
+    tippedVote: (privkey, sender, link, author, weight, tag, tip) => {
+        if (!tag) tag = ''
+        let tx = '{"type":19,"data":{"link":"'+
+            link+'", "author":"'+
+            author+'", "vt": '+
+            parseInt(weight)+', "tag": "'+tag+'", "tip": ' + parseInt(tip) + '}}'
+        return sign(privkey, sender, tx)
+    }
 }
 
 module.exports = cmds

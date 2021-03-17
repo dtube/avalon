@@ -1,27 +1,50 @@
 module.exports = {
-    fields: ['link', 'author', 'vt', 'tag'],
+    fields: ['link', 'author', 'vt', 'tag', 'tip'],
     validate: (tx, ts, legitUser, cb) => {
-        if (!validate.string(tx.data.author, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {
-            logr.debug('invalid tx data.author')
-            cb(false); return
-        }
-        if (!validate.string(tx.data.link, config.accountMaxLength, config.accountMinLength)) {
-            cb(false, 'invalid tx data.link'); return
-        }
-        if (!validate.integer(tx.data.vt, false, true)) {
-            cb(false, 'invalid tx data.vt must be a non-zero integer'); return
-        }
-        if (!validate.string(tx.data.tag, config.tagMaxLength)) {
-            cb(false, 'invalid tx data.tag'); return
-        }
-        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser)) {
-            cb(false, 'invalid tx not enough vt'); return
-        }
-        // checking if content exists
-        cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
-            if (!content) {
-                cb(false, 'invalid tx non-existing content'); return
+        // Check if author vote exists and whether author has claimed the reward
+        if (!validate.string(tx.data.author, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle))
+            return cb(false, 'invalid tx data.author')
+        
+        if (!validate.string(tx.data.link, config.accountMaxLength, config.accountMinLength))
+            return cb(false, 'invalid tx data.link')
+        
+        if (!validate.integer(tx.data.vt, false, true))
+            return cb(false, 'invalid tx data.vt must be a non-zero integer')
+        
+        if (!validate.string(tx.data.tag, config.tagMaxLength))
+            return cb(false, 'invalid tx data.tag')
+        
+        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser))
+            return cb(false, 'invalid tx not enough vt')
+
+        // tip should be between 1 and 10^config.tippedVotePrecision
+        if (!validate.integer(tx.data.tip,false,false,Math.pow(10,config.tippedVotePrecision),1))
+            return cb(false, 'invalid author tip value')
+        
+        cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, (err, content) => {
+            if (err) throw err
+            if (!content) return cb(false, 'cannot vote and tip non-existent content')
+            if (content.votes.length === 0) return cb(false, 'no votes in this content to tip author with')
+
+            // author should be voted and not claimed reward
+            let authorVote = false
+            let authorVoteClaimed = false
+            for (let v = 0; v < content.votes.length; v++) {
+                if (content.votes[v].u === tx.data.author) {
+                    authorVote = true
+                    if (content.votes[v].claimed)
+                        authorVoteClaimed = true
+                    break
+                }
             }
+
+            // probably content imported from genesis
+            if (!authorVote) return cb(false, 'author vote does not exist')
+
+            // can only tip author that have not claimed reward
+            if (authorVoteClaimed) return cb(false, 'author has already claimed reward')
+
+            // the remaining validations are the same as votes without author tip
             if (!config.allowRevotes) 
                 for (let i = 0; i < content.votes.length; i++) 
                     if (tx.sender === content.votes[i].u) {
@@ -31,10 +54,12 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
+        // same as vote but with (tx.data.tip / 10^config.tippedVotePrecision) of rewards tipped to author (first vote)
         var vote = {
             u: tx.sender,
             ts: ts,
-            vt: tx.data.vt
+            vt: tx.data.vt,
+            tip: tx.data.tip/Math.pow(10,config.tippedVotePrecision)
         }
         if (tx.data.tag) vote.tag = tx.data.tag
         cache.updateOne('contents', {_id: tx.data.author+'/'+tx.data.link},{$push: {
