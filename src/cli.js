@@ -269,6 +269,23 @@ program.command('sign <transaction>')
         writeLine('  $ sign \'{"type":1,"data":{"target":"bob"}}\' -F key.json -M alice')
     })
 
+program.command('tipped-vote <link> <author> <vt> <tag> <tip>')
+    .description('vote for a content with a % of curation rewards tipped to author')
+    .action(function(link, author, vt, tag, tip) {
+        verifyAndSendTx('tippedVote', link, author, vt, tag, tip)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: the identifier of the comment to vote on')        
+        writeLine('  <author>: the author of the comment to vote on')
+        writeLine('  <vt>: the amount of VT to spend on the vote')
+        writeLine('  <tag>: the tag to associate with the vote')
+        writeLine('  <tip>: the tip weight (1 => 1%, 100 => 100% of rewards claimable by author)')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ tipped-vote awesome-video alice 1000 introduce-yourself 15 -F key.json -M bob')
+    })
+
 program.command('transfer <receiver> <amount>')
     .alias('xfer')
     .option('--memo [text]', 'add a short message to the transfer')    
