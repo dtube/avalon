@@ -126,7 +126,8 @@ var config = {
             leaderRewardVT: 100,
             vtPerBurn: 44
         },
-        6000000: {
+        4800000: {
+            // Author tip hardfork
             txLimits: {
                 14: 2,
                 15: 2,
