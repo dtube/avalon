@@ -4,7 +4,7 @@ Make sure debian is up-to-date and download git and a few other packages from th
 ```bash
 sudo apt-get update
 sudo apt-get upgrade
-sudo apt-get install git wget tmux htop jq
+sudo apt-get install git wget tmux htop jq unzip
 git clone https://github.com/dtube/avalon.git
 cd avalon/
 ```
@@ -40,4 +40,4 @@ And install NPM modules that Avalon uses.
 npm install
 ```
 
-Then, you should be able to launch an avalon development chain by running the node with `./scripts/start.sh`. If you want to connect to an existing network, check [Syncing your node](./syncing-your-node.md) doc
+Then, you should be able to launch an avalon development chain by running the node with `./scripts/start.sh`. If you want to connect to an existing network, read [Syncing your node](./syncing-your-node.md) doc.
