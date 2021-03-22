@@ -13,7 +13,7 @@ cd ..
 Secondly, you will need to add some default peers to use to connect to the network.
 Near the bottom of the `scripts/start.sh` script:
 ```bash
-export PEERS=ws://34.65.228.228:6001,ws://techcoderx.com:6001
+export PEERS=ws://34.65.228.228:6001,ws://dseed.techcoderx.com:6001
 export MAX_PEERS=20
 ```
 If you need a bigger peer list, come to our [discord server](https://discord.gg/dtube) and look at the pinned messages of the #leader-candidates channel.
@@ -34,7 +34,7 @@ mkdir dump
 cd dump
 wget https://backup.d.tube/blocks.zip
 cd ..
-./scripts/start.sh
+REBUILD_STATE=1 ./scripts/start.sh
 ```
 ## 3- Replay from database snapshot
 This is the fastest method (takes <5 mins). You will download the latest hourly snapshot and import the data in your node, without any verification.
