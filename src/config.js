@@ -46,6 +46,8 @@ var config = {
             ecoStartRent: 0.75,
             // the maximum number of follows a single account can do
             followsMax: 2000,
+            // F
+            hotfix1: false,
             // the max size of a stringified json input (content / user profile)
             // best if kept slightly lower than bwMax
             jsonMaxBytes: 60000,
@@ -133,6 +135,9 @@ var config = {
                 15: 2,
                 19: 0
             }
+        },
+        4860000: {
+            hotfix1: true
         }
     },
     read: (blockNum) => {
