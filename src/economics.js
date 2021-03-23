@@ -57,7 +57,8 @@ var eco = {
                         var tx = block.txs[y]
                         if (tx.type === TransactionType.VOTE
                             || tx.type === TransactionType.COMMENT
-                            || tx.type === TransactionType.PROMOTED_COMMENT)
+                            || tx.type === TransactionType.PROMOTED_COMMENT
+                            || (tx.type === TransactionType.TIPPED_VOTE && config.hotfix1))
                             votes += Math.abs(tx.data.vt)*weight
                     }
                     weight++
