@@ -36,6 +36,7 @@ var p2p = {
         var server = new WebSocket.Server({host:p2p_host, port: p2p_port})
         server.on('connection', ws => p2p.handshake(ws))
         logr.info('Listening websocket p2p port on: ' + p2p_port)
+        logr.info('Version:',version)
         setTimeout(function(){p2p.recover()}, replay_interval)
         if (!process.env.NO_DISCOVERY || process.env.NO_DISCOVERY === '0' || process.env.NO_DISCOVERY === 0) {
             setInterval(function(){p2p.discoveryWorker()}, discovery_interval)
