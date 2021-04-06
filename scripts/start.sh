@@ -3,6 +3,8 @@
 # Ports configuration
 #export HTTP_PORT=3001
 #export P2P_PORT=6001
+#export HTTP_HOST=0.0.0.0
+#export P2P_HOST=0.0.0.0
 
 # MongoDB configuration
 #export DB_NAME=avalon

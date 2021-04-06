@@ -46,6 +46,8 @@ var config = {
             ecoStartRent: 0.75,
             // the maximum number of follows a single account can do
             followsMax: 2000,
+            // F
+            hotfix1: false,
             // the max size of a stringified json input (content / user profile)
             // best if kept slightly lower than bwMax
             jsonMaxBytes: 60000,
@@ -103,6 +105,9 @@ var config = {
             // the maximum length of tags (on votes)
             tagMaxLength: 25,
             tagMaxPerContent: 5,
+            // precision of author tip percentage
+            // 1 => 10% step, 2 => 1% step, 3 => 0.1% step, 4 => 0.01% step
+            tippedVotePrecision: 2,
             tmpForceTs: true,
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
@@ -112,6 +117,7 @@ var config = {
             txLimits: {
                 14: 2,
                 15: 2,
+                19: 1
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 360000000, // +1 vt per hour per DTC (3600 * 1000 * 100)
@@ -121,6 +127,17 @@ var config = {
             leaders: 13,
             leaderRewardVT: 100,
             vtPerBurn: 44
+        },
+        4800000: {
+            // Author tip hardfork
+            txLimits: {
+                14: 2,
+                15: 2,
+                19: 0
+            }
+        },
+        4860000: {
+            hotfix1: true
         }
     },
     read: (blockNum) => {

@@ -1,4 +1,4 @@
-const version = '1.2'
+const version = '1.3.1'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
@@ -7,6 +7,7 @@ const max_peers = process.env.MAX_PEERS || 15
 const history_interval = 10000
 const keep_history_for = 20000
 var p2p_port = process.env.P2P_PORT || default_port
+var p2p_host = process.env.P2P_HOST || "::"
 var WebSocket = require('ws')
 const { randomBytes } = require('crypto')
 var secp256k1 = require('secp256k1')
@@ -32,9 +33,10 @@ var p2p = {
     nodeId: null,
     init: () => {
         p2p.generateNodeId()
-        var server = new WebSocket.Server({port: p2p_port})
+        var server = new WebSocket.Server({host:p2p_host, port: p2p_port})
         server.on('connection', ws => p2p.handshake(ws))
         logr.info('Listening websocket p2p port on: ' + p2p_port)
+        logr.info('Version:',version)
         setTimeout(function(){p2p.recover()}, replay_interval)
         if (!process.env.NO_DISCOVERY || process.env.NO_DISCOVERY === '0' || process.env.NO_DISCOVERY === 0) {
             setInterval(function(){p2p.discoveryWorker()}, discovery_interval)

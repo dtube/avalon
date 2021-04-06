@@ -171,6 +171,8 @@ transaction = {
             case TransactionType.COMMENT:
             case TransactionType.VOTE:
             case TransactionType.PROMOTED_COMMENT:
+            case TransactionType.TIPPED_VOTE:
+                if (tx.type === TransactionType.TIPPED_VOTE && !config.hotfix1) break
                 vt = new GrowInt(account.vt, vtGrowConfig).grow(ts)
                 vt.v -= Math.abs(tx.data.vt)
                 break

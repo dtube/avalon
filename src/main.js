@@ -1,7 +1,7 @@
 // starting sub modules
 logr = require('./logger.js')
 config = require('./config.js').read(0)
-http = require('./http.js')
+http = require('./http/index.js')
 p2p = require('./p2p.js')
 mongo = require('./mongo.js')
 chain = require('./chain.js')

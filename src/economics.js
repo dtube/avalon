@@ -57,7 +57,8 @@ var eco = {
                         var tx = block.txs[y]
                         if (tx.type === TransactionType.VOTE
                             || tx.type === TransactionType.COMMENT
-                            || tx.type === TransactionType.PROMOTED_COMMENT)
+                            || tx.type === TransactionType.PROMOTED_COMMENT
+                            || (tx.type === TransactionType.TIPPED_VOTE && config.hotfix1))
                             votes += Math.abs(tx.data.vt)*weight
                     }
                     weight++
@@ -132,14 +133,14 @@ var eco = {
                 // share the new coins between winners
                 var newCoins = 0
                 for (let i = 0; i < winners.length; i++) {
-                    if (!winners[i].claimable)
-                        winners[i].claimable = 0
+                    if (!winners[i].gross)
+                        winners[i].gross = 0
                     
                     var won = thNewCoins * winners[i].share
                     var rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
                     won *= rentabilityWinner
                     won = Math.floor(won*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
-                    winners[i].claimable += won
+                    winners[i].gross += won
                     newCoins += won
                     delete winners[i].share
 
@@ -165,14 +166,14 @@ var eco = {
                     if (i === 0 && !config.ecoPunishAuthor)
                         break
                     if (!content.votes[i].claimed && content.votes[i].vt*currentVote.vt < 0)
-                        if (content.votes[i].claimable >= takeAwayAmount) {
-                            content.votes[i].claimable -= takeAwayAmount
+                        if (content.votes[i].gross >= takeAwayAmount) {
+                            content.votes[i].gross -= takeAwayAmount
                             newBurn += takeAwayAmount
                             takeAwayAmount = 0
                         } else {
-                            takeAwayAmount -= content.votes[i].claimable
-                            newBurn += content.votes[i].claimable
-                            content.votes[i].claimable = 0
+                            takeAwayAmount -= content.votes[i].gross
+                            newBurn += content.votes[i].gross
+                            content.votes[i].gross = 0
                         }
                     i--
                 }
@@ -180,6 +181,31 @@ var eco = {
                 
                 logr.econ(newCoins + ' dist from the vote')
                 logr.econ(newBurn + ' burn from the vote')
+
+                // compute final claimable amount after author tip
+                let authorVote = -1
+                let authorVoteClaimed = false
+                let totalAuthorTip = 0
+                let precisionMulti = Math.pow(10,config.ecoClaimPrecision+config.tippedVotePrecision)
+                for (let v = 0; v < newVotes.length; v++)
+                    if (newVotes[v].u === content.author) {
+                        authorVote = v
+                        if (newVotes[v].claimed) authorVoteClaimed = true
+                        if (!config.allowRevotes) break
+                    }
+                for (let v = 0; v < newVotes.length; v++)
+                    if (authorVote >= 0 && newVotes[v].u !== content.author && newVotes[v].tip) {
+                        if (!authorVoteClaimed) {
+                            let tipAmt = (newVotes[v].gross * Math.pow(10,config.ecoClaimPrecision)) * (newVotes[v].tip * Math.pow(10,config.tippedVotePrecision))
+                            totalAuthorTip += tipAmt
+                            newVotes[v].totalTip = tipAmt / precisionMulti
+                            newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - tipAmt) / precisionMulti
+                        } else
+                            newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - (newVotes[v].totalTip * precisionMulti)) / precisionMulti
+                    } else if (newVotes[v].u !== content.author)
+                        newVotes[v].claimable = newVotes[v].gross
+                if (authorVote >= 0 && !authorVoteClaimed)
+                    newVotes[authorVote].claimable = ((newVotes[authorVote].gross * precisionMulti) + totalAuthorTip) / precisionMulti
 
                 // add dist/burn/votes to currentBlock eco stats
                 eco.currentBlock.dist += newCoins
