@@ -2,7 +2,7 @@ const axios = require('axios')
 
 let config = {
     host: 'http://localhost',
-    port: '3001',
+    port: process.env.HTTP_PORT || '3001',
     homeDir: "/home/ec2-user/",
     testnetDir: "/home/ec2-user/avalon_testnet/tavalon/avalon_testnet/",
     mainnetDir: "/home/ec2-user/tavalon/avalon/",

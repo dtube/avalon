@@ -19,8 +19,8 @@ services:
           memory: 8G
 
     volumes:
-      - ~/avalon/mongodb:/var/lib/mongodb
-      - ~/avalon/logs:/avalon/logs
+      - $HOME/avalon/mongodb:/var/lib/mongodb
+      - $HOME/avalon/logs:/avalon/logs
 
     #restart: on-failure
 
@@ -84,8 +84,8 @@ services:
 
 
     ports:
-      - 3001:3001
-      - 6001:6001
+      - $HTTP_PORT:$HTTP_PORT
+      - $P2P_PORT:$P2P_PORT
 
     #command: /avalon/scripts/start.sh
     #command: ["node", "--stack-size=65500", "src/main.js"]
