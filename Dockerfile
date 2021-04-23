@@ -35,7 +35,7 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
 RUN wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | apt-key add -
 RUN echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-4.4.list
 RUN apt-get -y update && apt-get install -y libcurl3 openssl vim tmux mongodb
-
+RUN apt-get -y update && apt-get install -y locales-all
 
 # Install nvm with node and npm
 ENV NVM_DIR /root/.nvm
@@ -52,5 +52,7 @@ ENV PATH      $NVM_DIR/v$NODE_VERSION/bin:$PATH
 COPY ./scripts/start_dtube.sh ./scripts/start_dtube.sh
 COPY ./scripts/start_mainnet.sh ./scripts/start_mainnet.sh
 COPY ./scripts/restartMining.js .
+COPY .tmux.conf /root/.tmux.conf
+COPY .vimrc /root/.vimrc
 
 CMD ["sh"]
