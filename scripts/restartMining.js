@@ -30,7 +30,8 @@ let config = {
     replayLogPath: "/avalon/avalon.log",
     backupUrl: backupUrlMain + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
     blockBackupUrl: backupUrlMain + "blocks.zip",
-    genesisSourceUrl: backupUrlMain + "genesis.zip"
+    genesisSourceUrl: backupUrlMain + "genesis.zip",
+    mongodbPath: "/data/db"
 }
 
 var curbHeight = 0
@@ -109,7 +110,7 @@ function sleep (time) {
 }
 
 function replayFromSelfBackup() {
-    backupUrl = "/var/lib/mongodb/backup"
+    backupUrl = config.mongodbPath + "/backup"
 }
 
 function getGenesisBlocks() {
@@ -137,7 +138,7 @@ function getGenesisBlocks() {
 }
 
 function replayAndRebuildStateFromBlocks(cb) {
-    cmd = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep mongod` ]]; then `mongod --dbpath /var/lib/mongodb > mongo.log 2>&1 &`; fi"
+    cmd = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep mongod` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi"
     runCmd(cmd)
 
     cmd = "pgrep \"src/main\" | xargs --no-run-if-empty kill  -9"
@@ -168,7 +169,7 @@ function replayAndRebuildStateFromBlocks(cb) {
 }
 
 function replayFromAvalonBackup(cb) {
-    cmd = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep mongod` ]]; then `mongod --dbpath /var/lib/mongodb > mongo.log 2>&1 &`; fi"
+    cmd = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep mongod` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi"
     runCmd(cmd)
 
     cmd = "pgrep \"src/main\" | xargs --no-run-if-empty kill  -9"
@@ -301,7 +302,7 @@ function checkHeightAndRun() {
                 replayCheck++
                 if (replayCheck == 5000) {
                     checkRestartCmd = ""
-                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath /var/lib/mongodb > mongo.log 2>&1 &`; fi && sleep 10"
+                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 10"
                     restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
                     checkRestartCmd =  restartMongoDB + " && "
@@ -322,7 +323,7 @@ function checkHeightAndRun() {
 
         if (replayState == 0) {
             checkRestartCmd = ""
-            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath /var/lib/mongodb > mongo.log 2>&1 &`; fi && sleep 10"
+            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 10"
             restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
             checkRestartCmd =  restartMongoDB + " && "
@@ -339,7 +340,7 @@ function checkHeightAndRun() {
 }
 
 // running first time
-restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath /var/lib/mongodb &`; sleep 5; fi"
+restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " &`; sleep 5; fi"
 runCmd(restartMongoDB)
 
 restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `echo \" Restarting avalon\" >> " + config.logPath + " `; `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
