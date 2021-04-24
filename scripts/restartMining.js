@@ -37,6 +37,9 @@ var curbHeight = 0
 var prevbHeight = 0
 var replayFromDatabaseCount = 0
 var reRunCount = 0
+// try restarting before replaying for non-zero same height
+var tryRestartForSameHeight = 0
+var restartThreshold = 3
 var sameHeightCount = 0
 // How many times same height before replaying from database
 var sameHeightThreshold = 5
@@ -238,16 +241,28 @@ function checkHeightAndRun() {
                 } else if (sameHeightCount == sameHeightThreshold && replayState == 0) {
                     sameHeightCount = 0
                     logr.info('Same block height threshold reached. Replaying from database.')
-                    mongo.init(function() {
-                        logr.info("Dropping avalon mongo db (replayState from database snapshot)")
-                        mongo.dropDatabase(function(){
-                            replayState = 1
-                            replayFromAvalonBackup(function(replayCount, replayState) {
-                                replayCount++
-                                replayState = 0
+                    if (curbHeight == 0 || tryRestartForSameHeight == restartThreshold) {
+                        tryRestartForSameHeight = 0
+                        mongo.init(function() {
+                            logr.info("Dropping avalon mongo db (replayState from database snapshot)")
+                            mongo.dropDatabase(function(){
+                                replayState = 1
+                                replayFromAvalonBackup(function(replayCount, replayState) {
+                                    replayCount++
+                                    replayState = 0
+                                })
                             })
                         })
-                    })
+                    } else {
+                        // kill main and restart
+                        cmd = "pgrep \"src/main\" | xargs --no-run-if-empty kill  -9"
+                        runCmd(cmd)
+
+                        logr.info("Restarting avalon with new net")
+                        runAvalonScriptCmd = config.scriptPath + " >> " + config.logPath + " 2>&1"
+                        runCmd(runAvalonScriptCmd)
+                        tryRestartForSameHeight++
+                    }
                 }
             }
         } else {
