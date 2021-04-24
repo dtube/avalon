@@ -6,13 +6,15 @@ const db_url = process.env.DB_URL || 'mongodb://localhost:27017'
 const MongoClient = require('mongodb').MongoClient
 
 const backupUrlMain = process.env.BACKUP_URL || "https://dtube.club/backup/"
-const backupUrlOrig = "https://backup.d.tube/"
+const backupUrlOrig = "http://backup.d.tube/"
 
 var createNet = parseInt(process.env.CREATE_NET || 0)
 var shouldGetGenesisBlocks = parseInt(process.env.GET_GENESIS_BLOCKS || 0)
 
 var replayState = parseInt(process.env.REPLAY_STATE || 0)
 var rebuildState = parseInt(process.env.REBUILD_STATE || 0)
+var replayCheck = 0
+
 
 if (rebuildState)
     replayState = 0
@@ -26,8 +28,7 @@ let config = {
     scriptPath: "./scripts/start_mainnet.sh",
     logPath: "/avalon/avalon.log",
     replayLogPath: "/avalon/avalon.log",
-    backupUrl: backupUrlMain + "avalon.tar.gz",
-    //backupUrl = "https://backup.d.tube/$(date +%H).tar.gz"
+    backupUrl: backupUrlMain + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
     blockBackupUrl: backupUrlMain + "blocks.zip",
     genesisSourceUrl: backupUrlMain + "genesis.zip"
 }
@@ -177,9 +178,8 @@ function replayFromAvalonBackup(cb) {
     cmd += " && "
     cmd += "cd /avalon/dump"
     cmd += " && "
-    cmd += "wget -q --show-progress --progress=bar:force " + backupUrl + " >> " + config.replayLogPath + " 2>&1"
-    cmd += " && "
-    cmd += "tar xfvz ./* " +  " >> " + config.replayLogPath + " 2>&1"
+    downloadCmd = "wget -q --show-progress --progress=bar:force " + backupUrl + " >> " + config.replayLogPath + " 2>&1"
+    cmd += "if [[ ! -f $(TZ=GMT date +'%d%h%Y_%H').tar.gz ]]; then `" + downloadCmd + "`; fi" +  " && " + "tar xfvz ./*" + " >> " +  config.replayLogPath
     cmd += " && "
     cmd += "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep mongorestore` ]]; then `mongorestore -d " + db_name + " ./ >> " + config.replayLogPath + " 2>&1`; fi"
     cmd += " && "
@@ -256,6 +256,7 @@ function checkHeightAndRun() {
             replayCount = 0
             replayState = 0
             rebuildState = 0
+            replayCheck = 0
         }
         prevbHeight = curbHeight
 
@@ -281,7 +282,19 @@ function checkHeightAndRun() {
         }
         else {
             if (replayState == 1) {
-                logr.info("Replaying from database")
+                logr.info("Replaying from database.. 2nd case")
+                replayCheck++
+                if (replayCheck == 5000) {
+                    checkRestartCmd = ""
+                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath /var/lib/mongodb > mongo.log 2>&1 &`; fi && sleep 10"
+                    restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
+
+                    checkRestartCmd =  restartMongoDB + " && "
+                    checkRestartCmd += "mongo --quiet avalon --eval \"db.blocks.count()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongo --quiet avalon --eval \"db.blocks.count()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 15 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
+                    logr.info("Check restart command = " + checkRestartCmd)
+                    runCmd(checkRestartCmd)
+                    replayState = 0
+                }
             } else if(rebuildState == 1) {
                 logr.info("Rebuilding from blocks")
                 replayAndRebuildStateFromBlocks(function() {
