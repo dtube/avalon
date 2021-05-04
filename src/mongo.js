@@ -12,9 +12,13 @@ var mongo = {
         MongoClient.connect(db_url, {
             useNewUrlParser: true,
             useUnifiedTopology: true
-        }, function(err, client) {
+        }, async function(err, client) {
             if (err) throw err
             this.db = client.db(db_name)
+            await this.db.executeDbAdminCommand({
+                setParameter: 1,
+                internalQueryExecMaxBlockingSortBytes: 335544320
+            })
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
             // If a rebuild is specified, drop the database
@@ -62,7 +66,7 @@ var mongo = {
             
             // if there's a genesis file, we unzip and mongorestore it
             logr.info('Found genesis.zip file, checking sha256sum...')
-            var fileHash = sha256File(genesisZip)
+            let fileHash = sha256File(genesisZip)
             logr.debug(config.originHash+'\t config.originHash')
             logr.debug(fileHash+'\t genesis.zip')
             if (fileHash !== config.originHash) {
@@ -74,11 +78,11 @@ var mongo = {
             spawnSync('unzip',[genesisZip,'-d',genesisFolder])
             logr.info('Finished unzipping, importing data now...')
 
-            var mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
+            let mongorestore = spawn('mongorestore', ['--uri='+mongoUri, '-d', db_name, genesisFolder])                         
             mongorestore.stderr.on('data', (data) => {
                 data = data.toString().split('\n')
                 for (let i = 0; i < data.length; i++) {
-                    var line = data[i].split('\t')
+                    let line = data[i].split('\t')
                     if (line.length > 1 && line[1].indexOf(db_name+'.') > -1)
                         logr.debug(line[1])
                 }
@@ -117,7 +121,7 @@ var mongo = {
         db.collection('blocks').findOne({}, function(err, block) {
             if (err) throw err
             if (!block) {
-                var genesisBlock = chain.getGenesisBlock()
+                let genesisBlock = chain.getGenesisBlock()
                 db.collection('blocks').insertOne(genesisBlock, function() {
                     cb()
                 })
