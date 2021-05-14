@@ -15,10 +15,12 @@ var mongo = {
         }, async function(err, client) {
             if (err) throw err
             this.db = client.db(db_name)
-            await this.db.executeDbAdminCommand({
-                setParameter: 1,
-                internalQueryExecMaxBlockingSortBytes: 335544320
-            })
+            try {
+                await this.db.executeDbAdminCommand({
+                    setParameter: 1,
+                    internalQueryExecMaxBlockingSortBytes: 335544320
+                })
+            } catch {}
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
             // If a rebuild is specified, drop the database
