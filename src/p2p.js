@@ -262,6 +262,10 @@ var p2p = {
                 if (p2p.recovering) return
                 var tx = message.d
 
+                // if the pool is already full, do nothing at all
+                if (transaction.isPoolFull())
+                    break
+
                 // if its already in the mempool, it means we already handled it
                 if (transaction.isInPool(tx))
                     break
