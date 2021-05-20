@@ -260,7 +260,11 @@ var cache = {
         
         var timeBefore = new Date().getTime()
         parallel(executions, function(err, results) {
-            logr.debug(executions.length+' mongo queries executed in '+(new Date().getTime()-timeBefore)+'ms')
+            let execTime = new Date().getTime()-timeBefore
+            if (!rebuild && execTime >= config.blockTime/2)
+                logr.warn('Slow write execution: ' + executions.length + ' mongo queries took ' + execTime + 'ms')
+            else
+                logr.debug(executions.length+' mongo queries executed in '+execTime+'ms')
             cache.changes = []
             cache.inserts = []
             cache.rebuild.changes = []

@@ -182,6 +182,10 @@ var p2p = {
                     var challengeHash = p2p.sockets[p2p.sockets.indexOf(ws)].challengeHash
                     if (!challengeHash)
                         return
+                    if (message.d.origin_block !== config.originHash) {
+                        logr.debug('Different chain id, disconnecting')
+                        return ws.close()
+                    }
                     try {
                         var isValidSignature = secp256k1.ecdsaVerify(
                             bs58.decode(message.d.sign),
