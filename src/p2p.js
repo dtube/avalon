@@ -182,6 +182,10 @@ var p2p = {
                     var challengeHash = p2p.sockets[p2p.sockets.indexOf(ws)].challengeHash
                     if (!challengeHash)
                         return
+                    if (message.d.origin_block !== config.originHash) {
+                        logr.debug('Different chain id, disconnecting')
+                        return ws.close()
+                    }
                     try {
                         var isValidSignature = secp256k1.ecdsaVerify(
                             bs58.decode(message.d.sign),
@@ -257,6 +261,10 @@ var p2p = {
                 // we received a new transaction from a peer
                 if (p2p.recovering) return
                 var tx = message.d
+
+                // if the pool is already full, do nothing at all
+                if (transaction.isPoolFull())
+                    break
 
                 // if its already in the mempool, it means we already handled it
                 if (transaction.isInPool(tx))
