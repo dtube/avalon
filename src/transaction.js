@@ -119,7 +119,10 @@ transaction = {
                 cb(false, 'user has no bandwidth object'); return
             }
 
-            var newBw = new GrowInt(legitUser.bw, {growth:legitUser.balance/(config.bwGrowth), max:config.bwMax}).grow(ts)
+            var newBw = new GrowInt(legitUser.bw, {
+                growth: Math.max(legitUser.baseBwGrowth || 0, legitUser.balance)/(config.bwGrowth),
+                max: config.bwMax
+            }).grow(ts)
 
             if (!newBw) {
                 logr.debug(legitUser)
@@ -156,7 +159,10 @@ transaction = {
     collectGrowInts: (tx, ts, cb) => {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             // collect bandwidth
-            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax})
+            var bandwidth = new GrowInt(account.bw, {
+                growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
+                max: config.bwMax
+            })
             var needed_bytes = JSON.stringify(tx).length
             var bw = bandwidth.grow(ts)
             if (!bw) 
@@ -220,7 +226,10 @@ transaction = {
         if (!account.bw || !account.vt) 
             logr.debug('error loading grow int', account)
         
-        var bw = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax}).grow(ts)
+        var bw = new GrowInt(account.bw, {
+            growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
+            max: config.bwMax
+        }).grow(ts)
         var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
         if (!bw || !vt) {
             logr.fatal('error growing grow int', account, ts)

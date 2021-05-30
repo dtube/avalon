@@ -142,7 +142,9 @@ var config = {
         15000000: {
             maxKeys: 25,
             disallowVotingInactiveLeader: true,
-            burnAccount: 'dtube.airdrop'
+            burnAccount: 'dtube.airdrop',
+            preloadVt: 50, // 50% of vtPerBurn
+            preloadBwGrowth: 2 // x2 more time of bwGrowth
         }
     },
     read: (blockNum) => {
