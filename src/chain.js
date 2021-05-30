@@ -705,6 +705,8 @@ chain = {
                 // do nothing if there is none to burn
                 if (burnAccount.balance <= 0)
                     return rs(0)
+                // burn only up to available balance
+                burnAmount = Math.min(burnAmount,burnAccount.balance)
                 cache.updateOne('accounts', {name: config.burnAccount}, {$inc: {balance: -burnAmount}},() =>
                     transaction.updateGrowInts(burnAccount, block.timestamp, () => {
                         transaction.adjustNodeAppr(burnAccount, -burnAmount, () => {
