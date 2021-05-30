@@ -140,7 +140,8 @@ var config = {
             hotfix1: true
         },
         15000000: {
-            maxKeys: 25
+            maxKeys: 25,
+            disallowVotingInactiveLeader: true
         }
     },
     read: (blockNum) => {
