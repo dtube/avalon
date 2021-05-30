@@ -574,7 +574,7 @@ chain = {
             })
         
         var blockTimeBefore = new Date().getTime()
-        series(executions, function(err, results) {
+        series(executions, async function(err, results) {
             var string = 'executed'
             if(revalidate) string = 'validated & '+string
             logr.debug('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
@@ -591,10 +591,14 @@ chain = {
                     burnedInBlock += results[i].burned
             }
 
+            // execute periodic burn
+            let additionalBurn = await chain.decayBurnAccount(block)
+
             // add rewards for the leader who mined this block
             chain.leaderRewards(block.miner, block.timestamp, function(dist) {
                 distributedInBlock += dist
                 distributedInBlock = Math.round(distributedInBlock*1000) / 1000
+                burnedInBlock += additionalBurn
                 burnedInBlock = Math.round(burnedInBlock*1000) / 1000
                 cb(executedSuccesfully, distributedInBlock, burnedInBlock)
             })
@@ -686,6 +690,30 @@ chain = {
                     }
                 )
             else cb(0)
+        })
+    },
+    decayBurnAccount: (block) => {
+        return new Promise((rs) => {
+            if (!config.burnAccount || block._id % config.ecoBlocks !== 0)
+                return rs(0)
+            // offset inflation
+            let rp = eco.rewardPool()
+            let burnAmount = Math.floor(rp.dist)
+            if (burnAmount <= 0)
+                return rs(0)
+            cache.findOne('accounts', {name: config.burnAccount}, (e,burnAccount) => {
+                // do nothing if there is none to burn
+                if (burnAccount.balance <= 0)
+                    return rs(0)
+                cache.updateOne('accounts', {name: config.burnAccount}, {$inc: {balance: -burnAmount}},() =>
+                    transaction.updateGrowInts(burnAccount, block.timestamp, () => {
+                        transaction.adjustNodeAppr(burnAccount, -burnAmount, () => {
+                            logr.econ('Burned ' + burnAmount + ' periodically from ' + config.burnAccount)
+                            return rs(burnAmount)
+                        })
+                    })
+                )
+            })
         })
     },
     calculateHashForBlock: (block) => {

@@ -141,7 +141,8 @@ var config = {
         },
         15000000: {
             maxKeys: 25,
-            disallowVotingInactiveLeader: true
+            disallowVotingInactiveLeader: true,
+            burnAccount: 'dtube.airdrop'
         }
     },
     read: (blockNum) => {
