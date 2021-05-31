@@ -161,6 +161,23 @@ let cmds = {
             author+'", "vt": '+
             parseInt(weight)+', "tag": "'+tag+'", "tip": ' + parseInt(tip) + '}}'
         return sign(privkey, sender, tx)
+    },
+
+    newWeightedKey: (privKey, sender, id, pub, types, weight) => {
+        let tx = '{"type":20,"data":{"id":"'+
+			id+'","pub":"'+
+			pub+'","types":'+types+',"weight":'+weight+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    setSignatureThreshold: (privKey, sender, thresholds) => {
+        let tx = '{"type":21,"data":{"thresholds":'+thresholds+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    setPasswordWeight: (privKey, sender, weight) => {
+        let tx = '{"type":22,"data":{"weight":'+weight+'}}'
+        return sign(privKey, sender, tx)
     }
 }
 

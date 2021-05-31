@@ -144,7 +144,8 @@ var config = {
             disallowVotingInactiveLeader: true,
             burnAccount: 'dtube.airdrop',
             preloadVt: 50, // 50% of vtPerBurn
-            preloadBwGrowth: 2 // x2 more time of bwGrowth
+            preloadBwGrowth: 2, // x2 more time of bwGrowth
+            multisig: true
         }
     },
     read: (blockNum) => {
