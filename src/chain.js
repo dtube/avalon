@@ -362,33 +362,66 @@ chain = {
                 cb(false); return
             }
             // main key can authorize all transactions
-            var allowedPubKeys = [account.pub]
+            let allowedPubKeys = [[account.pub, account.pub_weight || 1]]
+            let threshold = 1
             // add all secondary keys having this transaction type as allowed keys
             if (account.keys && typeof txType === 'number' && Number.isInteger(txType))
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
-                        allowedPubKeys.push(account.keys[i].pub)
+                        allowedPubKeys.push([account.keys[i].pub, account.keys[i].weight || 1])
 
             // if there is no transaction type
             // it means we are verifying a block signature
             // so only the leader key is allowed
             if (txType === null)
                 if (account.pub_leader)
-                    allowedPubKeys = [account.pub_leader]
+                    allowedPubKeys = [[account.pub_leader, 1]]
                 else
                     allowedPubKeys = []
+            else {
+                // compute required signature threshold
+                if (account.thresholds && account.thresholds[txType])
+                    threshold = account.thresholds[txType]
+                else if (account.thresholds && account.thresholds.default)
+                    threshold = account.thresholds.default
+            }
+
+            // multisig transactions
+            if (config.multisig && Array.isArray(sign))
+                return chain.isValidMultisig(account,threshold,allowedPubKeys,hash,sign,cb)
             
+            // single signature
             for (let i = 0; i < allowedPubKeys.length; i++) {
-                var bufferHash = Buffer.from(hash, 'hex')
-                var b58sign = bs58.decode(sign)
-                var b58pub = bs58.decode(allowedPubKeys[i])
-                if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub)) {
+                let bufferHash = Buffer.from(hash, 'hex')
+                let b58sign = bs58.decode(sign)
+                let b58pub = bs58.decode(allowedPubKeys[i][0])
+                if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub) && allowedPubKeys[i[1]] >= threshold) {
                     cb(account)
                     return
                 }
             }
             cb(false)
         })
+    },
+    isValidMultisig: (account,threshold,allowedPubKeys,hash,signatures,cb) => {
+        let validWeights = 0
+        let validSigs = []
+        let hashBuf = Buffer.from(hash, 'hex')
+        for (let s = 0; s < signatures.length; s++) {
+            let signBuf = bs58.decode(signatures[s][0])
+            let recoveredPub = bs58.encode(secp256k1.ecdsaRecover(signBuf,signatures[s][1],hashBuf))
+            if (validSigs.includes(recoveredPub))
+                return cb(false, 'duplicate signatures found')
+            for (let p = 0; p < allowedPubKeys.length; p++)
+                if (allowedPubKeys[p][0] === recoveredPub) {
+                    validWeights += allowedPubKeys[p][1]
+                    validSigs.push(recoveredPub)
+                }
+        }
+        if (validWeights >= threshold)
+            cb(account)
+        else
+            cb(false, 'insufficient signature weight ' + validWeights + ' to reach threshold of ' + threshold)
     },
     isValidHashAndSignature: (newBlock, cb) => {
         // and that the hash is correct

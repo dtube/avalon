@@ -83,9 +83,16 @@ transaction = {
         if (!tx.hash || typeof tx.hash !== 'string') {
             cb(false, 'invalid tx hash'); return
         }
-        if (!tx.signature || typeof tx.signature !== 'string') {
+        if (!tx.signature || (typeof tx.signature !== 'string' && !(config.multisig && Array.isArray(tx.signature)))) {
             cb(false, 'invalid tx signature'); return
         }
+        // multisig transactions check
+        // signatures in multisig txs contain an array of signatures and recid 
+        if (config.multisig && Array.isArray(tx.signature))
+            for (let s = 0; s < tx.signature.length; s++)
+                if (!Array.isArray(tx.signature[s]) || tx.signature[s].length !== 2 || typeof tx.signature[s][0] !== 'string' || !Number.isInteger(tx.signature[s][1]))
+                    return cb(false, 'invalid multisig tx signature #'+s)
+
         // enforce transaction limits
         if (config.txLimits[tx.type] && config.txLimits[tx.type] === 1) {
             cb(false, 'transaction type is disabled'); return
