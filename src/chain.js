@@ -395,7 +395,7 @@ chain = {
                 let bufferHash = Buffer.from(hash, 'hex')
                 let b58sign = bs58.decode(sign)
                 let b58pub = bs58.decode(allowedPubKeys[i][0])
-                if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub) && allowedPubKeys[i[1]] >= threshold) {
+                if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub) && allowedPubKeys[i][1] >= threshold) {
                     cb(account)
                     return
                 }
