@@ -337,9 +337,12 @@ var cache = {
         }
     },
     warmupLeaders: (cb) => {
-        db.collection('accounts').find(
-            {pub_leader: {$exists:true}}
-        ).toArray((e,accs) => {
+        db.collection('accounts').find({
+            $and: [
+                {pub_leader: {$exists:true}},
+                {pub_leader: {$ne: ""}}
+            ]
+        }).toArray((e,accs) => {
             if (e) throw e
             for (let i in accs) {
                 cache.leaders[accs[i].name] = 1
