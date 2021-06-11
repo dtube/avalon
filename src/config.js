@@ -108,7 +108,6 @@ var config = {
             // precision of author tip percentage
             // 1 => 10% step, 2 => 1% step, 3 => 0.1% step, 4 => 0.01% step
             tippedVotePrecision: 2,
-            tmpForceTs: true,
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
             // limit which transactions are available

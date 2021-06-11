@@ -110,7 +110,7 @@ function startDaemon() {
     // start the websocket server
     p2p.init()
     // and connect to peers
-    p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [])
+    p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [], true)
 
     // regularly clean up old txs from mempool
     setInterval(function() {
