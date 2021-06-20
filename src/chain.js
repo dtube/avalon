@@ -321,8 +321,8 @@ chain = {
             if (chain.nextOutput.txs>1)
                 output += 's'
 
-            output += '  dist: '+chain.nextOutput.dist
-            output += '  burn: '+chain.nextOutput.burn
+            output += '  dist: '+eco.round(chain.nextOutput.dist)
+            output += '  burn: '+eco.round(chain.nextOutput.burn)
             output += '  delay: '+ (currentOutTime - block.timestamp)
 
             if (block.missedBy && !rebuilding)

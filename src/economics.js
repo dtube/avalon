@@ -86,10 +86,10 @@ var eco = {
         distributed += eco.currentBlock.dist
         votes += eco.currentBlock.votes
 
-        avail = Math.round(avail*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
-        burned = Math.round(burned*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
-        distributed = Math.round(distributed*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
-        votes = Math.round(votes*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+        avail = eco.round(avail)
+        burned = eco.round(burned)
+        distributed = eco.round(distributed)
+        votes = eco.round(votes)
         return {
             theo: theoricalPool,
             burn: burned,
@@ -137,14 +137,14 @@ var eco = {
                 var won = thNewCoins * winners[i].share
                 var rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
                 won *= rentabilityWinner
-                won = Math.floor(won*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+                won = eco.floor(won)
                 winners[i].gross += won
                 newCoins += won
                 delete winners[i].share
 
                 // logr.econ(winners[i].u+' wins '+won+' coins with rentability '+rentabilityWinner)
             }
-            newCoins = Math.round(newCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            newCoins = eco.round(newCoins)
 
             // reconstruct the votes array
             var newVotes = []
@@ -175,7 +175,7 @@ var eco = {
                     }
                 i--
             }
-            newBurn = Math.round(newBurn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            newBurn = eco.round(newBurn)
             
             logr.econ(newCoins + ' dist from the vote')
             logr.econ(newBurn + ' burn from the vote')
@@ -207,9 +207,9 @@ var eco = {
 
             // add dist/burn/votes to currentBlock eco stats
             eco.currentBlock.dist += newCoins
-            eco.currentBlock.dist = Math.round(eco.currentBlock.dist*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            eco.currentBlock.dist = eco.round(eco.currentBlock.dist)
             eco.currentBlock.burn += newBurn
-            eco.currentBlock.burn = Math.round(eco.currentBlock.burn*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+            eco.currentBlock.burn = eco.round(eco.currentBlock.burn)
             eco.currentBlock.votes += currentVote.vt
 
             // updating the content
@@ -268,7 +268,7 @@ var eco = {
             thNewCoins = stats.avail * Math.abs((vt) / stats.votes)
 
         // rounding down
-        thNewCoins = Math.floor(thNewCoins*Math.pow(10, config.ecoClaimPrecision))/Math.pow(10, config.ecoClaimPrecision)
+        thNewCoins = eco.floor(thNewCoins)
         
         // and making sure one person cant empty the whole pool when network has been inactive
         // e.g. when stats.votes close to 0
@@ -315,7 +315,9 @@ var eco = {
 
         rentability = Math.floor(rentability*Math.pow(10, config.ecoRentPrecision))/Math.pow(10, config.ecoRentPrecision)
         return rentability
-    }
+    },
+    round: (val = 0) => Math.round(val*Math.pow(10,config.ecoClaimPrecision))/Math.pow(10,config.ecoClaimPrecision),
+    floor: (val = 0) => Math.floor(val*Math.pow(10,config.ecoClaimPrecision))/Math.pow(10,ecoClaimPrecision)
 } 
 
 module.exports = eco

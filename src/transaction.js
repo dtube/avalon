@@ -118,9 +118,9 @@ transaction = {
             cb(false, 'invalid tx hash does not match'); return
         }
         // checking transaction signature
-        chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser) {
+        chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser,e) {
             if (!legitUser) {
-                cb(false, 'invalid signature'); return
+                cb(false, e || 'invalid signature'); return
             }
             if (!legitUser.bw) {
                 cb(false, 'user has no bandwidth object'); return
