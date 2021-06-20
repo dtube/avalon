@@ -317,7 +317,7 @@ var eco = {
         return rentability
     },
     round: (val = 0) => Math.round(val*Math.pow(10,config.ecoClaimPrecision))/Math.pow(10,config.ecoClaimPrecision),
-    floor: (val = 0) => Math.floor(val*Math.pow(10,config.ecoClaimPrecision))/Math.pow(10,ecoClaimPrecision)
+    floor: (val = 0) => Math.floor(val*Math.pow(10,config.ecoClaimPrecision))/Math.pow(10,config.ecoClaimPrecision)
 } 
 
 module.exports = eco
