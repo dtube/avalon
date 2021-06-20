@@ -249,12 +249,12 @@ chain = {
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err
             // push cached accounts and contents to mongodb
-            eco.appendHistory(block)
             chain.cleanMemory()
 
             // update the config if an update was scheduled
             config = require('./config.js').read(block._id)
-
+            chain.applyHardfork(block._id)
+            eco.appendHistory(block)
             eco.nextBlock()
 
             if (!p2p.recovering) {
@@ -790,6 +790,11 @@ chain = {
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
     },
+    applyHardfork: (blockNum) => {
+        // Update memory state on hardfork execution
+        if (blockNum === 4860000)
+            eco.loadHistory() // reset previous votes
+    },
     batchLoadBlocks: (blockNum,cb) => {
         if (chain.blocksToRebuild.length == 0) {
             db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
@@ -843,6 +848,7 @@ chain = {
                     
                     // update the config if an update was scheduled
                     config = require('./config.js').read(blockToRebuild._id)
+                    chain.applyHardfork(blockToRebuild._id)
                     eco.nextBlock()
                     eco.appendHistory(blockToRebuild)
                     chain.cleanMemory()
