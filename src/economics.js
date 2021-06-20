@@ -25,6 +25,7 @@ var eco = {
         burn: 0,
         votes: 0
     },
+    history: [],
     nextBlock: () => {
         eco.currentBlock.dist = 0
         eco.currentBlock.burn = 0
@@ -36,30 +37,68 @@ var eco = {
     inflation: () => {
         return config.rewardPoolMult * config.rewardPoolUsers + config.rewardPoolMin
     },
+    loadHistory: () => {
+        eco.history = []
+        let lastCBurn = 0
+        let lastCDist = 0
+        let firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
+        if (firstBlockIndex < 0) firstBlockIndex = 0
+        for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
+            const block = chain.recentBlocks[i]
+            if (block.burn)
+                lastCBurn += block.burn
+            if (block.dist)
+                lastCDist += block.dist
+
+            eco.history.push({_id: block._id, votes: eco.tallyVotes(block.txs)})
+        }
+
+        eco.history[eco.history.length-1].cDist = eco.round(lastCDist)
+        eco.history[eco.history.length-1].cBurn = eco.round(lastCBurn)
+    },
+    appendHistory: (nextBlock) => {
+        // nextBlock should yet to be added to recentBlocks
+        let lastIdx = chain.recentBlocks.length-config.ecoBlocks
+        let oldDist = lastIdx >= 0 ? chain.recentBlocks[lastIdx].dist || 0 : 0
+        let oldBurn = lastIdx >= 0 ? chain.recentBlocks[lastIdx].burn || 0 : 0
+        eco.history.push({
+            _id: nextBlock._id,
+            votes: eco.tallyVotes(nextBlock.txs),
+            cDist: eco.round(eco.history[eco.history.length-1].cDist - oldDist + (nextBlock.dist || 0)),
+            cBurn: eco.round(eco.history[eco.history.length-1].cBurn - oldBurn + (nextBlock.burn || 0))
+        })
+    },
+    cleanHistory: () => {
+        if (config.ecoBlocksIncreasesSoon) return
+        let extraBlocks = eco.history.length - config.ecoBlocks
+        while (extraBlocks > 0) {
+            eco.history.shift()
+            extraBlocks--
+        }
+    },
+    tallyVotes: (txs = []) => {
+        let votes = 0
+        for (let y = 0; y < txs.length; y++)
+            if (txs[y].type === TransactionType.VOTE
+                || txs[y].type === TransactionType.COMMENT
+                || txs[y].type === TransactionType.PROMOTED_COMMENT
+                || (txs[y].type === TransactionType.TIPPED_VOTE && config.hotfix1))
+                votes += Math.abs(txs[y].data.vt)
+        return votes
+    },
     rewardPool: () => {
         let theoricalPool = eco.inflation()
         let burned = 0
         let distributed = 0
         let votes = 0
         if (!eco.startRewardPool) {
-            let firstBlockIndex = chain.recentBlocks.length - config.ecoBlocks
+            distributed = eco.history[eco.history.length-1].cDist
+            burned = eco.history[eco.history.length-1].cBurn
+            let firstBlockIndex = eco.history.length - config.ecoBlocks
             if (firstBlockIndex < 0) firstBlockIndex = 0
             let weight = 1
-            for (let i = firstBlockIndex; i < chain.recentBlocks.length; i++) {
-                const block = chain.recentBlocks[i]
-                if (block.burn)
-                    burned += block.burn
-                if (block.dist)
-                    distributed += block.dist
-                
-                for (let y = 0; y < block.txs.length; y++) {
-                    let tx = block.txs[y]
-                    if (tx.type === TransactionType.VOTE
-                        || tx.type === TransactionType.COMMENT
-                        || tx.type === TransactionType.PROMOTED_COMMENT
-                        || (tx.type === TransactionType.TIPPED_VOTE && config.hotfix1))
-                        votes += Math.abs(tx.data.vt)*weight
-                }
+            for (let i = firstBlockIndex; i < eco.history.length; i++) {
+                votes += eco.history[i].votes*weight
                 weight++
             }
 

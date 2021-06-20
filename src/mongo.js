@@ -154,6 +154,7 @@ var mongo = {
         }).toArray(function(err, blocks) {
             if (err) throw err
             chain.recentBlocks = blocks.reverse()
+            eco.loadHistory()
             cb()
         })
     },
