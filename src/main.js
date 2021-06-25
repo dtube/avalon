@@ -14,11 +14,13 @@ consensus = require('./consensus')
 leaderStats = require('./leaderStats')
 
 // verify node version
-var allowNodeV = [10, 12, 14]
+var allowNodeV = [10, 12, 14, 16]
 const currentNodeV = parseInt(process.versions.node.split('.')[0])
 if (allowNodeV.indexOf(currentNodeV) === -1) {
     logr.fatal('Wrong NodeJS version. Allowed versions: v'+allowNodeV.join(', v'))
     process.exit(1)
+} else if (currentNodeV === 10) {
+    logr.warn('NodeJS v10 has reached end of life, hence v10 support for Avalon will be removed in the future. Please upgrade to the latest supported NodeJS v' + allowNodeV[allowNodeV.length])
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
 erroredRebuild = false
