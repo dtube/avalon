@@ -23,54 +23,51 @@ if (allowNodeV.indexOf(currentNodeV) === -1) {
 erroredRebuild = false
 
 // init the database and load most recent blocks in memory directly
-mongo.init(function() {
-    var timeStart = new Date().getTime()
-    cache.warmup('accounts', parseInt(process.env.WARMUP_ACCOUNTS), function(err) {
-        if (err) throw err
-        logr.info(Object.keys(cache.accounts).length+' acccounts loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
-        timeStart = new Date().getTime()
-        
-        cache.warmup('contents', parseInt(process.env.WARMUP_CONTENTS), function(err) {
-            if (err) throw err
-            logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
-            timeStart = new Date().getTime()
-
-            cache.warmupLeaders((leaderCount)=>{
-                logr.info(leaderCount+' leaders loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
-                
-                // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
-                let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
-                let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
-                if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
-                    logr.info('Chain state rebuild requested, unzipping blocks.zip...')
-                    mongo.restoreBlocks((e)=>{
-                        if (e) return logr.error(e)
-                        startRebuild(0)
-                    })
-                    return
-                }
-
-                mongo.lastBlock(function(block) {
-                    // Resuming an interrupted rebuild
-                    if (isResumingRebuild) {
-                        logr.info('Resuming interrupted rebuild from block ' + rebuildResumeBlock)
-                        config = require('./config').read(rebuildResumeBlock - 1)
-                        chain.restoredBlocks = block._id
-                        mongo.fillInMemoryBlocks(() => 
-                            db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => 
-                                chain.minerSchedule(b,(sch) => {
-                                    chain.schedule = sch
-                                    startRebuild(rebuildResumeBlock)
-                                })),rebuildResumeBlock)
-                        return
-                    }
-                    logr.info('#' + block._id + ' is the latest block in our db')
-                    config = require('./config.js').read(block._id)
-                    mongo.fillInMemoryBlocks(startDaemon)
-                })
-            })
+mongo.init(async function() {
+    // Warmup accounts
+    let timeStart = new Date().getTime()
+    await cache.warmup('accounts', parseInt(process.env.WARMUP_ACCOUNTS))
+    logr.info(Object.keys(cache.accounts).length+' acccounts loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+    
+    // Warmup contents
+    timeStart = new Date().getTime()
+    await cache.warmup('contents', parseInt(process.env.WARMUP_CONTENTS))
+    logr.info(Object.keys(cache.contents).length+' contents loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+    
+    // Warmup leaders
+    timeStart = new Date().getTime()
+    let leaderCount = await cache.warmupLeaders()
+    logr.info(leaderCount+' leaders loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+    
+    // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
+    let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
+    let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
+    if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
+        logr.info('Chain state rebuild requested, unzipping blocks.zip...')
+        mongo.restoreBlocks((e)=>{
+            if (e) return logr.error(e)
+            startRebuild(0)
         })
-    })
+        return
+    }
+
+    let block = await mongo.lastBlock()
+    // Resuming an interrupted rebuild
+    if (isResumingRebuild) {
+        logr.info('Resuming interrupted rebuild from block ' + rebuildResumeBlock)
+        config = require('./config').read(rebuildResumeBlock - 1)
+        chain.restoredBlocks = block._id
+        mongo.fillInMemoryBlocks(() => 
+            db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => 
+                chain.minerSchedule(b,(sch) => {
+                    chain.schedule = sch
+                    startRebuild(rebuildResumeBlock)
+                })),rebuildResumeBlock)
+        return
+    }
+    logr.info('#' + block._id + ' is the latest block in our db')
+    config = require('./config.js').read(block._id)
+    mongo.fillInMemoryBlocks(startDaemon)
 })
 
 function startRebuild(startBlock) {
