@@ -29,8 +29,7 @@ module.exports = {
                     }
                     sorting.$sort.node_appr = -1
                     matching.$match.hasVote = true
-                    matching.$match.pub_leader = { $exists: true }
-                    matching.$match.pub_leader = { $ne: '' }
+                    matching.$match.pub_leader = { $exists: true, $ne: '' }
                     break
                 default:
                     return res.status(400).send({error: 'invalid key'})
