@@ -248,15 +248,12 @@ var cache = {
                     })
                 })
 
-        // no operation compression (dumb and slow)
-        // for (let i = 0; i < cache.changes.length; i++) {
-        //     executions.push(function(callback) {
-        //         var change = cache.changes[i]
-        //         db.collection(change.collection).updateOne(change.query, change.changes, function() {
-        //             callback()
-        //         })
-        //     })
-        // }
+        // leader stats
+        if (process.env.LEADER_STATS === '1') {
+            let leaderStatsWriteOps = leaderStats.getWriteOps()
+            for (let op in leaderStatsWriteOps)
+                executions.push(leaderStatsWriteOps[op])
+        }
         
         var timeBefore = new Date().getTime()
         parallel(executions, function(err, results) {

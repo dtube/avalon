@@ -11,6 +11,7 @@ validate = require('./validate')
 eco = require('./economics.js')
 rankings = require('./rankings.js')
 consensus = require('./consensus')
+leaderStats = require('./leaderStats')
 
 // verify node version
 var allowNodeV = [10, 12, 14]
@@ -38,6 +39,9 @@ mongo.init(async function() {
     timeStart = new Date().getTime()
     let leaderCount = await cache.warmupLeaders()
     logr.info(leaderCount+' leaders loaded in RAM in '+(new Date().getTime()-timeStart)+' ms')
+
+    // Warmup leader stats
+    await leaderStats.loadIndex()
     
     // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
     let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)

@@ -190,8 +190,9 @@ chain = {
                     if (!p2p.recovering)
                         p2p.broadcastBlock(newBlock)
 
-                    // process notifications (non blocking)
+                    // process notifications and leader stats (non blocking)
                     notifications.processBlock(newBlock)
+                    leaderStats.processBlock(newBlock)
 
                     // emit event to confirm new transactions in the http api
                     for (let i = 0; i < newBlock.txs.length; i++)
@@ -843,8 +844,9 @@ chain = {
                         chain.recentBlocks.push(blockToRebuild)
                         chain.output(blockToRebuild, true)
                         
-                        // process notifications (non blocking)
+                        // process notifications and leader stats (non blocking)
                         notifications.processBlock(blockToRebuild)
+                        leaderStats.processBlock(blockToRebuild)
 
                         // next block
                         chain.rebuildState(blockNum+1, cb)
