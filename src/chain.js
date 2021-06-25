@@ -259,40 +259,22 @@ chain = {
 
             if (!p2p.recovering) {
                 // if block id is mult of n leaders, reschedule next n blocks
-                if (block._id % config.leaders === 0) 
-                    chain.minerSchedule(block, function(minerSchedule) {
-                        chain.schedule = minerSchedule
-                        chain.recentBlocks.push(block)
-                        chain.minerWorker(block)
-                        chain.output(block)
-                        cache.writeToDisk(function() {})
-                        cb(true)
-                    })
-                else {
-                    chain.recentBlocks.push(block)
-                    chain.minerWorker(block)
-                    chain.output(block)
-                    cache.writeToDisk(function() {})
-                    cb(true)
-                }
+                if (block._id % config.leaders === 0)
+                    chain.schedule = chain.minerSchedule(block)
+                chain.recentBlocks.push(block)
+                chain.minerWorker(block)
+                chain.output(block)
+                cache.writeToDisk(function() {})
+                cb(true)
             } else {
                 // if we are recovering we wait for mongo to update
                 cache.writeToDisk(function() {
                     if (block._id % config.leaders === 0) 
-                        chain.minerSchedule(block, function(minerSchedule) {
-                            chain.schedule = minerSchedule
-                            chain.recentBlocks.push(block)
-                            chain.minerWorker(block)
-                            chain.output(block)
-                            
-                            cb(true)
-                        })
-                    else {
-                        chain.recentBlocks.push(block)
-                        chain.minerWorker(block)
-                        chain.output(block)
-                        cb(true)
-                    }
+                        chain.schedule = chain.minerSchedule(block)
+                    chain.recentBlocks.push(block)
+                    chain.minerWorker(block)
+                    chain.output(block)
+                    cb(true)
                 })
             }
         })
@@ -637,7 +619,7 @@ chain = {
             })
         })
     },
-    minerSchedule: (block, cb) => {
+    minerSchedule: (block) => {
         var hash = block.hash
         var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         if (!p2p.recovering)
@@ -661,10 +643,10 @@ chain = {
             y++
         }
 
-        cb({
+        return {
             block: block,
             shuffle: shuffledMiners
-        })
+        }
     },
     generateLeaders: (withLeaderPub, limit, start) => {
         var leaders = []
@@ -813,10 +795,8 @@ chain = {
         if (blockNum === 0) {
             eco.history = [{_id: 0, votes: 0, cDist: 0, cBurn: 0}]
             chain.recentBlocks = [chain.getGenesisBlock()]
-            chain.minerSchedule(chain.getGenesisBlock(),(sch) => {
-                chain.schedule = sch
-                chain.rebuildState(blockNum+1,cb)
-            })
+            chain.schedule = chain.minerSchedule(chain.getGenesisBlock())
+            chain.rebuildState(blockNum+1,cb)
             return
         }
 
@@ -859,27 +839,15 @@ chain = {
 
                     cache.processRebuildOps(() => {
                         if (blockToRebuild._id % config.leaders === 0)
-                            chain.minerSchedule(blockToRebuild, function(minerSchedule) {
-                                chain.schedule = minerSchedule
-                                chain.recentBlocks.push(blockToRebuild)
-                                chain.output(blockToRebuild, true)
-                                
-                                // process notifications (non blocking)
-                                notifications.processBlock(blockToRebuild)
+                            chain.schedule = chain.minerSchedule(blockToRebuild)
+                        chain.recentBlocks.push(blockToRebuild)
+                        chain.output(blockToRebuild, true)
+                        
+                        // process notifications (non blocking)
+                        notifications.processBlock(blockToRebuild)
 
-                                // next block
-                                chain.rebuildState(blockNum+1, cb)
-                            })
-                        else {
-                            chain.recentBlocks.push(blockToRebuild)
-                            chain.output(blockToRebuild, true)
-
-                            // process notifications (non blocking)
-                            notifications.processBlock(blockToRebuild)
-
-                            // next block
-                            chain.rebuildState(blockNum+1, cb)
-                        }
+                        // next block
+                        chain.rebuildState(blockNum+1, cb)
                     }, blockToRebuild._id % writeInterval === 0)
                 })
             })

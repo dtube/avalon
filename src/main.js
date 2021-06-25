@@ -58,11 +58,10 @@ mongo.init(async function() {
         config = require('./config').read(rebuildResumeBlock - 1)
         chain.restoredBlocks = block._id
         mongo.fillInMemoryBlocks(() => 
-            db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => 
-                chain.minerSchedule(b,(sch) => {
-                    chain.schedule = sch
-                    startRebuild(rebuildResumeBlock)
-                })),rebuildResumeBlock)
+            db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => {
+                chain.schedule = chain.minerSchedule(b)
+                startRebuild(rebuildResumeBlock)
+            }),rebuildResumeBlock)
         return
     }
     logr.info('#' + block._id + ' is the latest block in our db')
@@ -95,9 +94,7 @@ function startDaemon() {
     // start miner schedule
     db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
         if (err) throw err
-        chain.minerSchedule(block, function(minerSchedule) {
-            chain.schedule = minerSchedule
-        })
+        chain.schedule = chain.minerSchedule(block)
     })
 
     // init hot/trending
