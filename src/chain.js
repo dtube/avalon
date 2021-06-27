@@ -374,15 +374,17 @@ chain = {
                 return chain.isValidMultisig(account,threshold,allowedPubKeys,hash,sign,cb)
             
             // single signature
-            for (let i = 0; i < allowedPubKeys.length; i++) {
-                let bufferHash = Buffer.from(hash, 'hex')
-                let b58sign = bs58.decode(sign)
-                let b58pub = bs58.decode(allowedPubKeys[i][0])
-                if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub) && allowedPubKeys[i][1] >= threshold) {
-                    cb(account)
-                    return
+            try {
+                for (let i = 0; i < allowedPubKeys.length; i++) {
+                    let bufferHash = Buffer.from(hash, 'hex')
+                    let b58sign = bs58.decode(sign)
+                    let b58pub = bs58.decode(allowedPubKeys[i][0])
+                    if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub) && allowedPubKeys[i][1] >= threshold) {
+                        cb(account)
+                        return
+                    }
                 }
-            }
+            } catch {}
             cb(false)
         })
     },
@@ -390,16 +392,20 @@ chain = {
         let validWeights = 0
         let validSigs = []
         let hashBuf = Buffer.from(hash, 'hex')
-        for (let s = 0; s < signatures.length; s++) {
-            let signBuf = bs58.decode(signatures[s][0])
-            let recoveredPub = bs58.encode(secp256k1.ecdsaRecover(signBuf,signatures[s][1],hashBuf))
-            if (validSigs.includes(recoveredPub))
-                return cb(false, 'duplicate signatures found')
-            for (let p = 0; p < allowedPubKeys.length; p++)
-                if (allowedPubKeys[p][0] === recoveredPub) {
-                    validWeights += allowedPubKeys[p][1]
-                    validSigs.push(recoveredPub)
-                }
+        try {
+            for (let s = 0; s < signatures.length; s++) {
+                let signBuf = bs58.decode(signatures[s][0])
+                let recoveredPub = bs58.encode(secp256k1.ecdsaRecover(signBuf,signatures[s][1],hashBuf))
+                if (validSigs.includes(recoveredPub))
+                    return cb(false, 'duplicate signatures found')
+                for (let p = 0; p < allowedPubKeys.length; p++)
+                    if (allowedPubKeys[p][0] === recoveredPub) {
+                        validWeights += allowedPubKeys[p][1]
+                        validSigs.push(recoveredPub)
+                    }
+            }
+        } catch (e) {
+            return cb(false, 'invalid signatures: ' + e.toString())
         }
         if (validWeights >= threshold)
             cb(account)
