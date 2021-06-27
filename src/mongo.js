@@ -132,18 +132,15 @@ var mongo = {
             
         })
     },
-    addMongoIndexes: (cb) => {
-        db.collection('accounts').createIndex( {name:1}, function() {
-            db.collection('accounts').createIndex( {balance:1}, function() {
-                db.collection('accounts').createIndex( {node_appr:1}, function() {
-                    db.collection('contents').createIndex( {ts:1}, function() {
-                        db.collection('contents').createIndex( {author:1}, function() {
-                            cb()
-                        })
-                    })
-                })
-            })
-        })
+    addMongoIndexes: async (cb) => {
+        await db.collection('accounts').createIndex({name:1})
+        await db.collection('accounts').createIndex({balance:1})
+        await db.collection('accounts').createIndex({node_appr:1})
+        await db.collection('accounts').createIndex({pub:1})
+        await db.collection('accounts').createIndex({'keys.pub':1})
+        await db.collection('contents').createIndex({ts:1})
+        await db.collection('contents').createIndex({author:1})
+        cb()
     },
     fillInMemoryBlocks: (cb,headBlock) => {
         let query = {}
