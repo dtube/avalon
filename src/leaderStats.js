@@ -1,5 +1,3 @@
-const parallel = require('run-parallel')
-
 // leader indexer from extended api
 let indexer = {
     leaders: {
