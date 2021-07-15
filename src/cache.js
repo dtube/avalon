@@ -1,5 +1,6 @@
 const parallel = require('run-parallel')
 const cloneDeep = require('clone-deep')
+const ProcessingQueue = require('./processingQueue')
 var cache = {
     copy: {
         accounts: {},
@@ -17,6 +18,7 @@ var cache = {
     },
     leaders: {},
     leaderChanges: [],
+    writerQueue: new ProcessingQueue(),
     rollback: function() {
         // rolling back changes from copied documents
         for (const key in cache.copy.accounts)
@@ -200,11 +202,16 @@ var cache = {
             cache.leaderChanges.push([leader,0])
     },
     clear: function() {
-        cache.accounts = {}
-        cache.contents = {}
-        cache.distributed = {}
+        cache.changes = []
+        cache.inserts = []
+        cache.rebuild.changes = []
+        cache.rebuild.inserts = []
+        cache.leaderChanges = []
+        cache.copy.accounts = {}
+        cache.copy.contents = {}
+        cache.copy.distributed = {}
     },
-    writeToDisk: function(cb, rebuild) {
+    writeToDisk: function(rebuild, cb) {
         // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
         let executions = []
         // executing the inserts (new comment / new account)
@@ -255,23 +262,22 @@ var cache = {
                 executions.push(leaderStatsWriteOps[op])
         }
         
-        var timeBefore = new Date().getTime()
-        parallel(executions, function(err, results) {
-            let execTime = new Date().getTime()-timeBefore
-            if (!rebuild && execTime >= config.blockTime/2)
-                logr.warn('Slow write execution: ' + executions.length + ' mongo queries took ' + execTime + 'ms')
-            else
-                logr.debug(executions.length+' mongo queries executed in '+execTime+'ms')
-            cache.changes = []
-            cache.inserts = []
-            cache.rebuild.changes = []
-            cache.rebuild.inserts = []
-            cache.leaderChanges = []
-            cache.copy.accounts = {}
-            cache.copy.contents = {}
-            cache.copy.distributed = {}
-            cb(err, results)
-        })
+        if (typeof cb === 'function') {
+            let timeBefore = new Date().getTime()
+            parallel(executions, function(err, results) {
+                let execTime = new Date().getTime()-timeBefore
+                if (!rebuild && execTime >= config.blockTime/2)
+                    logr.warn('Slow write execution: ' + executions.length + ' mongo queries took ' + execTime + 'ms')
+                else
+                    logr.debug(executions.length+' mongo queries executed in '+execTime+'ms')
+                cache.clear()
+                cb(err, results)
+            })
+        } else {
+            logr.debug(executions.length+' mongo ops queued')
+            cache.writerQueue.push((callback) => parallel(executions,() => callback()))
+            cache.clear()
+        }
     },
     processRebuildOps: (cb,writeToDisk) => {
         for (let i in cache.inserts)
@@ -285,7 +291,7 @@ var cache = {
         cache.copy.contents = {}
         cache.copy.distributed = {}
         if (writeToDisk)
-            cache.writeToDisk(cb,true)
+            cache.writeToDisk(true,cb)
         else
             cb()
     },

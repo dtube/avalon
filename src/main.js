@@ -88,11 +88,11 @@ function startRebuild(startBlock) {
             logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
         logr.info('Writing rebuild data to disk...')
         let cacheWriteStart = new Date().getTime()
-        cache.writeToDisk(() => {
+        cache.writeToDisk(true,() => {
             logr.info('Rebuild data written to disk in ' + (new Date().getTime() - cacheWriteStart) + ' ms')
             if (chain.shuttingDown) return process.exit(0)
             startDaemon()
-        },true)
+        })
     })
 }
 
@@ -123,9 +123,12 @@ process.on('SIGINT', function() {
     closing = true
     chain.shuttingDown = true
     if (!erroredRebuild && chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks) return
-    logr.warn('Waiting '+config.blockTime+' ms before shut down...')
-    setTimeout(function() {
-        logr.info('Avalon exitted safely')
-        process.exit(0)
-    }, config.blockTime)
+    process.stdout.write('\r')
+    logr.info('Received SIGINT, completing writer queue...')
+    setInterval(() => {
+        if (cache.writerQueue.queue.length === 0) {
+            logr.info('Avalon exitted safely')
+            process.exit(0)
+        }
+    },500)
 })
