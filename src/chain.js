@@ -576,7 +576,7 @@ chain = {
                                 })
                             })
                         else {
-                            logr.debug(error, tx)
+                            logr.error(error, tx)
                             callback(null, false)
                         }
                     })
