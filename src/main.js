@@ -48,6 +48,11 @@ mongo.init(async function() {
     // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
     let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
     let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
+
+    // alert when rebuild without signture verification, only use if you know what you are doing
+    if (process.env.REBUILD_NO_VERIFY === '1' && (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1))
+        logr.info('Rebuilding without signature verification. Only use this if you know what you are doing!')
+
     if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
         logr.info('Chain state rebuild requested, unzipping blocks.zip...')
         mongo.restoreBlocks((e)=>{

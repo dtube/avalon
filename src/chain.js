@@ -343,7 +343,11 @@ chain = {
             if (err) throw err
             if (!account) {
                 cb(false); return
+            } else if (chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks && process.env.REBUILD_NO_VERIFY === '1') {
+                // no verify rebuild mode, only use if you trust the contents of blocks.zip
+                return cb(account)
             }
+
             // main key can authorize all transactions
             let allowedPubKeys = [[account.pub, account.pub_weight || 1]]
             let threshold = 1
