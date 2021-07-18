@@ -20,7 +20,7 @@ if (allowNodeV.indexOf(currentNodeV) === -1) {
     logr.fatal('Wrong NodeJS version. Allowed versions: v'+allowNodeV.join(', v'))
     process.exit(1)
 } else if (currentNodeV === 10) {
-    logr.warn('NodeJS v10 has reached end of life, hence v10 support for Avalon will be removed in the future. Please upgrade to the latest supported NodeJS v' + allowNodeV[allowNodeV.length])
+    logr.warn('NodeJS v10 has reached end of life, hence v10 support for Avalon will be removed in the future. Please upgrade to the latest supported NodeJS v' + allowNodeV[allowNodeV.length-1])
 } else logr.info('Correctly using NodeJS v'+process.versions.node)
 
 erroredRebuild = false
@@ -54,7 +54,7 @@ mongo.init(async function() {
         logr.info('Rebuilding without signature verification. Only use this if you know what you are doing!')
 
     if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
-        logr.info('Chain state rebuild requested, unzipping blocks.zip...')
+        logr.info('Chain state rebuild requested'+(process.env.UNZIP_BLOCKS === '1' ? ', unzipping blocks.zip...' : ''))
         mongo.restoreBlocks((e)=>{
             if (e) return logr.error(e)
             startRebuild(0)
