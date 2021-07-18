@@ -138,13 +138,14 @@ var config = {
         4860000: {
             hotfix1: true
         },
-        15000000: {
+        8500050: {
             maxKeys: 25,
             disallowVotingInactiveLeader: true,
             burnAccount: 'dtube.airdrop',
             preloadVt: 50, // 50% of vtPerBurn
             preloadBwGrowth: 2, // x2 more time of bwGrowth
-            multisig: true
+            multisig: true,
+            leaders: 15
         }
     },
     read: (blockNum) => {
