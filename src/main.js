@@ -135,5 +135,5 @@ process.on('SIGINT', function() {
             logr.info('Avalon exitted safely')
             process.exit(0)
         }
-    },500)
+    },1000)
 })
