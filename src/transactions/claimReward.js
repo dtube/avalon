@@ -47,7 +47,7 @@ module.exports = {
                             $inc: {balance: reward}
                         }, function() {
                             cache.insertOne('distributed', {
-                                name: config.masterName,
+                                name: tx.sender,
                                 dist: reward,
                                 ts: ts,
                                 _id: content.author+'/'+content.link+'/claim/'+tx.sender

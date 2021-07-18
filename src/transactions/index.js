@@ -22,7 +22,10 @@ var transactions = [
     require('./limitVt.js'),
     require('./claimReward.js'),
     require('./enableNode.js'),
-    require('./tippedVote.js')
+    require('./tippedVote.js'),
+    require('./newWeightedKey.js'),
+    require('./setSignThreshold.js'),
+    require('./setPasswordWeight.js')
 ]
 
 module.exports = {
@@ -46,7 +49,10 @@ module.exports = {
         LIMIT_VT: 16,
         CLAIM_REWARD: 17,
         ENABLE_NODE: 18,
-        TIPPED_VOTE: 19
+        TIPPED_VOTE: 19,
+        NEW_WEIGHTED_KEY: 20,
+        SET_SIG_THRESHOLD: 21,
+        SET_PASSWORD_WEIGHT: 22
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')

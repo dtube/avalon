@@ -19,6 +19,7 @@
 #export NOTIFICATIONS=1
 #export RANKINGS=1
 #export CONTENTS=1
+#export LEADER_STATS=1
 
 # Cache warmup option
 export WARMUP_ACCOUNTS=100000

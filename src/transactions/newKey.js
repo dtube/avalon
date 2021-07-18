@@ -22,6 +22,8 @@ module.exports = {
             }
             if (!account.keys) {
                 cb(true); return
+            } else if (config.maxKeys && account.keys.length >= config.maxKeys) {
+                cb(false, 'cannot add more than ' + config.maxKeys + ' custom keys')
             } else {
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].id === tx.data.id) {
