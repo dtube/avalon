@@ -83,9 +83,16 @@ transaction = {
         if (!tx.hash || typeof tx.hash !== 'string') {
             cb(false, 'invalid tx hash'); return
         }
-        if (!tx.signature || typeof tx.signature !== 'string') {
+        if (!tx.signature || (typeof tx.signature !== 'string' && !(config.multisig && Array.isArray(tx.signature)))) {
             cb(false, 'invalid tx signature'); return
         }
+        // multisig transactions check
+        // signatures in multisig txs contain an array of signatures and recid 
+        if (config.multisig && Array.isArray(tx.signature))
+            for (let s = 0; s < tx.signature.length; s++)
+                if (!Array.isArray(tx.signature[s]) || tx.signature[s].length !== 2 || typeof tx.signature[s][0] !== 'string' || !Number.isInteger(tx.signature[s][1]))
+                    return cb(false, 'invalid multisig tx signature #'+s)
+
         // enforce transaction limits
         if (config.txLimits[tx.type] && config.txLimits[tx.type] === 1) {
             cb(false, 'transaction type is disabled'); return
@@ -111,15 +118,18 @@ transaction = {
             cb(false, 'invalid tx hash does not match'); return
         }
         // checking transaction signature
-        chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser) {
+        chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser,e) {
             if (!legitUser) {
-                cb(false, 'invalid signature'); return
+                cb(false, e || 'invalid signature'); return
             }
             if (!legitUser.bw) {
                 cb(false, 'user has no bandwidth object'); return
             }
 
-            var newBw = new GrowInt(legitUser.bw, {growth:legitUser.balance/(config.bwGrowth), max:config.bwMax}).grow(ts)
+            var newBw = new GrowInt(legitUser.bw, {
+                growth: Math.max(legitUser.baseBwGrowth || 0, legitUser.balance)/(config.bwGrowth),
+                max: config.bwMax
+            }).grow(ts)
 
             if (!newBw) {
                 logr.debug(legitUser)
@@ -156,7 +166,10 @@ transaction = {
     collectGrowInts: (tx, ts, cb) => {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             // collect bandwidth
-            var bandwidth = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax})
+            var bandwidth = new GrowInt(account.bw, {
+                growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
+                max: config.bwMax
+            })
             var needed_bytes = JSON.stringify(tx).length
             var bw = bandwidth.grow(ts)
             if (!bw) 
@@ -220,7 +233,10 @@ transaction = {
         if (!account.bw || !account.vt) 
             logr.debug('error loading grow int', account)
         
-        var bw = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth), max:config.bwMax}).grow(ts)
+        var bw = new GrowInt(account.bw, {
+            growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
+            max: config.bwMax
+        }).grow(ts)
         var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
         if (!bw || !vt) {
             logr.fatal('error growing grow int', account, ts)

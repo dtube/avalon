@@ -1,4 +1,4 @@
-const version = '1.3.1'
+const version = '1.4'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
@@ -37,10 +37,13 @@ var p2p = {
         server.on('connection', ws => p2p.handshake(ws))
         logr.info('Listening websocket p2p port on: ' + p2p_port)
         logr.info('Version:',version)
-        setTimeout(function(){p2p.recover()}, replay_interval)
+        setTimeout(() => {
+            p2p.recover()
+            setInterval(() => p2p.refresh(), replay_interval)
+        }, replay_interval)
         if (!process.env.NO_DISCOVERY || process.env.NO_DISCOVERY === '0' || process.env.NO_DISCOVERY === 0) {
             setInterval(function(){p2p.discoveryWorker()}, discovery_interval)
-            p2p.discoveryWorker()
+            p2p.discoveryWorker(true)
         }
         setInterval(function(){p2p.cleanRoundConfHistory()}, history_interval)
     },
@@ -48,7 +51,7 @@ var p2p = {
         p2p.nodeId = chain.getNewKeyPair()
         logr.info('P2P ID: '+p2p.nodeId.pub)
     },
-    discoveryWorker: () => {
+    discoveryWorker: (isInit = false) => {
         var leaders = chain.generateLeaders(false, config.leaders*3, 0)
         for (let i = 0; i < leaders.length; i++) {
             if (p2p.sockets.length >= max_peers) {
@@ -76,18 +79,18 @@ var p2p = {
                     }
                 }
                 if (!isConnected) {
-                    logr.info('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
-                    p2p.connect([leaders[i].json.node.ws])
+                    logr[isInit ? 'info' : 'debug']('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
+                    p2p.connect([leaders[i].json.node.ws],isInit)
                 }
             }
         }
     },
-    connect: (newPeers) => {
+    connect: (newPeers,isInit = false) => {
         newPeers.forEach((peer) => {
             var ws = new WebSocket(peer)
             ws.on('open', () => p2p.handshake(ws))
             ws.on('error', () => {
-                logr.warn('peer connection failed', peer)
+                logr[isInit ? 'warn' : 'debug']('peer connection failed', peer)
             })
         })
     },
@@ -285,12 +288,10 @@ var p2p = {
                 // it should come from one of the elected leaders, so let's verify signature
                 if (p2p.recovering) return
                 if (!message.s || !message.s.s || !message.s.n) return
-                if (config.tmpForceTs) {
-                    if (!message.d || !message.d.ts || 
-                        typeof message.d.ts != 'number' ||
-                        message.d.ts + 2*config.blockTime < new Date().getTime() ||
-                        message.d.ts - 2*config.blockTime > new Date().getTime()) return
-                }
+                if (!message.d || !message.d.ts || 
+                    typeof message.d.ts != 'number' ||
+                    message.d.ts + 2*config.blockTime < new Date().getTime() ||
+                    message.d.ts - 2*config.blockTime > new Date().getTime()) return
 
                 logr.cons(message.s.n+' U-R'+message.d.r)
 
@@ -342,7 +343,6 @@ var p2p = {
         if (Object.keys(p2p.recoveredBlocks).length + p2p.recoveringBlocks.length > max_blocks_buffer) return
         if (!p2p.recovering) p2p.recovering = chain.getLatestBlock()._id
         
-        p2p.recovering++
         var peersAhead = []
         for (let i = 0; i < p2p.sockets.length; i++)
             if (p2p.sockets[i].node_status 
@@ -355,11 +355,26 @@ var p2p = {
             return
         }
 
-        var champion = peersAhead[Math.floor(Math.random()*peersAhead.length)]
-        p2p.sendJSON(champion, {t: MessageType.QUERY_BLOCK, d:p2p.recovering})
-        p2p.recoveringBlocks.push(p2p.recovering)
-
-        if (p2p.recovering%2) p2p.recover()
+        let champion = peersAhead[Math.floor(Math.random()*peersAhead.length)]
+        if (p2p.recovering+1 <= champion.node_status.head_block) {
+            p2p.recovering++
+            p2p.sendJSON(champion, {t: MessageType.QUERY_BLOCK, d:p2p.recovering})
+            p2p.recoveringBlocks.push(p2p.recovering)
+            logr.debug('query block #'+p2p.recovering+' -- head block: '+champion.node_status.head_block)
+            if (p2p.recovering%2) p2p.recover()
+        }
+    },
+    refresh: (force = false) => {
+        if (p2p.recovering && !force) return
+        for (let i = 0; i < p2p.sockets.length; i++)
+            if (p2p.sockets[i].node_status 
+            && p2p.sockets[i].node_status.head_block > chain.getLatestBlock()._id + 10
+            && p2p.sockets[i].node_status.origin_block === config.originHash) {
+                logr.info('Catching up with network, head block: ' + p2p.sockets[i].node_status.head_block)
+                p2p.recovering = chain.getLatestBlock()._id
+                p2p.recover()
+                break
+            }
     },
     errorHandler: (ws) => {
         ws.on('close', () => p2p.closeConnection(ws))

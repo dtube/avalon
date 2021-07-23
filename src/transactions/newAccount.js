@@ -37,12 +37,24 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
+        let newAccBw = {v:0,t:0}
+        let newAccVt = {v:0,t:0}
+        let baseBwGrowth = 0
+        if (!tx.sender !== config.masterName || config.masterPaysForUsernames) {
+            if (config.preloadVt)
+                newAccVt = {v:eco.accountPrice(tx.data.name)*config.vtPerBurn*config.preloadVt/100,t:ts}
+            if (config.preloadBwGrowth) {
+                newAccBw = {v:0,t:ts}
+                baseBwGrowth = Math.floor(eco.accountPrice(tx.data.name)/config.preloadBwGrowth)
+            }
+        }
         cache.insertOne('accounts', {
             name: tx.data.name.toLowerCase(),
             pub: tx.data.pub,
             balance: 0,
-            bw: {v:0,t:0},
-            vt: {v:0,t:0},
+            bw: newAccBw,
+            vt: newAccVt,
+            baseBwGrowth: baseBwGrowth,
             follows: [],
             followers: [],
             keys: [],
