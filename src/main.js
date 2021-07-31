@@ -131,7 +131,7 @@ process.on('SIGINT', function() {
     process.stdout.write('\r')
     logr.info('Received SIGINT, completing writer queue...')
     setInterval(() => {
-        if (cache.writerQueue.queue.length === 0) {
+        if (cache.writerQueue.queue.length === 0 && !cache.writerQueue.processing) {
             logr.info('Avalon exitted safely')
             process.exit(0)
         }
