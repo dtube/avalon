@@ -146,6 +146,9 @@ var config = {
             preloadBwGrowth: 2, // x2 more time of bwGrowth
             multisig: true,
             leaders: 15
+        },
+        8595000: {
+            hotfix2: true
         }
     },
     read: (blockNum) => {
