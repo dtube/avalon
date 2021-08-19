@@ -258,26 +258,14 @@ chain = {
             eco.appendHistory(block)
             eco.nextBlock()
 
-            if (!p2p.recovering) {
-                // if block id is mult of n leaders, reschedule next n blocks
-                if (block._id % config.leaders === 0)
-                    chain.schedule = chain.minerSchedule(block)
-                chain.recentBlocks.push(block)
-                chain.minerWorker(block)
-                chain.output(block)
-                cache.writeToDisk(false)
-                cb(true)
-            } else {
-                // if we are recovering we wait for mongo to update
-                cache.writeToDisk(false,function() {
-                    if (block._id % config.leaders === 0) 
-                        chain.schedule = chain.minerSchedule(block)
-                    chain.recentBlocks.push(block)
-                    chain.minerWorker(block)
-                    chain.output(block)
-                    cb(true)
-                })
-            }
+            // if block id is mult of n leaders, reschedule next n blocks
+            if (block._id % config.leaders === 0)
+                chain.schedule = chain.minerSchedule(block)
+            chain.recentBlocks.push(block)
+            chain.minerWorker(block)
+            chain.output(block)
+            cache.writeToDisk(false)
+            cb(true)
         })
     },
     output: (block,rebuilding) => {
