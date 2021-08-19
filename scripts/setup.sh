@@ -5,7 +5,7 @@ wget https://backup.d.tube/genesis.zip
 cd ..
 mkdir dump
 cd dump
-wget https://backup.d.tube/$(date +%H).tar.gz
+wget https://backup.d.tube/$(date -u +%H).tar.gz
 tar xfvz ./*
 mongo avalon --eval "printjson(db.dropDatabase())"
 mongorestore -d avalon ./
