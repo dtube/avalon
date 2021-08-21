@@ -42,7 +42,7 @@ This is the fastest method (takes <5 mins). You will download the latest hourly 
 ```bash
 mkdir dump
 cd dump
-wget https://backup.d.tube/$(date +%H).tar.gz
+wget https://backup.d.tube/$(date -u +%H).tar.gz
 tar xfvz ./*
 mongorestore -d avalon ./
 cd ..
