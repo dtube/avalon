@@ -1,7 +1,7 @@
 #!/bin/bash
 mkdir genesis
 cd genesis
-wget https://backup.d.tube/genesis.zip
+wget -c https://backup.d.tube/genesis.zip
 cd ..
 mkdir dump
 cd dump
