@@ -6,9 +6,10 @@ module.exports = {
                 res.sendStatus(500)
                 return
             }
-            db.collection('accounts').findOne({ name: req.params.name }, function (err, account) {
+            let user = req.params.name.toLowerCase()
+            db.collection('accounts').findOne({ name: user }, function (err, account) {
                 if (account) res.send('Not Available')
-                else res.send(String(eco.accountPrice(req.params.name)))
+                else res.send(String(eco.accountPrice(user)))
             })
         })
     }

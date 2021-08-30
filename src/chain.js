@@ -190,8 +190,9 @@ chain = {
                     if (!p2p.recovering)
                         p2p.broadcastBlock(newBlock)
 
-                    // process notifications (non blocking)
+                    // process notifications and leader stats (non blocking)
                     notifications.processBlock(newBlock)
+                    leaderStats.processBlock(newBlock)
 
                     // emit event to confirm new transactions in the http api
                     for (let i = 0; i < newBlock.txs.length; i++)
@@ -249,52 +250,22 @@ chain = {
         db.collection('blocks').insertOne(block, function(err) {
             if (err) throw err
             // push cached accounts and contents to mongodb
-            
             chain.cleanMemory()
 
             // update the config if an update was scheduled
             config = require('./config.js').read(block._id)
-
+            chain.applyHardfork(block._id)
+            eco.appendHistory(block)
             eco.nextBlock()
 
-            if (!p2p.recovering) {
-                // if block id is mult of n leaders, reschedule next n blocks
-                if (block._id % config.leaders === 0) 
-                    chain.minerSchedule(block, function(minerSchedule) {
-                        chain.schedule = minerSchedule
-                        chain.recentBlocks.push(block)
-                        chain.minerWorker(block)
-                        chain.output(block)
-                        cache.writeToDisk(function() {})
-                        cb(true)
-                    })
-                else {
-                    chain.recentBlocks.push(block)
-                    chain.minerWorker(block)
-                    chain.output(block)
-                    cache.writeToDisk(function() {})
-                    cb(true)
-                }
-            } else {
-                // if we are recovering we wait for mongo to update
-                cache.writeToDisk(function() {
-                    if (block._id % config.leaders === 0) 
-                        chain.minerSchedule(block, function(minerSchedule) {
-                            chain.schedule = minerSchedule
-                            chain.recentBlocks.push(block)
-                            chain.minerWorker(block)
-                            chain.output(block)
-                            
-                            cb(true)
-                        })
-                    else {
-                        chain.recentBlocks.push(block)
-                        chain.minerWorker(block)
-                        chain.output(block)
-                        cb(true)
-                    }
-                })
-            }
+            // if block id is mult of n leaders, reschedule next n blocks
+            if (block._id % config.leaders === 0)
+                chain.schedule = chain.minerSchedule(block)
+            chain.recentBlocks.push(block)
+            chain.minerWorker(block)
+            chain.output(block)
+            cache.writeToDisk(false)
+            cb(true)
         })
     },
     output: (block,rebuilding) => {
@@ -321,8 +292,8 @@ chain = {
             if (chain.nextOutput.txs>1)
                 output += 's'
 
-            output += '  dist: '+chain.nextOutput.dist
-            output += '  burn: '+chain.nextOutput.burn
+            output += '  dist: '+eco.round(chain.nextOutput.dist)
+            output += '  burn: '+eco.round(chain.nextOutput.burn)
             output += '  delay: '+ (currentOutTime - block.timestamp)
 
             if (block.missedBy && !rebuilding)
@@ -360,35 +331,78 @@ chain = {
             if (err) throw err
             if (!account) {
                 cb(false); return
+            } else if (chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks && process.env.REBUILD_NO_VERIFY === '1') {
+                // no verify rebuild mode, only use if you trust the contents of blocks.zip
+                return cb(account)
             }
+
             // main key can authorize all transactions
-            var allowedPubKeys = [account.pub]
+            let allowedPubKeys = [[account.pub, account.pub_weight || 1]]
+            let threshold = 1
             // add all secondary keys having this transaction type as allowed keys
             if (account.keys && typeof txType === 'number' && Number.isInteger(txType))
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
-                        allowedPubKeys.push(account.keys[i].pub)
+                        allowedPubKeys.push([account.keys[i].pub, account.keys[i].weight || 1])
 
             // if there is no transaction type
             // it means we are verifying a block signature
             // so only the leader key is allowed
             if (txType === null)
                 if (account.pub_leader)
-                    allowedPubKeys = [account.pub_leader]
+                    allowedPubKeys = [[account.pub_leader, 1]]
                 else
                     allowedPubKeys = []
-            
-            for (let i = 0; i < allowedPubKeys.length; i++) {
-                var bufferHash = Buffer.from(hash, 'hex')
-                var b58sign = bs58.decode(sign)
-                var b58pub = bs58.decode(allowedPubKeys[i])
-                if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub)) {
-                    cb(account)
-                    return
-                }
+            else {
+                // compute required signature threshold
+                if (account.thresholds && account.thresholds[txType])
+                    threshold = account.thresholds[txType]
+                else if (account.thresholds && account.thresholds.default)
+                    threshold = account.thresholds.default
             }
+
+            // multisig transactions
+            if (config.multisig && Array.isArray(sign))
+                return chain.isValidMultisig(account,threshold,allowedPubKeys,hash,sign,cb)
+            
+            // single signature
+            try {
+                for (let i = 0; i < allowedPubKeys.length; i++) {
+                    let bufferHash = Buffer.from(hash, 'hex')
+                    let b58sign = bs58.decode(sign)
+                    let b58pub = bs58.decode(allowedPubKeys[i][0])
+                    if (secp256k1.ecdsaVerify(b58sign, bufferHash, b58pub) && allowedPubKeys[i][1] >= threshold) {
+                        cb(account)
+                        return
+                    }
+                }
+            } catch {}
             cb(false)
         })
+    },
+    isValidMultisig: (account,threshold,allowedPubKeys,hash,signatures,cb) => {
+        let validWeights = 0
+        let validSigs = []
+        let hashBuf = Buffer.from(hash, 'hex')
+        try {
+            for (let s = 0; s < signatures.length; s++) {
+                let signBuf = bs58.decode(signatures[s][0])
+                let recoveredPub = bs58.encode(secp256k1.ecdsaRecover(signBuf,signatures[s][1],hashBuf))
+                if (validSigs.includes(recoveredPub))
+                    return cb(false, 'duplicate signatures found')
+                for (let p = 0; p < allowedPubKeys.length; p++)
+                    if (allowedPubKeys[p][0] === recoveredPub) {
+                        validWeights += allowedPubKeys[p][1]
+                        validSigs.push(recoveredPub)
+                    }
+            }
+        } catch (e) {
+            return cb(false, 'invalid signatures: ' + e.toString())
+        }
+        if (validWeights >= threshold)
+            cb(account)
+        else
+            cb(false, 'insufficient signature weight ' + validWeights + ' to reach threshold of ' + threshold)
     },
     isValidHashAndSignature: (newBlock, cb) => {
         // and that the hash is correct
@@ -554,7 +568,7 @@ chain = {
                                 })
                             })
                         else {
-                            logr.debug(error, tx)
+                            logr.error(error, tx)
                             callback(null, false)
                         }
                     })
@@ -574,7 +588,7 @@ chain = {
             })
         
         var blockTimeBefore = new Date().getTime()
-        series(executions, function(err, results) {
+        series(executions, async function(err, results) {
             var string = 'executed'
             if(revalidate) string = 'validated & '+string
             logr.debug('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
@@ -591,16 +605,20 @@ chain = {
                     burnedInBlock += results[i].burned
             }
 
+            // execute periodic burn
+            let additionalBurn = await chain.decayBurnAccount(block)
+
             // add rewards for the leader who mined this block
             chain.leaderRewards(block.miner, block.timestamp, function(dist) {
                 distributedInBlock += dist
                 distributedInBlock = Math.round(distributedInBlock*1000) / 1000
+                burnedInBlock += additionalBurn
                 burnedInBlock = Math.round(burnedInBlock*1000) / 1000
                 cb(executedSuccesfully, distributedInBlock, burnedInBlock)
             })
         })
     },
-    minerSchedule: (block, cb) => {
+    minerSchedule: (block) => {
         var hash = block.hash
         var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         if (!p2p.recovering)
@@ -624,10 +642,10 @@ chain = {
             y++
         }
 
-        cb({
+        return {
             block: block,
             shuffle: shuffledMiners
-        })
+        }
     },
     generateLeaders: (withLeaderPub, limit, start) => {
         var leaders = []
@@ -688,6 +706,32 @@ chain = {
             else cb(0)
         })
     },
+    decayBurnAccount: (block) => {
+        return new Promise((rs) => {
+            if (!config.burnAccount || block._id % config.ecoBlocks !== 0)
+                return rs(0)
+            // offset inflation
+            let rp = eco.rewardPool()
+            let burnAmount = Math.floor(rp.dist)
+            if (burnAmount <= 0)
+                return rs(0)
+            cache.findOne('accounts', {name: config.burnAccount}, (e,burnAccount) => {
+                // do nothing if there is none to burn
+                if (burnAccount.balance <= 0)
+                    return rs(0)
+                // burn only up to available balance
+                burnAmount = Math.min(burnAmount,burnAccount.balance)
+                cache.updateOne('accounts', {name: config.burnAccount}, {$inc: {balance: -burnAmount}},() =>
+                    transaction.updateGrowInts(burnAccount, block.timestamp, () => {
+                        transaction.adjustNodeAppr(burnAccount, -burnAmount, () => {
+                            logr.econ('Burned ' + burnAmount + ' periodically from ' + config.burnAccount)
+                            return rs(burnAmount)
+                        })
+                    })
+                )
+            })
+        })
+    },
     calculateHashForBlock: (block) => {
         return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn)
     },
@@ -708,6 +752,7 @@ chain = {
     cleanMemory: () => {
         chain.cleanMemoryBlocks()
         chain.cleanMemoryTx()
+        eco.cleanHistory()
     },
     cleanMemoryBlocks: () => {
         if (config.ecoBlocksIncreasesSoon) {
@@ -717,7 +762,7 @@ chain = {
             
         var extraBlocks = chain.recentBlocks.length - config.ecoBlocks
         while (extraBlocks > 0) {
-            chain.recentBlocks.splice(0,1)
+            chain.recentBlocks.shift()
             extraBlocks--
         }
     },
@@ -725,6 +770,11 @@ chain = {
         for (const hash in chain.recentTxs)
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
+    },
+    applyHardfork: (blockNum) => {
+        // Update memory state on hardfork execution
+        if (blockNum === 4860000)
+            eco.loadHistory() // reset previous votes
     },
     batchLoadBlocks: (blockNum,cb) => {
         if (chain.blocksToRebuild.length == 0) {
@@ -742,11 +792,10 @@ chain = {
             
         // Genesis block is handled differently
         if (blockNum === 0) {
+            eco.history = [{_id: 0, votes: 0, cDist: 0, cBurn: 0}]
             chain.recentBlocks = [chain.getGenesisBlock()]
-            chain.minerSchedule(chain.getGenesisBlock(),(sch) => {
-                chain.schedule = sch
-                chain.rebuildState(blockNum+1,cb)
-            })
+            chain.schedule = chain.minerSchedule(chain.getGenesisBlock())
+            chain.rebuildState(blockNum+1,cb)
             return
         }
 
@@ -778,7 +827,9 @@ chain = {
                     
                     // update the config if an update was scheduled
                     config = require('./config.js').read(blockToRebuild._id)
+                    chain.applyHardfork(blockToRebuild._id)
                     eco.nextBlock()
+                    eco.appendHistory(blockToRebuild)
                     chain.cleanMemory()
 
                     let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
@@ -787,27 +838,16 @@ chain = {
 
                     cache.processRebuildOps(() => {
                         if (blockToRebuild._id % config.leaders === 0)
-                            chain.minerSchedule(blockToRebuild, function(minerSchedule) {
-                                chain.schedule = minerSchedule
-                                chain.recentBlocks.push(blockToRebuild)
-                                chain.output(blockToRebuild, true)
-                                
-                                // process notifications (non blocking)
-                                notifications.processBlock(blockToRebuild)
+                            chain.schedule = chain.minerSchedule(blockToRebuild)
+                        chain.recentBlocks.push(blockToRebuild)
+                        chain.output(blockToRebuild, true)
+                        
+                        // process notifications and leader stats (non blocking)
+                        notifications.processBlock(blockToRebuild)
+                        leaderStats.processBlock(blockToRebuild)
 
-                                // next block
-                                chain.rebuildState(blockNum+1, cb)
-                            })
-                        else {
-                            chain.recentBlocks.push(blockToRebuild)
-                            chain.output(blockToRebuild, true)
-
-                            // process notifications (non blocking)
-                            notifications.processBlock(blockToRebuild)
-
-                            // next block
-                            chain.rebuildState(blockNum+1, cb)
-                        }
+                        // next block
+                        chain.rebuildState(blockNum+1, cb)
                     }, blockToRebuild._id % writeInterval === 0)
                 })
             })

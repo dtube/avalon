@@ -108,7 +108,6 @@ var config = {
             // precision of author tip percentage
             // 1 => 10% step, 2 => 1% step, 3 => 0.1% step, 4 => 0.01% step
             tippedVotePrecision: 2,
-            tmpForceTs: true,
             // the time after which transactions expire and wont be accepted by nodes anymore
             txExpirationTime: 60000,
             // limit which transactions are available
@@ -138,6 +137,18 @@ var config = {
         },
         4860000: {
             hotfix1: true
+        },
+        8500050: {
+            maxKeys: 25,
+            disallowVotingInactiveLeader: true,
+            burnAccount: 'dtube.airdrop',
+            preloadVt: 50, // 50% of vtPerBurn
+            preloadBwGrowth: 2, // x2 more time of bwGrowth
+            multisig: true,
+            leaders: 15
+        },
+        8595000: {
+            hotfix2: true
         }
     },
     read: (blockNum) => {

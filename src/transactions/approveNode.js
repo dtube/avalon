@@ -17,7 +17,9 @@ module.exports = {
                 cache.findOne('accounts', {name: tx.data.target}, function(err, account) {
                     if (!account) 
                         cb(false, 'invalid tx target does not exist')
-                    else 
+                    else if (config.disallowVotingInactiveLeader && !account.pub_leader)
+                        cb(false, 'target does not have an activated leader signing key')
+                    else
                         cb(true)
                     
                 })
