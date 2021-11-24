@@ -28,6 +28,8 @@ module.exports = {
                 filter.skip = skip
     
             db.collection('blocks').find(query, filter).toArray(function(err, blocks) {
+                if (err || !blocks)
+                    return res.status(500).send({error: 'failed to query blocks for account history'})
                 for (let b = 0; b < blocks.length; b++) {
                     let newTxs = []
                     for (let t = 0; t < blocks[b].txs.length; t++)
