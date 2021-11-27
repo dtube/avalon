@@ -1,7 +1,4 @@
-const one_day = 86400000
-const one_hour = 3600000
-const one_minute = 60000
-var TransactionType = require('./transactions').Types
+const TransactionType = require('./transactions').Types
 
 // List of potential community-breaking abuses:
 // 1- Multi accounts voting (cartoons)
@@ -231,7 +228,7 @@ var eco = {
                     if (!config.allowRevotes) break
                 }
             for (let v = 0; v < newVotes.length; v++)
-                if (authorVote >= 0 && newVotes[v].u !== content.author && newVotes[v].tip) {
+                if (authorVote >= 0 && newVotes[v].u !== content.author && newVotes[v].tip)
                     if (!authorVoteClaimed) {
                         let tipAmt = (newVotes[v].gross * Math.pow(10,config.ecoClaimPrecision)) * (newVotes[v].tip * Math.pow(10,config.tippedVotePrecision))
                         totalAuthorTip += tipAmt
@@ -239,7 +236,7 @@ var eco = {
                         newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - tipAmt) / precisionMulti
                     } else
                         newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - (newVotes[v].totalTip * precisionMulti)) / precisionMulti
-                } else if (newVotes[v].u !== content.author)
+                else if (newVotes[v].u !== content.author)
                     newVotes[v].claimable = newVotes[v].gross
             if (authorVote >= 0 && !authorVoteClaimed)
                 newVotes[authorVote].claimable = ((newVotes[authorVote].gross * precisionMulti) + totalAuthorTip) / precisionMulti

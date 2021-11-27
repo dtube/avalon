@@ -93,7 +93,7 @@ let indexer = {
             let updatedLeader = indexer.updates.leaders[acc]
             ops.push((cb) => db.collection('leaders').updateOne({_id: updatedLeader },{
                 $set: indexer.leaders[updatedLeader]
-            },{ upsert: true },(e) => cb(null,true)))
+            },{ upsert: true },() => cb(null,true)))
         }
         indexer.updates.leaders = []
         return ops

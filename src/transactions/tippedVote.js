@@ -29,14 +29,13 @@ module.exports = {
             // author should be voted and not claimed reward
             let authorVote = false
             let authorVoteClaimed = false
-            for (let v = 0; v < content.votes.length; v++) {
+            for (let v = 0; v < content.votes.length; v++)
                 if (content.votes[v].u === tx.data.author) {
                     authorVote = true
                     if (content.votes[v].claimed)
                         authorVoteClaimed = true
                     break
                 }
-            }
 
             // probably content imported from genesis
             if (!authorVote) return cb(false, 'author vote does not exist')
@@ -66,13 +65,12 @@ module.exports = {
             votes: vote
         }}, function(){
             cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
-                if (process.env.CONTENTS != '1') {
+                if (process.env.CONTENTS !== '1')
                     return eco.curation(tx.data.author, tx.data.link, function(distCurators, distMaster, burnCurator) {
                         if (!content.pa && !content.pp)
                             rankings.update(tx.data.author, tx.data.link, vote, distCurators)
                         cb(true, distCurators+distMaster, burnCurator)
                     })
-                }
                 // update top tags
                 var topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
