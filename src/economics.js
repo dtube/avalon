@@ -221,13 +221,15 @@ var eco = {
             let authorVoteClaimed = false
             let totalAuthorTip = 0
             let precisionMulti = Math.pow(10,config.ecoClaimPrecision+config.tippedVotePrecision)
+            // determine existence and position of author vote
             for (let v = 0; v < newVotes.length; v++)
                 if (newVotes[v].u === content.author) {
                     authorVote = v
                     if (newVotes[v].claimed) authorVoteClaimed = true
                     if (!config.allowRevotes) break
                 }
-            for (let v = 0; v < newVotes.length; v++)
+            // tally up tip amount
+            for (let v = 0; v < newVotes.length; v++) {
                 if (authorVote >= 0 && newVotes[v].u !== content.author && newVotes[v].tip)
                     if (!authorVoteClaimed) {
                         let tipAmt = (newVotes[v].gross * Math.pow(10,config.ecoClaimPrecision)) * (newVotes[v].tip * Math.pow(10,config.tippedVotePrecision))
@@ -238,6 +240,11 @@ var eco = {
                         newVotes[v].claimable = ((newVotes[v].gross * precisionMulti) - (newVotes[v].totalTip * precisionMulti)) / precisionMulti
                 else if (newVotes[v].u !== content.author)
                     newVotes[v].claimable = newVotes[v].gross
+                // failsafe to ensure claimable cannot be negative
+                if (newVotes[v].claimable < 0)
+                    newVotes[v].claimable = 0
+            }
+            // apply all tips to author vote
             if (authorVote >= 0 && !authorVoteClaimed)
                 newVotes[authorVote].claimable = ((newVotes[authorVote].gross * precisionMulti) + totalAuthorTip) / precisionMulti
 
