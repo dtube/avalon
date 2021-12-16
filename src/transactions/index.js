@@ -25,7 +25,8 @@ var transactions = [
     require('./tippedVote.js'),
     require('./newWeightedKey.js'),
     require('./setSignThreshold.js'),
-    require('./setPasswordWeight.js')
+    require('./setPasswordWeight.js'),
+    require('./unsetSignThreshold.js')
 ]
 
 module.exports = {
@@ -52,7 +53,8 @@ module.exports = {
         TIPPED_VOTE: 19,
         NEW_WEIGHTED_KEY: 20,
         SET_SIG_THRESHOLD: 21,
-        SET_PASSWORD_WEIGHT: 22
+        SET_PASSWORD_WEIGHT: 22,
+        UNSET_SIG_THRESHOLD: 23
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')
