@@ -132,7 +132,8 @@ var config = {
             txLimits: {
                 14: 2,
                 15: 2,
-                19: 0
+                19: 0,
+                23: 1
             }
         },
         4860000: {
@@ -148,7 +149,14 @@ var config = {
             leaders: 15
         },
         8595000: {
-            hotfix2: true
+            masterNoPreloadAcc: true
+        },
+        25000000: {
+            txLimits: {
+                14: 2,
+                15: 2,
+                23: 0
+            }
         }
     },
     read: (blockNum) => {

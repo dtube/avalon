@@ -40,7 +40,7 @@ module.exports = {
         let newAccBw = {v:0,t:0}
         let newAccVt = {v:0,t:0}
         let baseBwGrowth = 0
-        if (!config.hotfix2 || tx.sender !== config.masterName || config.masterPaysForUsernames) {
+        if (!config.masterNoPreloadAcc || tx.sender !== config.masterName || config.masterPaysForUsernames) {
             if (config.preloadVt)
                 newAccVt = {v:eco.accountPrice(tx.data.name)*config.vtPerBurn*config.preloadVt/100,t:ts}
             if (config.preloadBwGrowth) {
