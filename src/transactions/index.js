@@ -26,7 +26,8 @@ var transactions = [
     require('./newWeightedKey.js'),
     require('./setSignThreshold.js'),
     require('./setPasswordWeight.js'),
-    require('./unsetSignThreshold.js')
+    require('./unsetSignThreshold.js'),
+    require('./newAccountWithBw.js')
 ]
 
 module.exports = {
@@ -54,7 +55,8 @@ module.exports = {
         NEW_WEIGHTED_KEY: 20,
         SET_SIG_THRESHOLD: 21,
         SET_PASSWORD_WEIGHT: 22,
-        UNSET_SIG_THRESHOLD: 23
+        UNSET_SIG_THRESHOLD: 23,
+        NEW_ACCOUNT_WITH_BW: 24
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')

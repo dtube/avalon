@@ -178,6 +178,8 @@ transaction = {
             bw.v -= needed_bytes
             if (tx.type === TransactionType.TRANSFER_BW)
                 bw.v -= tx.data.amount
+            else if (tx.type === TransactionType.NEW_ACCOUNT_WITH_BW)
+                bw.v -= tx.data.bw
 
             // collect voting power when needed
             var vt = null
