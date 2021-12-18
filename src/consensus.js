@@ -65,6 +65,36 @@ var consensus = {
         if (!consensus.isActive())
             threshold += 1
 
+        // identify block collisions between blocks of same _id produced by:
+        // 1. only one leader (double production)
+        // 2. more than one leader (latency issues between leaders)
+        // resolution: apply the earliest valid block, or in case of same timestamp the lowest hash
+        // todo: add leader slashing for double production and other possible malicious behaviour
+        let possBlocksById = {}
+        if (consensus.possBlocks.length > 1) {
+            for (let i in consensus.possBlocks) {
+                if (possBlocksById[consensus.possBlocks[i].block._id])
+                    possBlocksById[consensus.possBlocks[i].block._id].push(consensus.possBlocks[i])
+                else
+                    possBlocksById[consensus.possBlocks[i].block._id] = [consensus.possBlocks[i]]
+            }
+            for (let i in possBlocksById)
+                if (possBlocksById[i].length > 1) {
+                    let collisions = []
+                    for (let i in consensus.possBlocks)
+                        collisions.push([consensus.possBlocks[i].block.miner,consensus.possBlocks[i].block.timestamp])
+                    logr.info('Block collision detected at height '+i+', the leaders are:',collisions)
+                    logr.cons('Poss blocks',possBlocksById[i])
+                }
+            consensus.possBlocks.sort((a,b) => {
+                // valid blocks with different _id must have a different timestamp
+                if (a.block.timestamp !== b.block.timestamp)
+                    return a.block.timestamp - b.block.timestamp
+                else
+                    return a.block.hash < b.block.hash ? -1 : 1
+            })
+        }
+
         for (let i = 0; i < consensus.possBlocks.length; i++) {
             const possBlock = consensus.possBlocks[i]
             logr.cons('T'+Math.ceil(threshold)+' R0-'+possBlock[0].length+' R1-'+possBlock[1].length)
@@ -75,7 +105,13 @@ var consensus = {
             && possBlock[0] && possBlock[0].indexOf(process.env.NODE_OWNER) !== -1) {
                 // block becomes valid, we can move forward !
                 consensus.finalizing = true
-                logr.cons('block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
+
+                // log which block got applied if collision exists
+                if (possBlocksById[possBlock.block._id] && possBlocksById[possBlock.block._id].length > 1)
+                    logr.info('Applying block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' by '+possBlock.block.miner+' with timestamp '+possBlock.block.timestamp)
+                else
+                    logr.cons('block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
+
                 chain.validateAndAddBlock(possBlock.block, false, function(err) {
                     if (err) throw err
 
