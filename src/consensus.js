@@ -81,8 +81,8 @@ var consensus = {
             for (let i in possBlocksById)
                 if (possBlocksById[i].length > 1) {
                     let collisions = []
-                    for (let i in consensus.possBlocks)
-                        collisions.push([consensus.possBlocks[i].block.miner,consensus.possBlocks[i].block.timestamp])
+                    for (let j in possBlocksById[i])
+                        collisions.push([possBlocksById[i][j].block.miner,possBlocksById[i][j].block.timestamp])
                     logr.info('Block collision detected at height '+i+', the leaders are:',collisions)
                     logr.cons('Poss blocks',possBlocksById[i])
                 }
