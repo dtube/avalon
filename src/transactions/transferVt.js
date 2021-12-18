@@ -18,6 +18,8 @@ module.exports = {
         
     },
     execute: (tx, ts, cb) => {
+        if (config.burnAccountIsBlackhole && tx.data.receiver === config.burnAccount)
+            return cb(true)
         cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
             if (err) throw err
             account.vt.v += tx.data.amount

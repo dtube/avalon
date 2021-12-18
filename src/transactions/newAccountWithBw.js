@@ -1,3 +1,5 @@
+const GrowInt = require('growint')
+
 module.exports = {
     fields: ['name', 'pub', 'bw'],
     validate: (tx, ts, legitUser, cb) => {

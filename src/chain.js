@@ -26,7 +26,7 @@ class Block {
     }
 }
 
-chain = {
+let chain = {
     blocksToRebuild: [],
     restoredBlocks: 0,
     schedule: null,
@@ -254,7 +254,7 @@ chain = {
 
             // update the config if an update was scheduled
             config = require('./config.js').read(block._id)
-            chain.applyHardfork(block._id)
+            chain.applyHardforkPostBlock(block._id)
             eco.appendHistory(block)
             eco.nextBlock()
 
@@ -586,6 +586,7 @@ chain = {
                     })
                 i++
             })
+        executions.push((callback) => chain.applyHardfork(block._id,callback))
         
         var blockTimeBefore = new Date().getTime()
         series(executions, async function(err, results) {
@@ -708,7 +709,7 @@ chain = {
     },
     decayBurnAccount: (block) => {
         return new Promise((rs) => {
-            if (!config.burnAccount || block._id % config.ecoBlocks !== 0)
+            if (!config.burnAccount || config.burnAccountIsBlackhole || block._id % config.ecoBlocks !== 0)
                 return rs(0)
             // offset inflation
             let rp = eco.rewardPool()
@@ -771,8 +772,26 @@ chain = {
             if (chain.recentTxs[hash].ts + config.txExpirationTime < chain.getLatestBlock().timestamp)
                 delete chain.recentTxs[hash]
     },
-    applyHardfork: (blockNum) => {
-        // Update memory state on hardfork execution
+    applyHardfork: (block,cb) => {
+        // Do something on hardfork block after tx executions and before leader rewards distribution
+        // NOTE: Update block height to actual HF block activation
+        if (block._id === 25000000)
+            // Clear @dtube.airdrop account
+            cache.findOne('accounts', {name: config.burnAccount}, (e,burnAccount) => {
+                let burned = burnAccount.balance
+                cache.updateOne('accounts',
+                    {name: config.burnAccount},
+                    {$set: {
+                        balance: 0,
+                        bw: { v: 0, t: block.timestamp },
+                        vt: { v: 0, t: block.timestamp }
+                    }}, () => cb(null, { executed: true, distributed: 0, burned: burned }))
+            })
+        else
+            cb(null, { executed: true, distributed: 0, burned: 0 })
+    },
+    applyHardforkPostBlock: (blockNum) => {
+        // Do something after executing hardfork block
         if (blockNum === 4860000)
             eco.loadHistory() // reset previous votes
     },
@@ -827,7 +846,7 @@ chain = {
                     
                     // update the config if an update was scheduled
                     config = require('./config.js').read(blockToRebuild._id)
-                    chain.applyHardfork(blockToRebuild._id)
+                    chain.applyHardforkPostBlock(blockToRebuild._id)
                     eco.nextBlock()
                     eco.appendHistory(blockToRebuild)
                     chain.cleanMemory()

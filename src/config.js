@@ -153,6 +153,7 @@ var config = {
             masterNoPreloadAcc: true
         },
         25000000: {
+            burnAccountIsBlackhole: true,
             txLimits: {
                 14: 2,
                 15: 2,
