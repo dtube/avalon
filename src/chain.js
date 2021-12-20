@@ -544,6 +544,7 @@ let chain = {
                 })
             })
     },
+    isValidNewBlockPromise: (newBlock, verifyHashAndSig, verifyTxValidity) => new Promise((rs) => chain.isValidNewBlock(newBlock, verifyHashAndSig, verifyTxValidity, rs)),
     executeBlockTransactions: (block, revalidate, isFinal, cb) => {
         // revalidating transactions in orders if revalidate = true
         // adding transaction to recent transactions (to prevent tx re-use) if isFinal = true
@@ -818,57 +819,58 @@ let chain = {
             return
         }
 
-        chain.batchLoadBlocks(blockNum,(blockToRebuild) => {
+        chain.batchLoadBlocks(blockNum, async (blockToRebuild) => {
             if (!blockToRebuild)
                 // Rebuild is complete
                 return cb(null,blockNum)
             
             // Validate block and transactions, then execute them
-            chain.isValidNewBlock(blockToRebuild,true,false,(isValid) => {
-                if (!isValid)
+            if (process.env.REBUILD_NO_VALIDATE !== '1') {
+                let isValidBlock = await chain.isValidNewBlockPromise(blockToRebuild,true,false)
+                if (!isValidBlock)
                     return cb(true, blockNum)
-                chain.executeBlockTransactions(blockToRebuild,true,true,(validTxs,dist,burn) => {
-                    // if any transaction is wrong, thats a fatal error
-                    // transactions should have been verified in isValidNewBlock
-                    if (blockToRebuild.txs.length !== validTxs.length) {
-                        logr.fatal('Invalid tx(s) in block found after starting execution')
-                        return cb('Invalid tx(s) in block found after starting execution', blockNum)
-                    }
+            }
+            chain.executeBlockTransactions(blockToRebuild,process.env.REBUILD_NO_VALIDATE !== '1',true,(validTxs,dist,burn) => {
+                // if any transaction is wrong, thats a fatal error
+                // transactions should have been verified in isValidNewBlock
+                if (blockToRebuild.txs.length !== validTxs.length) {
+                    logr.fatal('Invalid tx(s) in block found after starting execution')
+                    return cb('Invalid tx(s) in block found after starting execution', blockNum)
+                }
 
-                    // error if distributed or burned computed amounts are different than the reported one
-                    let blockDist = blockToRebuild.dist || 0
-                    if (blockDist !== dist)
-                        return cb('Wrong dist amount ' + blockDist + ' ' + dist, blockNum)
+                // error if distributed or burned computed amounts are different than the reported one
+                let blockDist = blockToRebuild.dist || 0
+                if (blockDist !== dist)
+                    return cb('Wrong dist amount ' + blockDist + ' ' + dist, blockNum)
 
-                    let blockBurn = blockToRebuild.burn || 0
-                    if (blockBurn !== burn) 
-                        return cb('Wrong burn amount ' + blockBurn + ' ' + burn, blockNum)
+                let blockBurn = blockToRebuild.burn || 0
+                if (blockBurn !== burn) 
+                    return cb('Wrong burn amount ' + blockBurn + ' ' + burn, blockNum)
+                
+                // update the config if an update was scheduled
+                config = require('./config.js').read(blockToRebuild._id)
+                chain.applyHardforkPostBlock(blockToRebuild._id)
+                eco.nextBlock()
+                eco.appendHistory(blockToRebuild)
+                chain.cleanMemory()
+
+                let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
+                if (isNaN(writeInterval) || writeInterval < 1)
+                    writeInterval = 10000
+
+                cache.processRebuildOps(() => {
+                    if (blockToRebuild._id % config.leaders === 0)
+                        chain.schedule = chain.minerSchedule(blockToRebuild)
+                    chain.recentBlocks.push(blockToRebuild)
+                    chain.output(blockToRebuild, true)
                     
-                    // update the config if an update was scheduled
-                    config = require('./config.js').read(blockToRebuild._id)
-                    chain.applyHardforkPostBlock(blockToRebuild._id)
-                    eco.nextBlock()
-                    eco.appendHistory(blockToRebuild)
-                    chain.cleanMemory()
+                    // process notifications and leader stats (non blocking)
+                    notifications.processBlock(blockToRebuild)
+                    leaderStats.processBlock(blockToRebuild)
 
-                    let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
-                    if (isNaN(writeInterval) || writeInterval < 1)
-                        writeInterval = 10000
-
-                    cache.processRebuildOps(() => {
-                        if (blockToRebuild._id % config.leaders === 0)
-                            chain.schedule = chain.minerSchedule(blockToRebuild)
-                        chain.recentBlocks.push(blockToRebuild)
-                        chain.output(blockToRebuild, true)
-                        
-                        // process notifications and leader stats (non blocking)
-                        notifications.processBlock(blockToRebuild)
-                        leaderStats.processBlock(blockToRebuild)
-
-                        // next block
-                        chain.rebuildState(blockNum+1, cb)
-                    }, blockToRebuild._id % writeInterval === 0)
-                })
+                    // next block
+                    chain.rebuildState(blockNum+1, cb)
+                }, blockToRebuild._id % writeInterval === 0)
             })
         })
     }
