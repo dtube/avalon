@@ -40,11 +40,10 @@ module.exports = {
                 cache.findOne('contents', {_id: tx.sender+'/'+tx.data.link}, function(err, content) {
                     if (content)
                         // user is editing an existing comment
-                        if (content.pa !== tx.data.pa || content.pp !== tx.data.pp) {
-                            cb(false, 'invalid tx parent comment cannot be edited'); return
-                        } else {
+                        if (content.pa !== tx.data.pa || content.pp !== tx.data.pp)
+                            return cb(false, 'invalid tx parent comment cannot be edited')
+                        else
                             cb(true)
-                        }
                     else
                         // it is a new comment
                         cb(true)

@@ -18,10 +18,10 @@
     "express": "^4.16.4",
     "growint": "^1.0.1",
     "log4js": "^3.0.6",
-    "mongodb": "^3.6.2",
+    "mongodb": "^4.2.2",
     "node-fetch": "^2.3.0",
     "oembed-parser": "^1.2.2",
-    "open-graph-scraper": "^3.6.1",
+    "open-graph-scraper": "^4.11.0",
     "run-parallel": "^1.1.10",
     "run-series": "^1.1.9",
     "secp256k1": "^4.0.2",
@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "chance": "^1.0.18",
-    "eslint": "^5.16.0",
+    "eslint": "^8.5.0",
     "javalon": "^1.0.7",
     "pkg": "^4.4.9"
   }

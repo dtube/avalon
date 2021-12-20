@@ -36,13 +36,13 @@ module.exports = {
             }
 
             let aggregation = [projecting, sorting, {$limit: 100}]
-            if (req.params.key == 'leaders')
+            if (req.params.key === 'leaders')
                 aggregation.push(matching)
 
             db.collection('accounts').aggregate(aggregation).toArray((e,r) => {
                 if (e)
                     return res.status(500).send(e)
-                if (req.params.key != 'leaders')
+                if (req.params.key !== 'leaders')
                     return res.send(r)
                 else {
                     for (let leader = 0; leader < r.length; leader++) {

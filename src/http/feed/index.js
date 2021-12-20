@@ -56,18 +56,18 @@ module.exports = {
             for (var k=0; k<filterAttrs.length; k++) {
                 var kv = filterAttrs[k].split('=')
 
-                if (kv.length == 2) {
+                if (kv.length === 2) {
                     var key = kv[0]
                     filterKeys.push(key)
                     var val = kv[1]
 
-                    if (key == 'authors') 
+                    if (key === 'authors') 
                         filterMap['authors'] = val.split(',')
-                    else if (key == 'tags') 
+                    else if (key === 'tags') 
                         filterMap['tags'] = val.split(',')
-                    else if (key == 'limit') 
+                    else if (key === 'limit') 
                         filterMap['limit'] = parseInt(val)
-                    else if (key == 'tsrange') 
+                    else if (key === 'tsrange') 
                         filterMap['tsrange'] = val.split(',')
                 }
             }
@@ -75,16 +75,16 @@ module.exports = {
             for (var k=0; k<defaultKeys.length; k++) {
                 var key = defaultKeys[k]
 
-                if (filterKeys.includes(key) == false) 
-                    if (key == 'authors') {
+                if (!filterKeys.includes(key)) 
+                    if (key === 'authors') {
                         filterMap['authors'] = []
                         filterMap['authors'].push('all')
-                    } else if (key == 'tags') {
+                    } else if (key === 'tags') {
                         filterMap['tags'] = []
                         filterMap['tags'].push('all')
-                    } else if (key == 'limit') {
+                    } else if (key === 'limit') 
                         filterMap['limit'] = 50
-                    } else if (key == 'tsrange') {
+                    else if (key === 'tsrange') {
                         filterMap['tsrange'] = []
                         filterMap['tsrange'].push(0)
                         filterMap['tsrange'].push(Number.MAX_SAFE_INTEGER)

@@ -34,14 +34,14 @@ module.exports = {
             for (var k=0; k<filterAttrs.length; k++) {
                 var kv = filterAttrs[k].split('=')
 
-                if (kv.length == 2) {
+                if (kv.length === 2) {
                     var key = kv[0]
                     filterKeys.push(key)
                     var val = kv[1]
 
-                    if (key == 'tags') 
+                    if (key === 'tags') 
                         filterMap['tags'] = val.split(',')
-                    else if (key == 'limit') 
+                    else if (key === 'limit') 
                         filterMap['limit'] = parseInt(val)
                 }
             }
@@ -49,13 +49,12 @@ module.exports = {
             for (var k=0; k<defaultKeys.length; k++) {
                 var key = defaultKeys[k]
 
-                if (filterKeys.includes(key) == false) 
-                    if (key == 'tags') {
+                if (!filterKeys.includes(key)) 
+                    if (key === 'tags') {
                         filterMap['tags'] = []
                         filterMap['tags'].push('all')
-                    } else if (key == 'limit') {
+                    } else if (key === 'limit') 
                         filterMap['limit'] = Number.MAX_SAFE_INTEGER
-                    }
             }
 
             tags = filterMap['tags']

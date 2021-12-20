@@ -797,7 +797,7 @@ let chain = {
             eco.loadHistory() // reset previous votes
     },
     batchLoadBlocks: (blockNum,cb) => {
-        if (chain.blocksToRebuild.length == 0) {
+        if (chain.blocksToRebuild.length === 0) {
             db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
                 if (e) throw e
                 if (blocks) chain.blocksToRebuild = blocks

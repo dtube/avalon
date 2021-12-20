@@ -23,23 +23,23 @@ module.exports = {
             for (var k=0; k<filterAttrs.length; k++) {
                 var kv = filterAttrs[k].split('=')
 
-                if (kv.length == 2) {
+                if (kv.length === 2) {
                     var key = kv[0]
                     filterKeys.push(key)
                     var val = kv[1]
 
-                    if (key == 'sortBy') 
+                    if (key === 'sortBy') 
                         filterMap['sortBy'] = val
-                    else if (key == 'limit') {
+                    else if (key === 'limit') {
                         filterMap['limit'] = parseInt(val)
                         limit = filterMap['limit']
                     }
                 }
             }
             var ts = -1
-            if (filterMap['sortBy'] == 'desc') 
+            if (filterMap['sortBy'] === 'desc') 
                 ts = -1
-            else if (filterMap['sortBy'] == 'asc') 
+            else if (filterMap['sortBy'] === 'asc') 
                 ts = 1
             db.collection('contents').find({ pa: null, author: username }, { sort: { ts: ts }, limit: limit }).toArray(function (err, contents) {
                 res.send(contents)
