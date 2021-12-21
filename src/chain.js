@@ -245,28 +245,27 @@ let chain = {
         }
             
     },
-    addBlock: (block, cb) => {
+    addBlock: async (block, cb) => {
         // add the block in our own db
-        db.collection('blocks').insertOne(block, function(err) {
-            if (err) throw err
-            // push cached accounts and contents to mongodb
-            chain.cleanMemory()
+        await db.collection('blocks').insertOne(block)
 
-            // update the config if an update was scheduled
-            config = require('./config.js').read(block._id)
-            chain.applyHardforkPostBlock(block._id)
-            eco.appendHistory(block)
-            eco.nextBlock()
+        // push cached accounts and contents to mongodb
+        chain.cleanMemory()
 
-            // if block id is mult of n leaders, reschedule next n blocks
-            if (block._id % config.leaders === 0)
-                chain.schedule = chain.minerSchedule(block)
-            chain.recentBlocks.push(block)
-            chain.minerWorker(block)
-            chain.output(block)
-            cache.writeToDisk(false)
-            cb(true)
-        })
+        // update the config if an update was scheduled
+        config = require('./config.js').read(block._id)
+        chain.applyHardforkPostBlock(block._id)
+        eco.appendHistory(block)
+        eco.nextBlock()
+
+        // if block id is mult of n leaders, reschedule next n blocks
+        if (block._id % config.leaders === 0)
+            chain.schedule = chain.minerSchedule(block)
+        chain.recentBlocks.push(block)
+        chain.minerWorker(block)
+        chain.output(block)
+        cache.writeToDisk(false)
+        cb(true)
     },
     output: (block,rebuilding) => {
         chain.nextOutput.txs += block.txs.length

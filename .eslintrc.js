@@ -2,6 +2,7 @@ module.exports = {
     'env': {
         'commonjs': true,
         'es6': true,
+        'es2020': true,
         'node': true
     },
     'extends': 'eslint:recommended',
@@ -25,7 +26,7 @@ module.exports = {
         'leaderStats': 'writable'
     },
     'parserOptions': {
-        'ecmaVersion': 2018
+        'ecmaVersion': 2020
     },
     'rules': {
         'indent': [

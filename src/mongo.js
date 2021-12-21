@@ -25,7 +25,7 @@ let mongo = {
 
             // If a rebuild is specified, drop the database
             if (process.env.REBUILD_STATE === '1' && !isResumingRebuild)
-                return db.dropDatabase(() => mongo.initGenesis(cb))
+                return db.dropDatabase(() => mongo.initGenesis().then(cb))
 
             // check if genesis block exists or not
             db.collection('blocks').findOne({_id: 0}, function(err, genesis) {
@@ -36,12 +36,12 @@ let mongo = {
                         process.exit(1)
                     }
                     cb()
-                } else mongo.initGenesis(cb)
+                } else mongo.initGenesis().then(cb)
             })
             
         })
     },
-    initGenesis: async (cb) => {
+    initGenesis: async () => {
         if (process.env.REBUILD_STATE === '1')
             logr.info('Starting genesis for rebuild...')
         else
@@ -59,7 +59,7 @@ let mongo = {
             logr.warn('No genesis.zip file found')
             // if no genesis file, we create only the master account and empty block 0
             await mongo.insertMasterAccount()
-            mongo.insertBlockZero(cb)
+            await mongo.insertBlockZero()
             return
         }
         
@@ -79,7 +79,7 @@ let mongo = {
 
         await mongo.restore(mongoUri,genesisFolder)
         logr.info('Finished importing genesis data')
-        mongo.insertBlockZero(cb)
+        await mongo.insertBlockZero()
     },
     restore: (mongoUri,folder) => {
         return new Promise((rs) => {
@@ -116,18 +116,9 @@ let mongo = {
             }
         }) 
     },
-    insertBlockZero: (cb) => {
+    insertBlockZero: async () => {
         logr.info('Inserting Block #0 with hash '+config.originHash)
-        db.collection('blocks').findOne({}, function(err, block) {
-            if (err) throw err
-            if (!block) {
-                let genesisBlock = chain.getGenesisBlock()
-                db.collection('blocks').insertOne(genesisBlock, function() {
-                    cb()
-                })
-            } else 
-                cb()
-        })
+        await db.collection('blocks').insertOne(chain.getGenesisBlock())
     },
     addMongoIndexes: async () => {
         await db.collection('accounts').createIndex({name:1})

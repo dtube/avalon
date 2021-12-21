@@ -260,6 +260,8 @@ var cache = {
             for (let op in leaderStatsWriteOps)
                 executions.push(leaderStatsWriteOps[op])
         }
+
+        executions.push((callback) => db.collection('state').updateOne({_id: 0},{$set:{headBlock:chain.getLatestBlock()._id}},{ upsert: true },() => callback(null,true)))
         
         if (typeof cb === 'function') {
             let timeBefore = new Date().getTime()
