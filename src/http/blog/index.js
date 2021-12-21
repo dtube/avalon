@@ -16,7 +16,6 @@ module.exports = {
             var filterAttrs = filterBy.split('&')
 
             var filterMap = {}
-            var defaultKeys = ['sortBy']
             var filterKeys = []
 
             var limit = 50
