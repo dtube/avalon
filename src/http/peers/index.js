@@ -10,8 +10,6 @@ module.exports = {
                 }
                 if (p2p.sockets[i].node_status)
                     peer.node_status = p2p.sockets[i].node_status
-                if (p2p.sockets[i].sentUs)
-                    peer.sentUs = p2p.sockets[i].sentUs
 
                 peers.push(peer)
             }

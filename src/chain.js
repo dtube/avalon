@@ -331,10 +331,9 @@ let chain = {
             if (err) throw err
             if (!account) {
                 cb(false); return
-            } else if (chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks && process.env.REBUILD_NO_VERIFY === '1') {
+            } else if (chain.restoredBlocks && chain.getLatestBlock()._id < chain.restoredBlocks && process.env.REBUILD_NO_VERIFY === '1')
                 // no verify rebuild mode, only use if you trust the contents of blocks.zip
                 return cb(account)
-            }
 
             // main key can authorize all transactions
             let allowedPubKeys = [[account.pub, account.pub_weight || 1]]
@@ -353,13 +352,11 @@ let chain = {
                     allowedPubKeys = [[account.pub_leader, 1]]
                 else
                     allowedPubKeys = []
-            else {
-                // compute required signature threshold
-                if (account.thresholds && account.thresholds[txType])
-                    threshold = account.thresholds[txType]
-                else if (account.thresholds && account.thresholds.default)
-                    threshold = account.thresholds.default
-            }
+            // compute required signature threshold otherwise
+            else if (account.thresholds && account.thresholds[txType])
+                threshold = account.thresholds[txType]
+            else if (account.thresholds && account.thresholds.default)
+                threshold = account.thresholds.default
 
             // multisig transactions
             if (config.multisig && Array.isArray(sign))
@@ -376,7 +373,7 @@ let chain = {
                         return
                     }
                 }
-            } catch {}
+            } catch (e) {}
             cb(false)
         })
     },
@@ -797,13 +794,13 @@ let chain = {
             eco.loadHistory() // reset previous votes
     },
     batchLoadBlocks: (blockNum,cb) => {
-        if (chain.blocksToRebuild.length === 0) {
+        if (chain.blocksToRebuild.length === 0)
             db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
                 if (e) throw e
                 if (blocks) chain.blocksToRebuild = blocks
                 cb(chain.blocksToRebuild.shift())
             })
-        } else cb(chain.blocksToRebuild.shift())
+        else cb(chain.blocksToRebuild.shift())
     },
     rebuildState: (blockNum,cb) => {
         // If chain shutting down, stop rebuilding and output last number for resuming

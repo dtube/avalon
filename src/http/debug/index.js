@@ -9,10 +9,6 @@ module.exports = {
                     processed: consensus.processed,
                     validating: consensus.validating,
                 },
-                p2p: {
-                    recoveringBlocks: p2p.recoveringBlocks,
-                    // recoveredBlocks: p2p.recoveredBlocks
-                },
                 chain: {
                     recentBlocks: chain.recentBlocks,
                     recentTxs: chain.recentTxs

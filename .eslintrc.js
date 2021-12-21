@@ -11,11 +11,9 @@ module.exports = {
         'db': 'writable',
         'logr': 'writable',
         'config': 'writable',
-        'http': 'writable',
         'p2p': 'writable',
         'eco': 'writable',
         'validate': 'writable',
-        'mongo': 'writable',
         'chain': 'writable',
         'transaction': 'writable',
         'cache': 'writable',
@@ -57,10 +55,15 @@ module.exports = {
         'no-magic-numbers': [
             'warn',
             {
-                'ignore': [-1, 0, 1, 2]
+                'ignore': [-1, 0, 1, 2, 10, 400, 404, 500, 1000]
             }
         ],
-        'no-useless-concat': 'error'
+        'no-useless-concat': 'error',
+        'no-empty': [
+            'error', {
+                'allowEmptyCatch': true
+            }
+        ]
         // 'complexity': [
         //     'warn',
         //     20

@@ -1,9 +1,7 @@
 // starting sub modules
 logr = require('./logger.js')
 config = require('./config.js').read(0)
-http = require('./http/index.js')
 p2p = require('./p2p.js')
-mongo = require('./mongo.js')
 chain = require('./chain.js')
 transaction = require('./transaction.js')
 cache = require('./cache.js')
@@ -12,6 +10,9 @@ eco = require('./economics.js')
 rankings = require('./rankings.js')
 consensus = require('./consensus')
 leaderStats = require('./leaderStats')
+
+const mongo = require('./mongo')
+const http = require('./http')
 
 // verify node version
 const allowNodeV = [14, 16]
@@ -48,13 +49,13 @@ mongo.init(async function() {
     let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
 
     // alert when rebuild without validation/signture verification, only use if you know what you are doing
-    if (process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1)
+    if (process.env.REBUILD_STATE === '1')
         if (process.env.REBUILD_NO_VALIDATE === '1')
             logr.info('Rebuilding without validation. Only use this if you know what you are doing!')
         else if (process.env.REBUILD_NO_VERIFY === '1')
             logr.info('Rebuilding without signature verification. Only use this if you know what you are doing!')
 
-    if ((process.env.REBUILD_STATE === '1' || process.env.REBUILD_STATE === 1) && !isResumingRebuild) {
+    if (process.env.REBUILD_STATE === '1' && !isResumingRebuild) {
         logr.info('Chain state rebuild requested'+(process.env.UNZIP_BLOCKS === '1' ? ', unzipping blocks.zip...' : ''))
         mongo.restoreBlocks((e)=>{
             if (e) return logr.error(e)
