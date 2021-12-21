@@ -115,7 +115,8 @@ module.exports = {
                 limit = Number.MAX_SAFE_INTEGER
 
             let tsrange = filterMap['tsrange']
-            if (tsrange.length == 2) {
+            let tsfrom, tsto
+            if (tsrange.length === 2) {
                 tsfrom = parseInt(tsrange[0]) * 1000
                 tsto = parseInt(tsrange[1]) * 1000
             } else 
