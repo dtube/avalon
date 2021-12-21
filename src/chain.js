@@ -772,6 +772,7 @@ let chain = {
     },
     applyHardfork: (block,cb) => {
         // Do something on hardfork block after tx executions and before leader rewards distribution
+        // As this is not a real transaction, no actual transaction is considered executed here
         // NOTE: Update block height to actual HF block activation
         if (block._id === 25000000)
             // Clear @dtube.airdrop account
@@ -783,10 +784,10 @@ let chain = {
                         balance: 0,
                         bw: { v: 0, t: block.timestamp },
                         vt: { v: 0, t: block.timestamp }
-                    }}, () => cb(null, { executed: true, distributed: 0, burned: burned }))
+                    }}, () => cb(null, { executed: false, distributed: 0, burned: burned }))
             })
         else
-            cb(null, { executed: true, distributed: 0, burned: 0 })
+            cb(null, { executed: false, distributed: 0, burned: 0 })
     },
     applyHardforkPostBlock: (blockNum) => {
         // Do something after executing hardfork block
