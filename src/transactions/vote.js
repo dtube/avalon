@@ -50,14 +50,59 @@ module.exports = {
                 // update top tags
                 var topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
-                    var exists = false
-                    for (let y = 0; y < topTags.length; y++)
-                        if (topTags[y].tag === content.votes[i].tag) {
-                            exists = true
-                            topTags[y].vt += Math.abs(content.votes[i].vt)
+                    var newTags = {}
+                    for (let y = 0; y < topTags.length; y++) {
+                        contentTags = []
+                        tmpTags = content.votes[i].tag
+                        if (tmpTags.length > config.tagMaxLength)
+                            tmpTags = tmpTags.substring(0, config.tagMaxLength)
+                        tmpTags = content.votes[i].tag.trim().split(",")
+                        for (let j = 0; j < tmpTags.length; j++) {
+                            contentTags.push(tmpTags[j].trim())
                         }
-                    if (!exists && content.votes[i].tag)
-                        topTags.push({tag: content.votes[i].tag, vt: Math.abs(content.votes[i].vt)})
+
+                        // idea is to distribute the vt equally to all comma separated tags, the extra is given to the first tag
+                        // process for each comma separated tags
+                        nTag = contentTags.length
+                        totalTagVt = content.votes[i].vt
+                        for (let j = 0; j < nTag; j++) {
+                            curTag = contentTags[j]
+                            curTagVt = (totalTagVt / nTag) + (totalTagVt % nTag) // the modulo part will be zero for j > 0 because of the next if block, see example below
+
+                            if (j == 0) {
+                                totalTagVt = totalTagVt - (totalTagVt % nTag)   // removing the extra modulo part for all other tags except the first one
+                            }
+
+                            if (topTags[y].tag === curTag) {
+                                topTags[y].vt += Math.abs(curTagVt)
+                                newTags[curTag] = null // tag already exists, so nullifying pre-pushed tag
+                            } else {
+                                newTags[curTag] = {tag: curTag, vt: Math.abs(curTagVt)}
+                            }
+                        }
+                         /*
+                        Example:
+                        content.votes[i].tag = "hike, hiking, hiker"
+                        totalTagVt = 313
+                        nt = 3
+
+                        topTags[0] = {tag: "hike", vt: 313/3 + 313%3 = 104 + 1 = 105} // hike
+
+                        totalTagVt = 313 - (313%3) = 313 - 1 = 312
+
+                        topTags[1] = {tag: "hiking", vt: 312/3 + 312%3 = 104} // hiking
+
+                        topTags[2] = {tag: "hiker", vt: 312/3 + 312%3 = 104} // hiker
+
+                        105 + 104 + 104 = 313 total
+                        */
+                    }
+
+                    for (let [tagKey, tagVal] of newTags) {
+                        if (!tagVal && tagVal.tag) {// if tagKey not null, then exists false, then push
+                            topTags.push(tagVal)
+                        }
+                    }
                 }
 
                 topTags = topTags.sort(function(a,b) {
