@@ -10,7 +10,7 @@ module.exports = {
                 try {
                     block = blocks.read(blockNumber)
                 } catch (e) {
-                    return res.status(404).send({error: e})
+                    return res.status(404).send({error: e.toString()})
                 }
                 return res.send(block)
             }
