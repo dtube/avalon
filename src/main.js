@@ -115,7 +115,11 @@ function startRebuild(startBlock) {
         let cacheWriteStart = new Date().getTime()
         cache.writeToDisk(true,() => {
             logr.info('Rebuild data written to disk in ' + (new Date().getTime() - cacheWriteStart) + ' ms')
-            if (chain.shuttingDown) return process.exit(0)
+            if (chain.shuttingDown) {
+                if (blocks.isOpen)
+                    blocks.close()
+                return process.exit(0)
+            }
             startDaemon()
         })
     })

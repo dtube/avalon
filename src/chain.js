@@ -6,6 +6,7 @@ const series = require('run-series')
 const cloneDeep = require('clone-deep')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
+const txHistory = require('./txHistory')
 const blocks = require('./blocks')
 const GrowInt = require('growint')
 const default_replay_output = 100
@@ -193,7 +194,6 @@ let chain = {
 
                     // process notifications and leader stats (non blocking)
                     notifications.processBlock(newBlock)
-                    leaderStats.processBlock(newBlock)
 
                     // emit event to confirm new transactions in the http api
                     for (let i = 0; i < newBlock.txs.length; i++)
@@ -261,6 +261,8 @@ let chain = {
         chain.applyHardforkPostBlock(block._id)
         eco.appendHistory(block)
         eco.nextBlock()
+        leaderStats.processBlock(block)
+        txHistory.processBlock(block)
 
         // if block id is mult of n leaders, reschedule next n blocks
         if (block._id % config.leaders === 0)
@@ -858,6 +860,8 @@ let chain = {
                 eco.nextBlock()
                 eco.appendHistory(blockToRebuild)
                 chain.cleanMemory()
+                leaderStats.processBlock(blockToRebuild)
+                txHistory.processBlock(blockToRebuild)
 
                 let writeInterval = parseInt(process.env.REBUILD_WRITE_INTERVAL)
                 if (isNaN(writeInterval) || writeInterval < 1)
@@ -871,7 +875,6 @@ let chain = {
                     
                     // process notifications and leader stats (non blocking)
                     notifications.processBlock(blockToRebuild)
-                    leaderStats.processBlock(blockToRebuild)
 
                     // next block
                     chain.rebuildState(blockNum+1, cb)

@@ -1,6 +1,7 @@
 const parallel = require('run-parallel')
 const cloneDeep = require('clone-deep')
 const ProcessingQueue = require('./processingQueue')
+const txHistory = require('./txHistory')
 var cache = {
     copy: {
         accounts: {},
@@ -259,6 +260,13 @@ var cache = {
             let leaderStatsWriteOps = leaderStats.getWriteOps()
             for (let op in leaderStatsWriteOps)
                 executions.push(leaderStatsWriteOps[op])
+        }
+
+        // tx history
+        if (process.env.TX_HISTORY === '1') {
+            let txHistoryWriteOps = txHistory.getWriteOps()
+            for (let op in txHistoryWriteOps)
+                executions.push(txHistoryWriteOps[op])
         }
 
         executions.push((callback) => db.collection('state').updateOne({_id: 0},{$set:{headBlock:chain.getLatestBlock()._id}},{ upsert: true },() => callback(null,true)))
