@@ -1,8 +1,12 @@
+const blocks = require('../../blocks')
+
 module.exports = {
     init: (app) => {
         // count how many blocks are in the node
         // todo: kill this endpoint and replace by /block/latest (faster execution and same result)
         app.get('/count', (req, res) => {
+            if (blocks.isOpen)
+                return res.send({ count: blocks.height })
             db.collection('blocks').findOne({},{ 
                 sort: { _id: -1 },
                 projection: { _id: 1 }

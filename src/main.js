@@ -11,6 +11,7 @@ rankings = require('./rankings.js')
 consensus = require('./consensus')
 leaderStats = require('./leaderStats')
 
+const blocks = require('./blocks')
 const mongo = require('./mongo')
 const http = require('./http')
 
@@ -26,6 +27,9 @@ let erroredRebuild = false
 
 // init the database and load most recent blocks in memory directly
 mongo.init(async function() {
+    // init blocks BSON if not using mongodb for blocks
+    await blocks.init()
+
     // Warmup accounts
     let timeStart = new Date().getTime()
     await cache.warmup('accounts', parseInt(process.env.WARMUP_ACCOUNTS))
@@ -57,29 +61,43 @@ mongo.init(async function() {
 
     if (process.env.REBUILD_STATE === '1' && !isResumingRebuild) {
         logr.info('Chain state rebuild requested'+(process.env.UNZIP_BLOCKS === '1' ? ', unzipping blocks.zip...' : ''))
-        mongo.restoreBlocks((e)=>{
-            if (e) return logr.error(e)
+        if (!blocks.isOpen)
+            mongo.restoreBlocks((e)=>{
+                if (e) return logr.error(e)
+                startRebuild(0)
+            })
+        else
             startRebuild(0)
-        })
         return
     }
 
-    let block = await mongo.lastBlock()
+    let block = blocks.isOpen ? blocks.lastBlock() : await mongo.lastBlock()
     // Resuming an interrupted rebuild
     if (isResumingRebuild) {
         logr.info('Resuming interrupted rebuild from block ' + rebuildResumeBlock)
         config = require('./config').read(rebuildResumeBlock - 1)
         chain.restoredBlocks = block._id
-        mongo.fillInMemoryBlocks(() => 
-            db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => {
-                chain.schedule = chain.minerSchedule(b)
-                startRebuild(rebuildResumeBlock)
-            }),rebuildResumeBlock)
+        let blkScheduleStart = rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders
+        if (!blocks.isOpen)
+            mongo.fillInMemoryBlocks(() => 
+                db.collection('blocks').findOne({_id:rebuildResumeBlock-1 - (rebuildResumeBlock-1)%config.leaders},(e,b) => {
+                    chain.schedule = chain.minerSchedule(b)
+                    startRebuild(rebuildResumeBlock)
+                }),rebuildResumeBlock)
+        else {
+            blocks.fillInMemoryBlocks(rebuildResumeBlock)
+            chain.schedule = chain.minerSchedule(blocks.read(blkScheduleStart))
+            startRebuild(rebuildResumeBlock)
+        }
         return
     }
     logr.info('#' + block._id + ' is the latest block in our db')
     config = require('./config.js').read(block._id)
-    mongo.fillInMemoryBlocks(startDaemon)
+    if (blocks.isOpen) {
+        blocks.fillInMemoryBlocks()
+        startDaemon()
+    } else
+        mongo.fillInMemoryBlocks(startDaemon)
 })
 
 function startRebuild(startBlock) {
@@ -105,10 +123,14 @@ function startRebuild(startBlock) {
 
 function startDaemon() {
     // start miner schedule
-    db.collection('blocks').findOne({_id: chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)}, function(err, block) {
-        if (err) throw err
-        chain.schedule = chain.minerSchedule(block)
-    })
+    let blkScheduleStart = chain.getLatestBlock()._id - (chain.getLatestBlock()._id % config.leaders)
+    if (blocks.isOpen)
+        chain.schedule = chain.minerSchedule(blocks.read(blkScheduleStart))
+    else
+        db.collection('blocks').findOne({_id: blkScheduleStart}, function(err, block) {
+            if (err) throw err
+            chain.schedule = chain.minerSchedule(block)
+        })
 
     // init hot/trending
     rankings.init()
@@ -133,6 +155,7 @@ process.on('SIGINT', function() {
     process.stdout.write('\r')
     logr.info('Received SIGINT, completing writer queue...')
     setInterval(() => {
+        blocks.close()
         if (cache.writerQueue.queue.length === 0 && !cache.writerQueue.processing) {
             logr.info('Avalon exitted safely')
             process.exit(0)

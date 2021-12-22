@@ -6,16 +6,15 @@ const max_blocks_buffer = 100
 const max_peers = process.env.MAX_PEERS || 15
 const history_interval = 10000
 const keep_history_for = 20000
-var p2p_port = process.env.P2P_PORT || default_port
-var p2p_host = process.env.P2P_HOST || '::'
-var WebSocket = require('ws')
+const p2p_port = process.env.P2P_PORT || default_port
+const p2p_host = process.env.P2P_HOST || '::'
+const WebSocket = require('ws')
 const { randomBytes } = require('crypto')
-var secp256k1 = require('secp256k1')
-var bs58 = require('base-x')(config.b58Alphabet)
-var chain = require('./chain.js')
-var consensus = require('./consensus.js')
+const secp256k1 = require('secp256k1')
+const bs58 = require('base-x')(config.b58Alphabet)
+const blocks = require('./blocks')
 
-var MessageType = {
+const MessageType = {
     QUERY_NODE_STATUS: 0,
     NODE_STATUS: 1,
     QUERY_BLOCK: 2,
@@ -25,7 +24,7 @@ var MessageType = {
     BLOCK_CONF_ROUND: 6
 }
 
-var p2p = {
+let p2p = {
     sockets: [],
     recoveringBlocks: [],
     recoveredBlocks: [],
@@ -219,12 +218,21 @@ var p2p = {
 
             case MessageType.QUERY_BLOCK:
                 // a peer wants to see the data in one of our stored blocks
-                db.collection('blocks').findOne({_id: message.d}, function(err, block) {
-                    if (err)
-                        throw err
-                    if (block)
-                        p2p.sendJSON(ws, {t:MessageType.BLOCK, d:block})
-                })
+                if (blocks.isOpen) {
+                    let block = {}
+                    try {
+                        blocks.read(message.d)
+                    } catch (e) {
+                        break
+                    }
+                    p2p.sendJSON(ws, {t:MessageType.BLOCK, d:block})
+                } else
+                    db.collection('blocks').findOne({_id: message.d}, function(err, block) {
+                        if (err)
+                            throw err
+                        if (block)
+                            p2p.sendJSON(ws, {t:MessageType.BLOCK, d:block})
+                    })
                 break
 
             case MessageType.BLOCK:

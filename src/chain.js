@@ -6,6 +6,7 @@ const series = require('run-series')
 const cloneDeep = require('clone-deep')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
+const blocks = require('./blocks')
 const GrowInt = require('growint')
 const default_replay_output = 100
 const replay_output = process.env.REPLAY_OUTPUT || default_replay_output
@@ -247,7 +248,10 @@ let chain = {
     },
     addBlock: async (block, cb) => {
         // add the block in our own db
-        await db.collection('blocks').insertOne(block)
+        if (blocks.isOpen)
+            blocks.appendBlock(block)
+        else
+            await db.collection('blocks').insertOne(block)
 
         // push cached accounts and contents to mongodb
         chain.cleanMemory()
@@ -795,11 +799,15 @@ let chain = {
     },
     batchLoadBlocks: (blockNum,cb) => {
         if (chain.blocksToRebuild.length === 0)
-            db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,blocks) => {
-                if (e) throw e
-                if (blocks) chain.blocksToRebuild = blocks
+            if (blocks.isOpen) {
+                chain.blocksToRebuild = blocks.readRange(blockNum, blockNum+max_batch_blocks-1)
                 cb(chain.blocksToRebuild.shift())
-            })
+            } else
+                db.collection('blocks').find({_id: { $gte: blockNum, $lt: blockNum+max_batch_blocks }}).toArray((e,loadedBlocks) => {
+                    if (e) throw e
+                    if (loadedBlocks) chain.blocksToRebuild = loadedBlocks
+                    cb(chain.blocksToRebuild.shift())
+                })
         else cb(chain.blocksToRebuild.shift())
     },
     rebuildState: (blockNum,cb) => {

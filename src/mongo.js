@@ -23,6 +23,10 @@ let mongo = {
             } catch (e) {}
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
+            // MongoDB init stops here when using blocks BSON store
+            if (process.env.BLOCKS_DIR)
+                return cb()
+
             // If a rebuild is specified, drop the database
             if (process.env.REBUILD_STATE === '1' && !isResumingRebuild)
                 return db.dropDatabase(() => mongo.initGenesis().then(cb))
@@ -117,6 +121,7 @@ let mongo = {
         }) 
     },
     insertBlockZero: async () => {
+        if (process.env.BLOCKS_DIR) return
         logr.info('Inserting Block #0 with hash '+config.originHash)
         await db.collection('blocks').insertOne(chain.getGenesisBlock())
     },

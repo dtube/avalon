@@ -10,6 +10,7 @@
   "dependencies": {
     "base-x": "^3.0.8",
     "body-parser": "^1.15.2",
+    "bson": "^4.6.0",
     "clone-deep": "^4.0.1",
     "commander": "^2.20.0",
     "cors": "^2.8.5",
