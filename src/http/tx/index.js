@@ -6,8 +6,10 @@ module.exports = {
                 db.collection('txs').findOne({ _id: req.params.txhash },(e,tx) => {
                     if (!tx)
                         res.status(404).send({error: 'transaction not found'})
-                    else
+                    else {
+                        delete tx._id
                         res.send(tx)
+                    }
                 })
             else
                 db.collection('blocks').findOne({ 'txs.hash': req.params.txhash }, { projection: { txs: { $elemMatch: { hash: req.params.txhash}}}},(error,tx) => {
