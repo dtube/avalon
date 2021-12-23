@@ -1,3 +1,5 @@
+const blocks = require('../../blocks')
+
 module.exports = {
     init: (app) => {
         /**
@@ -9,12 +11,46 @@ module.exports = {
          * @apiParam {Integer} lastBlock Lastest block the transaction is included into
          * @apiParam {Integer} [skip] Account history items to skip for pagination
          * 
-         * @apiSuccess {Objects[]} transactions List of transactions sent or received by the account
+         * @apiSuccess {Object[]} transactions List of transactions sent or received by the account
          */
         app.get('/history/:author/:lastBlock/:skip?', (req, res) => {
             let lastBlock = parseInt(req.params.lastBlock)
             let skip = parseInt(req.params.skip)
             let author = req.params.author
+
+            if (blocks.isOpen) {
+                let query = {
+                    $and: [
+                        { $or: [
+                            {'sender': author},
+                            {'data.target': author},
+                            {'data.receiver': author},
+                            {'data.pa': author},
+                            {'data.author': author}
+                        ]}
+                    ]
+                }
+                let filter = {
+                    sort: {includedInBlock: -1},
+                    limit: 50
+                }
+        
+                if (lastBlock > 0) 
+                    query['$and'].push({includedInBlock: {$lt: lastBlock}})
+                
+                if (!isNaN(skip) && skip > 0)
+                    filter.skip = skip
+        
+                db.collection('txs').find(query, filter).toArray(function(err, txs) {
+                    if (err || !txs)
+                        return res.status(500).send({error: 'failed to query account history'})
+                    for (let t = 0; t < txs.length; t++)
+                        delete txs[t]._id
+                    res.send(txs)
+                })
+                return
+            }
+
             let query = {
                 $and: [
                     { $or: [
@@ -52,42 +88,6 @@ module.exports = {
                     blocks[b].txs = newTxs
                 }
                 res.send(blocks)
-            })
-        })
-
-        // history v2, eventually this should replace the above
-        app.get('/history2/:author/:lastBlock/:skip?', (req, res) => {
-            let lastBlock = parseInt(req.params.lastBlock)
-            let skip = parseInt(req.params.skip)
-            let author = req.params.author
-            let query = {
-                $and: [
-                    { $or: [
-                        {'sender': author},
-                        {'data.target': author},
-                        {'data.receiver': author},
-                        {'data.pa': author},
-                        {'data.author': author}
-                    ]}
-                ]
-            }
-            let filter = {
-                sort: {includedInBlock: -1},
-                limit: 50
-            }
-    
-            if (lastBlock > 0) 
-                query['$and'].push({includedInBlock: {$lt: lastBlock}})
-            
-            if (!isNaN(skip) && skip > 0)
-                filter.skip = skip
-    
-            db.collection('txs').find(query, filter).toArray(function(err, txs) {
-                if (err || !txs)
-                    return res.status(500).send({error: 'failed to query account history'})
-                for (let t = 0; t < txs.length; t++)
-                    delete txs[t]._id
-                res.send(txs)
             })
         })
     }
