@@ -22,15 +22,11 @@ var cache = {
     writerQueue: new ProcessingQueue(),
     rollback: function() {
         // rolling back changes from copied documents
-        for (const key in cache.copy.accounts)
-            cache.accounts[key] = cloneDeep(cache.copy.accounts[key])
-        for (const key in cache.copy.contents)
-            cache.contents[key] = cloneDeep(cache.copy.contents[key])
-        for (const key in cache.copy.distributed)
-            cache.distributed[key] = cloneDeep(cache.copy.distributed[key])
-        cache.copy.accounts = {}
-        cache.copy.contents = {}
-        cache.copy.distributed = {}
+        for (let c in cache.copy) {
+            for (const key in cache.copy[c])
+                cache[c][key] = cloneDeep(cache.copy[c][key])
+            cache.copy[c] = {}
+        }
         cache.changes = []
 
         // and discarding new inserts
@@ -207,9 +203,8 @@ var cache = {
         cache.rebuild.changes = []
         cache.rebuild.inserts = []
         cache.leaderChanges = []
-        cache.copy.accounts = {}
-        cache.copy.contents = {}
-        cache.copy.distributed = {}
+        for (let c in cache.copy)
+            cache.copy[c] = {}
     },
     writeToDisk: function(rebuild, cb) {
         // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
@@ -227,11 +222,9 @@ var cache = {
 
         // then the update with simple operation compression
         // 1 update per document concerned (even if no real change)
-        let docsToUpdate = {
-            accounts: {},
-            contents: {},
-            distributed: {}
-        }
+        let docsToUpdate = {}
+        for (let c in cache.copy)
+            docsToUpdate[c] = {}
         let changesArr = rebuild ? cache.rebuild.changes : cache.changes
         for (let i = 0; i < changesArr.length; i++) {
             var change = changesArr[i]
@@ -269,6 +262,7 @@ var cache = {
                 executions.push(txHistoryWriteOps[op])
         }
 
+        // current state at block number
         executions.push((callback) => db.collection('state').updateOne({_id: 0},{$set:{headBlock:chain.getLatestBlock()._id}},{ upsert: true },() => callback(null,true)))
         
         if (typeof cb === 'function') {
@@ -296,9 +290,8 @@ var cache = {
         cache.inserts = []
         cache.changes = []
         cache.leaderChanges = []
-        cache.copy.accounts = {}
-        cache.copy.contents = {}
-        cache.copy.distributed = {}
+        for (let c in cache.copy)
+            cache.copy[c] = {}
         if (writeToDisk)
             cache.writeToDisk(true,cb)
         else
