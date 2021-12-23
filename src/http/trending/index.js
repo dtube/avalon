@@ -5,9 +5,9 @@ module.exports = {
             res.send(rankings.contents.trending.slice(0, 50))
         })
         app.get('/trending/:author/:link', (req, res) => {
-            var filteredContents = []
-            var isPastRelativeContent = false
-            var added = 0
+            let filteredContents = []
+            let isPastRelativeContent = false
+            let added = 0
             for (let i = 0; i < rankings.contents.trending.length; i++) {
                 if (isPastRelativeContent) {
                     filteredContents.push(rankings.contents.trending[i])

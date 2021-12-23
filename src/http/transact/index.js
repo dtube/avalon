@@ -2,7 +2,7 @@ module.exports = {
     init: (app) => {
         // add data to the upcoming transactions pool
         app.post('/transact', (req, res) => {
-            var tx = req.body
+            let tx = req.body
             if (!tx) {
                 res.sendStatus(500)
                 return

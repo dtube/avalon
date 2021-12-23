@@ -5,7 +5,7 @@ module.exports = {
         // add data to the upcoming transactions pool
         // and return only when the transaction is in a finalized block
         app.post('/transactWaitConfirm', (req, res) => {
-            var tx = req.body
+            let tx = req.body
             if (!tx) {
                 res.sendStatus(500)
                 return
@@ -23,7 +23,7 @@ module.exports = {
                     p2p.broadcast({ t: 5, d: tx })
                     transaction.addToPool([tx])
 
-                    var transactTimeout = setTimeout(function () {
+                    let transactTimeout = setTimeout(function () {
                         transaction.eventConfirmation.removeListener(tx.hash, () => { })
                         res.status(408).send({ error: 'transaction timeout' })
                     }, timeout_transact_async)

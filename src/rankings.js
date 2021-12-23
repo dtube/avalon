@@ -1,11 +1,11 @@
-var decay = require('decay')
+const decay = require('decay')
 const cloneDeep = require('clone-deep')
 const hotHalfTime = 43200 // 12 hours
 const trendingHalfTime = 302400 // 3.5 days
 const expireFactor = 5000 // disappears after 5 half times
-var isEnabled = process.env.RANKINGS || false
+const isEnabled = process.env.RANKINGS || false
 
-var rankings = {
+let rankings = {
     expireFactor: expireFactor,
     types: {
         hot: {
@@ -32,7 +32,7 @@ var rankings = {
     generate: function() {
         if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         for (const key in rankings.types) {
-            var minTs = new Date().getTime() - rankings.types[key].halfLife*expireFactor
+            let minTs = new Date().getTime() - rankings.types[key].halfLife*expireFactor
             db.collection('contents').find({pa: null, ts: {'$gt': minTs}}, {sort: {ts: -1}}).toArray(function(err, contents) {
                 for (let i = 0; i < contents.length; i++) {
                     contents[i].score = 0
@@ -61,7 +61,7 @@ var rankings = {
         if (!isEnabled || chain.getLatestBlock()._id < chain.restoredBlocks) return
         content = cloneDeep(content)
         for (const key in rankings.types) {
-            var alreadyAdded = false
+            let alreadyAdded = false
             for (let i = 0; i < rankings.contents[key].length; i++) 
                 if (content.author === rankings.contents[key][i].author && content.link === rankings.contents[key][i].link) {
                     alreadyAdded = true
@@ -88,7 +88,7 @@ var rankings = {
         for (const key in rankings.types)
             for (let i = 0; i < rankings.contents[key].length; i++)
                 if (rankings.contents[key][i].author === author && rankings.contents[key][i].link === link) {
-                    var ts = rankings.contents[key][i].ts
+                    let ts = rankings.contents[key][i].ts
                     if (ts < new Date().getTime() - rankings.types[key].halfTime*expireFactor)
                         return
                     

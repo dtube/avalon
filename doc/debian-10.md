@@ -14,11 +14,11 @@ Install NodeJS + NPM
 sudo apt-get install nodejs npm
 ```
 
-Check node version with `node -v`. Avalon runs with node v10, v12 and v14 only. If needed, install NVM and install and use other node versions:
+Check node version with `node -v`. Avalon runs with node v14 and v16 only. If needed, install NVM and install and use other node versions:
 ```bash
-wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
-nvm install v14
-nvm use v14
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+nvm install v16
+nvm use v16
 ```
 
 Now install MongoDB:

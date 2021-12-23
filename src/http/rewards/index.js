@@ -6,7 +6,7 @@ module.exports = {
                 res.sendStatus(500)
                 return
             }
-            var claimableDate = new Date().getTime() - config.ecoClaimTime
+            let claimableDate = new Date().getTime() - config.ecoClaimTime
             db.collection('contents').aggregate([
                 { $unwind: '$votes' },
                 {
@@ -37,7 +37,7 @@ module.exports = {
                 res.sendStatus(500)
                 return
             }
-            var claimableDate = new Date().getTime() - config.ecoClaimTime
+            let claimableDate = new Date().getTime() - config.ecoClaimTime
             db.collection('contents').aggregate([
                 { $unwind: '$votes' },
                 {

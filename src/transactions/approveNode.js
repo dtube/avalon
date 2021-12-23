@@ -34,9 +34,9 @@ module.exports = {
                 cache.findOne('accounts', {name: tx.sender}, function(err, acc) {
                     if (err) throw err
                     if (!acc.approves) acc.approves = []
-                    var node_appr = Math.floor(acc.balance/acc.approves.length)
-                    var node_appr_before = (acc.approves.length === 1 ? 0 : Math.floor(acc.balance/(acc.approves.length-1)))
-                    var node_owners = []
+                    let node_appr = Math.floor(acc.balance/acc.approves.length)
+                    let node_appr_before = (acc.approves.length === 1 ? 0 : Math.floor(acc.balance/(acc.approves.length-1)))
+                    let node_owners = []
                     for (let i = 0; i < acc.approves.length; i++)
                         if (acc.approves[i] !== tx.data.target)
                             node_owners.push(acc.approves[i])

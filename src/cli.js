@@ -1,12 +1,12 @@
-var config = require('./config.js').read(0)
-var TransactionType = require('./transactions').Types
-var cmds = require('./clicmds.js')
-var program = require('commander')
+let config = require('./config.js').read(0)
+const TransactionType = require('./transactions').Types
+const cmds = require('./clicmds.js')
+const program = require('commander')
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
-var fetch = require('node-fetch')
-var fs = require('fs')
+const fetch = require('node-fetch')
+const fs = require('fs')
 const defaultPort = 3001
 
 program
@@ -104,11 +104,9 @@ program.command('keypair')
     .alias('key')
     .option('-H, --has [text]', 'generated public key will contain the specified text')
     .action(function(options) {
-        var has = (options.has || '')
+        let has = (options.has || '')
         has = has.toLowerCase()
-        var priv
-        var pub
-        var pub58
+        let priv, pub, pub58
         do {
             priv = randomBytes(config.randomBytesLength)
             pub = secp256k1.publicKeyCreate(priv)
@@ -341,7 +339,7 @@ program.command('transfer <receiver> <amount>')
     .option('--memo [text]', 'add a short message to the transfer')    
     .description('transfer coins')
     .action(function(receiver, amount, options) {
-        var memo = ''
+        let memo = ''
         if (options && options.memo) memo = options.memo
         verifyAndSendTx('transfer', receiver, amount, memo)
     }).on('--help', function(){
@@ -439,10 +437,10 @@ function verifyAndSendTx(txType, ...args) {
 }
 
 function sendTx(tx) {
-    var port = process.env.API_PORT || defaultPort
-    var ip = process.env.API_IP || '[::1]'
-    var protocol = process.env.API_PROTOCOL || 'http'
-    var url = protocol+'://'+ip+':'+port+'/transact'
+    let port = process.env.API_PORT || defaultPort
+    let ip = process.env.API_IP || '[::1]'
+    let protocol = process.env.API_PROTOCOL || 'http'
+    let url = protocol+'://'+ip+':'+port+'/transact'
     if (program.api)
         url = program.api+'/transact'
     if (program.wait)
@@ -466,7 +464,7 @@ function sendTx(tx) {
     })
     if (program.spam && program.spam > 0)
         setTimeout(function(){
-            var newTx = JSON.stringify(tx)
+            let newTx = JSON.stringify(tx)
             sendTx(cmds.sign(program.key, program.me, newTx))
         }, program.spam)
 }
@@ -506,7 +504,7 @@ function verifyKeyAndUser(cb) {
 
 function readKeyFromFile() {
     if (program.file) {
-        var file = fs.readFileSync(program.file, 'utf8')
+        let file = fs.readFileSync(program.file, 'utf8')
         try {
             program.key = JSON.parse(file).priv
         } catch (error) {

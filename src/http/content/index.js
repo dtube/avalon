@@ -26,7 +26,7 @@ module.exports = {
                         cb()
                         return
                     }
-                    var executions = []
+                    let executions = []
                     for (let i = 0; i < posts.length; i++)
                         executions.push(function (callback) {
                             db.collection('contents').find({

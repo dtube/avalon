@@ -2,9 +2,9 @@ module.exports = {
     init: (app) => {
         // list connected peers
         app.get('/peers', (req, res) => {
-            var peers = []
+            let peers = []
             for (let i = 0; i < p2p.sockets.length; i++) {
-                var peer = {
+                let peer = {
                     ip: p2p.sockets[i]._socket.remoteAddress,
                     port: p2p.sockets[i]._socket.remotePort,
                 }

@@ -6,7 +6,7 @@ module.exports = {
                 res.sendStatus(500)
                 return
             }
-            var names = req.params.names.split(',', 100)
+            let names = req.params.names.split(',', 100)
             db.collection('accounts').find({ name: { $in: names } }).toArray(function (err, accounts) {
                 if (!accounts) res.sendStatus(404)
                 else {

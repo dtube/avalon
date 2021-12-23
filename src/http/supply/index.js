@@ -13,7 +13,7 @@ module.exports = {
                 if (e)
                     return res.sendStatus(500)
 
-                var reply = {
+                let reply = {
                     circulating: r[0][0].total
                 }
                 if (r[1].length > 0) {

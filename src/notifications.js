@@ -1,5 +1,5 @@
-var TransactionType = require('./transactions').Types
-var isEnabled = process.env.NOTIFICATIONS || false
+const TransactionType = require('./transactions').Types
+const isEnabled = process.env.NOTIFICATIONS || false
 
 notifications = {
     processBlock: (block) => {
@@ -12,13 +12,13 @@ notifications = {
             notifications.processTx(block.txs[i], block.timestamp)
     },
     purgeOld: (block) => {
-        var threshold = block.timestamp - config.notifPurge * config.notifPurgeAfter * config.blockTime
+        let threshold = block.timestamp - config.notifPurge * config.notifPurgeAfter * config.blockTime
         db.collection('notifications').deleteMany({
             ts: {$lt: threshold}
         })
     },
     processTx: (tx, ts) => {
-        var notif = {}
+        let notif = {}
         switch (tx.type) {
         case TransactionType.APPROVE_NODE_OWNER:
         case TransactionType.FOLLOW:
@@ -61,10 +61,10 @@ notifications = {
             }
         
             /** Find mentions */
-            var content = JSON.stringify(tx.data.json)
-            var words = content.split('@')
-            var i = 1
-            var mentions = 0
+            let content = JSON.stringify(tx.data.json)
+            let words = content.split('@')
+            let i = 1
+            let mentions = 0
             while (mentions < config.notifMaxMentions && i<words.length) {
                 for (let y = 0; y < words[i].length; y++) 
                     if (config.allowedUsernameChars.indexOf(words[i][y]) === -1) {

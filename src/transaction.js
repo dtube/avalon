@@ -1,11 +1,11 @@
-var GrowInt = require('growint')
-var CryptoJS = require('crypto-js')
+const GrowInt = require('growint')
+const CryptoJS = require('crypto-js')
 const { EventEmitter } = require('events')
 const cloneDeep = require('clone-deep')
 
-var Transaction = require('./transactions')
-var TransactionType = Transaction.Types
-var max_mempool = process.env.MEMPOOL_SIZE || 200
+const Transaction = require('./transactions')
+const TransactionType = Transaction.Types
+const max_mempool = process.env.MEMPOOL_SIZE || 200
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
@@ -15,7 +15,7 @@ transaction = {
             return
 
         for (let y = 0; y < txs.length; y++) {
-            var exists = false
+            let exists = false
             for (let i = 0; i < transaction.pool.length; i++)
                 if (transaction.pool[i].hash === txs[y].hash)
                     exists = true
@@ -48,7 +48,7 @@ transaction = {
             }
     },
     isInPool: (tx) => {
-        var isInPool = false
+        let isInPool = false
         for (let i = 0; i < transaction.pool.length; i++)
             if (transaction.pool[i].hash === tx.hash) {
                 isInPool = true
@@ -111,7 +111,7 @@ transaction = {
             cb(false, 'transaction already in chain'); return
         }
         // verify hash matches the transaction's payload
-        var newTx = cloneDeep(tx)
+        let newTx = cloneDeep(tx)
         delete newTx.signature
         delete newTx.hash
         if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
@@ -126,7 +126,7 @@ transaction = {
                 cb(false, 'user has no bandwidth object'); return
             }
 
-            var newBw = new GrowInt(legitUser.bw, {
+            let newBw = new GrowInt(legitUser.bw, {
                 growth: Math.max(legitUser.baseBwGrowth || 0, legitUser.balance)/(config.bwGrowth),
                 max: config.bwMax
             }).grow(ts)
@@ -154,11 +154,11 @@ transaction = {
     },
     hasEnoughVT: (amount, ts, legitUser) => {
         // checking if user has enough power for a transaction requiring voting power
-        var vtGrowConfig = {
+        let vtGrowConfig = {
             growth: legitUser.balance / config.vtGrowth,
             max: legitUser.maxVt
         }
-        var vtBefore = new GrowInt(legitUser.vt, vtGrowConfig).grow(ts)
+        let vtBefore = new GrowInt(legitUser.vt, vtGrowConfig).grow(ts)
         if (vtBefore.v < Math.abs(amount))
             return false
         return true
@@ -166,12 +166,12 @@ transaction = {
     collectGrowInts: (tx, ts, cb) => {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             // collect bandwidth
-            var bandwidth = new GrowInt(account.bw, {
+            let bandwidth = new GrowInt(account.bw, {
                 growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
                 max: config.bwMax
             })
-            var needed_bytes = JSON.stringify(tx).length
-            var bw = bandwidth.grow(ts)
+            let needed_bytes = JSON.stringify(tx).length
+            let bw = bandwidth.grow(ts)
             if (!bw) 
                 throw 'No bandwidth error'
             
@@ -182,8 +182,8 @@ transaction = {
                 bw.v -= tx.data.bw
 
             // collect voting power when needed
-            var vt = null
-            var vtGrowConfig = {
+            let vt = null
+            let vtGrowConfig = {
                 growth: account.balance / config.vtGrowth,
                 max: account.maxVt
             }
@@ -209,7 +209,7 @@ transaction = {
             }
 
             // update both at the same time !
-            var changes = {bw: bw}
+            let changes = {bw: bw}
             if (vt) changes.vt = vt
             logr.trace('GrowInt Collect', account.name, changes)
             cache.updateOne('accounts', 
@@ -235,11 +235,11 @@ transaction = {
         if (!account.bw || !account.vt) 
             logr.debug('error loading grow int', account)
         
-        var bw = new GrowInt(account.bw, {
+        let bw = new GrowInt(account.bw, {
             growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
             max: config.bwMax
         }).grow(ts)
-        var vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+        let vt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
         if (!bw || !vt) {
             logr.fatal('error growing grow int', account, ts)
             return
@@ -264,11 +264,11 @@ transaction = {
             return
         }
 
-        var node_appr_before = Math.floor(acc.balance/acc.approves.length)
+        let node_appr_before = Math.floor(acc.balance/acc.approves.length)
         acc.balance += newCoins
-        var node_appr = Math.floor(acc.balance/acc.approves.length)
+        let node_appr = Math.floor(acc.balance/acc.approves.length)
         
-        var node_owners = []
+        let node_owners = []
         for (let i = 0; i < acc.approves.length; i++)
             node_owners.push(acc.approves[i])
         

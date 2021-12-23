@@ -11,7 +11,7 @@ module.exports = {
                 cb(false, 'cannot edit and promote'); return
             }
             // then verify that the same comment without promotion would be ok
-            var comment = {
+            let comment = {
                 type: 4,
                 data: Object.assign({}, tx.data)
             }
@@ -37,13 +37,13 @@ module.exports = {
     execute: (tx, ts, cb) => {
         // almost same logic as comment
         // except we are sure its a new content
-        var superVote = {
+        let superVote = {
             u: tx.sender,
             ts: ts,
             vt: tx.data.vt+(tx.data.burn * config.vtPerBurn), // we just add some extra VTs
             burn: tx.data.burn // add burn data for later
         }
-        var newContent = {
+        let newContent = {
             _id: tx.sender+'/'+tx.data.link,
             author: tx.sender,
             link: tx.data.link,

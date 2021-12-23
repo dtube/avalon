@@ -1,4 +1,4 @@
-var CryptoJS = require('crypto-js')
+const CryptoJS = require('crypto-js')
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
@@ -61,12 +61,12 @@ let chain = {
         )
     },
     prepareBlock: () => {
-        var previousBlock = chain.getLatestBlock()
-        var nextIndex = previousBlock._id + 1
-        var nextTimestamp = new Date().getTime()
+        let previousBlock = chain.getLatestBlock()
+        let nextIndex = previousBlock._id + 1
+        let nextTimestamp = new Date().getTime()
         // grab all transactions and sort by ts
-        var txs = []
-        var mempool = transaction.pool.sort(function(a,b){return a.ts-b.ts})
+        let txs = []
+        let mempool = transaction.pool.sort(function(a,b){return a.ts-b.ts})
         loopOne:
         for (let i = 0; i < mempool.length; i++) {
             if (txs.length === config.maxTxPerBlock)
@@ -88,21 +88,19 @@ let chain = {
         }
         txs = txs.sort(function(a,b){return a.ts-b.ts})
         transaction.removeFromPool(txs)
-        var miner = process.env.NODE_OWNER
-        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, miner)
+        return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, process.env.NODE_OWNER)
     },
     hashAndSignBlock: (block) => {
-        var nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned)
-        var signature = secp256k1.ecdsaSign(Buffer.from(nextHash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
+        let nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned)
+        let signature = secp256k1.ecdsaSign(Buffer.from(nextHash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
         return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned, signature, nextHash)
-        
     },
     canMineBlock: (cb) => {
         if (chain.shuttingDown) {
             cb(true, null); return
         }
-        var newBlock = chain.prepareBlock()
+        let newBlock = chain.prepareBlock()
         // run the transactions and validation
         // pre-validate our own block (not the hash and signature as we dont have them yet)
         // nor transactions because we will filter them on execution later
@@ -140,7 +138,7 @@ let chain = {
                 
                 // push the new block to consensus possible blocks
                 // and go straight to end of round 0 to skip re-validating the block
-                var possBlock = {
+                let possBlock = {
                     block: newBlock
                 }
                 for (let r = 0; r < config.consensusRounds; r++)
@@ -173,12 +171,12 @@ let chain = {
                 }
 
                 // error if distributed or burned computed amounts are different than the reported one
-                var blockDist = newBlock.dist || 0
+                let blockDist = newBlock.dist || 0
                 if (blockDist !== distributed) {
                     logr.error('Wrong dist amount', blockDist, distributed)
                     cb(true, newBlock); return
                 }
-                var blockBurn = newBlock.burn || 0
+                let blockBurn = newBlock.burn || 0
                 if (blockBurn !== burned) {
                     logr.error('Wrong burn amount', blockBurn, burned)
                     cb(true, newBlock); return
@@ -202,8 +200,6 @@ let chain = {
                     cb(null, newBlock)
                 })
             })
-
-            
         })
     },
     minerWorker: (block) => {
@@ -215,7 +211,7 @@ let chain = {
             process.exit(1)
         }
 
-        var mineInMs = null
+        let mineInMs = null
         // if we are the next scheduled witness, try to mine in time
         if (chain.schedule.shuffle[(block._id)%config.leaders].name === process.env.NODE_OWNER)
             mineInMs = config.blockTime
@@ -282,7 +278,7 @@ let chain = {
 
         if (block._id%replay_output === 0 || (!rebuilding && !p2p.recovering)) {
             let currentOutTime = new Date().getTime()
-            var output = ''
+            let output = ''
             if (rebuilding)
                 output += 'Rebuilt '
 
@@ -408,7 +404,7 @@ let chain = {
     },
     isValidHashAndSignature: (newBlock, cb) => {
         // and that the hash is correct
-        var theoreticalHash = chain.calculateHashForBlock(newBlock)
+        let theoreticalHash = chain.calculateHashForBlock(newBlock)
         if (theoreticalHash !== newBlock.hash) {
             logr.debug(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
             logr.error('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
@@ -473,7 +469,7 @@ let chain = {
            
 
         // verify that its indeed the next block
-        var previousBlock = chain.getLatestBlock()
+        let previousBlock = chain.getLatestBlock()
         if (previousBlock._id + 1 !== newBlock._id) {
             logr.error('invalid index')
             cb(false); return
@@ -492,7 +488,7 @@ let chain = {
         }
 
         // check if miner is normal scheduled one
-        var minerPriority = 0
+        let minerPriority = 0
         if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name === newBlock.miner) 
             minerPriority = 1
         // allow miners of n blocks away
@@ -550,10 +546,10 @@ let chain = {
     executeBlockTransactions: (block, revalidate, isFinal, cb) => {
         // revalidating transactions in orders if revalidate = true
         // adding transaction to recent transactions (to prevent tx re-use) if isFinal = true
-        var executions = []
+        let executions = []
         for (let i = 0; i < block.txs.length; i++) 
             executions.push(function(callback) {
-                var tx = block.txs[i]
+                let tx = block.txs[i]
                 if (revalidate)
                     transaction.isValid(tx, block.timestamp, function(isValid, error) {
                         if (isValid) 
@@ -591,15 +587,15 @@ let chain = {
             })
         executions.push((callback) => chain.applyHardfork(block._id,callback))
         
-        var blockTimeBefore = new Date().getTime()
+        let blockTimeBefore = new Date().getTime()
         series(executions, async function(err, results) {
-            var string = 'executed'
+            let string = 'executed'
             if(revalidate) string = 'validated & '+string
             logr.debug('Block '+string+' in '+(new Date().getTime()-blockTimeBefore)+'ms')
             if (err) throw err
-            var executedSuccesfully = []
-            var distributedInBlock = 0
-            var burnedInBlock = 0
+            let executedSuccesfully = []
+            let distributedInBlock = 0
+            let burnedInBlock = 0
             for (let i = 0; i < results.length; i++) {
                 if (results[i].executed)
                     executedSuccesfully.push(block.txs[i])
@@ -623,24 +619,24 @@ let chain = {
         })
     },
     minerSchedule: (block) => {
-        var hash = block.hash
-        var rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
+        let hash = block.hash
+        let rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         if (!p2p.recovering)
             logr.debug('Generating schedule... NRNG: ' + rand)
-        var miners = chain.generateLeaders(true, config.leaders, 0)
+        let miners = chain.generateLeaders(true, config.leaders, 0)
         miners = miners.sort(function(a,b) {
             if(a.name < b.name) return -1
             if(a.name > b.name) return 1
             return 0
         })
-        var shuffledMiners = []
+        let shuffledMiners = []
         while (miners.length > 0) {
-            var i = rand%miners.length
+            let i = rand%miners.length
             shuffledMiners.push(miners[i])
             miners.splice(i, 1)
         }
         
-        var y = 0
+        let y = 0
         while (shuffledMiners.length < config.leaders) {
             shuffledMiners.push(shuffledMiners[y])
             y++
@@ -652,14 +648,14 @@ let chain = {
         }
     },
     generateLeaders: (withLeaderPub, limit, start) => {
-        var leaders = []
+        let leaders = []
         let leaderAccs = withLeaderPub ? cache.leaders : cache.accounts
         for (const key in leaderAccs) {
             if (!cache.accounts[key].node_appr || cache.accounts[key].node_appr <= 0)
                 continue
             if (withLeaderPub && !cache.accounts[key].pub_leader)
                 continue
-            var newLeader = cloneDeep(cache.accounts[key])
+            let newLeader = cloneDeep(cache.accounts[key])
             leaders.push({
                 name: newLeader.name,
                 pub: newLeader.pub,
@@ -678,8 +674,8 @@ let chain = {
     leaderRewards: (name, ts, cb) => {
         // rewards leaders with 'free' voting power in the network
         cache.findOne('accounts', {name: name}, function(err, account) {
-            var newBalance = account.balance + config.leaderReward
-            var newVt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
+            let newBalance = account.balance + config.leaderReward
+            let newVt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
             if (!newVt) 
                 logr.debug('error growing grow int', account, ts)
             
@@ -740,7 +736,7 @@ let chain = {
         return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn)
     },
     calculateHash: (index, phash, timestamp, txs, miner, missedBy, distributed, burned) => {
-        var string = index + phash + timestamp + txs + miner
+        let string = index + phash + timestamp + txs + miner
         if (missedBy) string += missedBy
         if (distributed) string += distributed
         if (burned) string += burned
@@ -764,7 +760,7 @@ let chain = {
             return
         }
             
-        var extraBlocks = chain.recentBlocks.length - config.ecoBlocks
+        let extraBlocks = chain.recentBlocks.length - config.ecoBlocks
         while (extraBlocks > 0) {
             chain.recentBlocks.shift()
             extraBlocks--

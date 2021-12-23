@@ -70,13 +70,13 @@ module.exports = {
                 cb(true)
             else {
                 // new content
-                var vote = {
+                let vote = {
                     u: tx.sender,
                     ts: ts,
                     vt: tx.data.vt
                 }
                 
-                var newContent = {
+                let newContent = {
                     _id: tx.sender+'/'+tx.data.link,
                     author: tx.sender,
                     link: tx.data.link,

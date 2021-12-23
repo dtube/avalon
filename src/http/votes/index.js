@@ -2,19 +2,19 @@ module.exports = {
     init: (app) => {
         // get votes history of a user
         app.get('/votes/all/:voter/:lastTs', (req, res) => {
-            var voter = req.params.voter
-            var query = {
+            let voter = req.params.voter
+            let query = {
                 $and: [{
                     'votes.u': voter,
                 }]
             }
-            var lastTs = parseInt(req.params.lastTs)
+            let lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
 
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
-                var votes = []
+                let votes = []
                 for (let i = 0; i < contents.length; i++) 
                     for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
@@ -34,19 +34,19 @@ module.exports = {
         // adding back this one for compatibility purpose
         // to remove in future
         app.get('/votes/:voter/:lastTs', (req, res) => {
-            var voter = req.params.voter
-            var query = {
+            let voter = req.params.voter
+            let query = {
                 $and: [{
                     'votes.u': voter,
                 }]
             }
-            var lastTs = parseInt(req.params.lastTs)
+            let lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
 
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
-                var votes = []
+                let votes = []
                 for (let i = 0; i < contents.length; i++) 
                     for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
@@ -66,9 +66,9 @@ module.exports = {
 
         // get pending votes history of a user
         app.get('/votes/pending/:voter/:lastTs', (req, res) => {
-            var voter = req.params.voter
-            var claimableDate = new Date().getTime() - config.ecoClaimTime
-            var query = {
+            let voter = req.params.voter
+            let claimableDate = new Date().getTime() - config.ecoClaimTime
+            let query = {
                 $and: [{}],
                 votes:
                 {
@@ -78,13 +78,13 @@ module.exports = {
                     }
                 }
             }
-            var lastTs = parseInt(req.params.lastTs)
+            let lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
 
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
-                var votes = []
+                let votes = []
                 for (let i = 0; i < contents.length; i++) 
                     for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
@@ -104,9 +104,9 @@ module.exports = {
 
         // get claimable votes history of a user
         app.get('/votes/claimable/:voter/:lastTs', (req, res) => {
-            var voter = req.params.voter
-            var claimableDate = new Date().getTime() - config.ecoClaimTime
-            var query = {
+            let voter = req.params.voter
+            let claimableDate = new Date().getTime() - config.ecoClaimTime
+            let query = {
                 $and: [{}],
                 votes:
                 {
@@ -118,12 +118,12 @@ module.exports = {
                     }
                 }
             }
-            var lastTs = parseInt(req.params.lastTs)
+            let lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
-                var votes = []
+                let votes = []
                 for (let i = 0; i < contents.length; i++) 
                     for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
@@ -143,8 +143,8 @@ module.exports = {
 
         // get claimed votes history of a user
         app.get('/votes/claimed/:voter/:lastTs', (req, res) => {
-            var voter = req.params.voter
-            var query = {
+            let voter = req.params.voter
+            let query = {
                 $and: [{}],
                 votes:
                 {
@@ -155,12 +155,12 @@ module.exports = {
                     }
                 }
             }
-            var lastTs = parseInt(req.params.lastTs)
+            let lastTs = parseInt(req.params.lastTs)
             if (lastTs > 0)
                 query['$and'].push({ ts: { $lt: lastTs } })
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
-                var votes = []
+                let votes = []
                 for (let i = 0; i < contents.length; i++) 
                     for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)

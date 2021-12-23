@@ -54,7 +54,7 @@ module.exports = {
     },
     execute: (tx, ts, cb) => {
         // same as vote but with (tx.data.tip / 10^config.tippedVotePrecision) of rewards tipped to author (first vote)
-        var vote = {
+        let vote = {
             u: tx.sender,
             ts: ts,
             vt: tx.data.vt,
@@ -72,9 +72,9 @@ module.exports = {
                         cb(true, distCurators+distMaster, burnCurator)
                     })
                 // update top tags
-                var topTags = []
+                let topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
-                    var exists = false
+                    let exists = false
                     for (let y = 0; y < topTags.length; y++)
                         if (topTags[y].tag === content.votes[i].tag) {
                             exists = true

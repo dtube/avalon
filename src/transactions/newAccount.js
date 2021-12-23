@@ -8,7 +8,7 @@ module.exports = {
             cb(false, 'invalid tx data.pub'); return
         }
 
-        var lowerUser = tx.data.name.toLowerCase()
+        let lowerUser = tx.data.name.toLowerCase()
 
         for (let i = 0; i < lowerUser.length; i++) {
             const c = lowerUser[i]

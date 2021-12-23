@@ -2,30 +2,30 @@ module.exports = {
     init: (app) => {
         // get blog of user
         app.get('/blog/:username', (req, res) => {
-            var username = req.params.username
+            let username = req.params.username
 
             db.collection('contents').find({ pa: null, author: username }, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 res.send(contents)
             })
         })
         app.get('/blog/:username/:filter', (req, res) => {
-            var username = req.params.username
-            var filterParam = req.params.filter
-            var filter = filterParam.split(':')
-            var filterBy = filter[1]
-            var filterAttrs = filterBy.split('&')
+            let username = req.params.username
+            let filterParam = req.params.filter
+            let filter = filterParam.split(':')
+            let filterBy = filter[1]
+            let filterAttrs = filterBy.split('&')
 
-            var filterMap = {}
-            var filterKeys = []
+            let filterMap = {}
+            let filterKeys = []
 
-            var limit = 50
-            for (var k=0; k<filterAttrs.length; k++) {
-                var kv = filterAttrs[k].split('=')
+            let limit = 50
+            for (let k=0; k<filterAttrs.length; k++) {
+                let kv = filterAttrs[k].split('=')
 
                 if (kv.length === 2) {
-                    var key = kv[0]
+                    let key = kv[0]
                     filterKeys.push(key)
-                    var val = kv[1]
+                    let val = kv[1]
 
                     if (key === 'sortBy') 
                         filterMap['sortBy'] = val
@@ -35,7 +35,7 @@ module.exports = {
                     }
                 }
             }
-            var ts = -1
+            let ts = -1
             if (filterMap['sortBy'] === 'desc') 
                 ts = -1
             else if (filterMap['sortBy'] === 'asc') 
@@ -55,7 +55,7 @@ module.exports = {
                     res.send([])
                     return
                 }
-                var username = req.params.username
+                let username = req.params.username
                 db.collection('contents').find({
                     $and: [
                         { pa: null },

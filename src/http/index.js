@@ -4,9 +4,9 @@ const cors = require('cors')
 const bodyParser = require('body-parser')
 const fs = require('fs')
 
-var http = {
+let http = {
     init: () => {
-        var app = express()
+        let app = express()
         app.use(cors())
         app.use(bodyParser.json())
 
