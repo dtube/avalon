@@ -1,6 +1,14 @@
 module.exports = {
     init: (app) => {
-        // get distributions for a user
+        /**
+         * @api {get} /distributed/:name User Distribution
+         * @apiName distributed
+         * @apiGroup Economics
+         * 
+         * @apiParam {String} name Username to retrieve token distributions of
+         * 
+         * @apiSuccess {Array} distributed List of token distributions to the account
+         */
         app.get('/distributed/:name', (req, res) => {
             if (!req.params.name) {
                 res.sendStatus(500)

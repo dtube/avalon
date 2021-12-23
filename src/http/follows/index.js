@@ -1,6 +1,14 @@
 module.exports = {
     init: (app) => {
-        // get follows
+        /**
+         * @api {get} /follows/:name Followings
+         * @apiName followings
+         * @apiGroup Follows
+         * 
+         * @apiParam {String} name Username to retrieve list of followings
+         * 
+         * @apiSuccess {String[]} accounts List of accounts that is followed by the username in query
+         */
         app.get('/follows/:name', (req, res) => {
             if (!req.params.name) {
                 res.sendStatus(500)

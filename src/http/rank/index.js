@@ -1,5 +1,14 @@
 module.exports = {
     init: (app) => {
+        /**
+         * @api {get} /rank/:key Account Ranks
+         * @apiName rank
+         * @apiGroup Accounts
+         * 
+         * @apiParam {String} key The key to query rank by. Valid values: `balance`, `subs` and `leaders`.
+         * 
+         * @apiSuccess {Object[]} accounts The account rankings
+         */
         app.get('/rank/:key',(req,res) => {
             let sorting = {$sort: {}}
             let projecting = {

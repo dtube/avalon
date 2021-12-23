@@ -1,6 +1,16 @@
 module.exports = {
     init: (app) => {
-        // account history api
+        /**
+         * @api {get} /history/:author/:lastBlock/:skip? Account History
+         * @apiName accountHistory
+         * @apiGroup Accounts
+         * 
+         * @apiParam {String} author Username to retrieve account history of
+         * @apiParam {Integer} lastBlock Lastest block the transaction is included into
+         * @apiParam {Integer} [skip] Account history items to skip for pagination
+         * 
+         * @apiSuccess {Objects[]} transactions List of transactions sent or received by the account
+         */
         app.get('/history/:author/:lastBlock/:skip?', (req, res) => {
             let lastBlock = parseInt(req.params.lastBlock)
             let skip = parseInt(req.params.skip)

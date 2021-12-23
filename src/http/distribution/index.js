@@ -2,6 +2,13 @@ const parallel = require('run-parallel')
 
 module.exports = {
     init: (app) => {
+        /**
+         * @api {get} /distribution Wealth Distribution
+         * @apiName distribution
+         * @apiGroup Economics
+         * 
+         * @apiSuccess {Array} distribution Tiered wealth distribution of the network, multiplied by 10 for each increment
+         */
         app.get('/distribution',(req,res) => {
             let ops = []
 

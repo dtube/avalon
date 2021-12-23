@@ -1,6 +1,22 @@
 module.exports = {
     init: (app) => {
-        // get votes history of a user
+        /**
+         * @api {get} /votes/all/:voter/:lastTs All Votes
+         * @apiName votesAll
+         * @apiGroup Vote History
+         * 
+         * @apiParam {String} voter Username of voter
+         * @apiParam {Integer} lastTs Last timestamp of votes to be queried
+         * 
+         * @apiSuccess {Object[]} votes Complete list of votes made by voter
+         * @apiSuccess {String} votes.author Author of vote
+         * @apiSuccess {String} votes.link Permlink of vote
+         * @apiSuccess {Double} votes.claimable Amount claimable from vote
+         * @apiSuccess {Double} [votes.claimed] Timestamp of when the curation rewards from the vote was claimed
+         * @apiSuccess {Integer} votes.vt VP spent on vote
+         * @apiSuccess {Integer} votes.ts Timestamp of when the vote was casted
+         * @apiSuccess {Integer} votes.contentTs Timestamp of the content being voted on
+         */
         app.get('/votes/all/:voter/:lastTs', (req, res) => {
             let voter = req.params.voter
             let query = {
@@ -64,7 +80,22 @@ module.exports = {
             })
         })
 
-        // get pending votes history of a user
+        /**
+         * @api {get} /votes/pending/:voter/:lastTs Pending Votes
+         * @apiName votesPending
+         * @apiGroup Vote History
+         * 
+         * @apiParam {String} voter Username of voter
+         * @apiParam {Integer} lastTs Last timestamp of votes to be queried
+         * 
+         * @apiSuccess {Object[]} votes Complete list of votes made by voter
+         * @apiSuccess {String} votes.author Author of vote
+         * @apiSuccess {String} votes.link Permlink of vote
+         * @apiSuccess {Double} votes.claimable Amount claimable from vote
+         * @apiSuccess {Integer} votes.vt VP spent on vote
+         * @apiSuccess {Integer} votes.ts Timestamp of when the vote was casted
+         * @apiSuccess {Integer} votes.contentTs Timestamp of the content being voted on
+         */
         app.get('/votes/pending/:voter/:lastTs', (req, res) => {
             let voter = req.params.voter
             let claimableDate = new Date().getTime() - config.ecoClaimTime
@@ -102,7 +133,22 @@ module.exports = {
             })
         })
 
-        // get claimable votes history of a user
+        /**
+         * @api {get} /votes/claimable/:voter/:lastTs Claimable Votes
+         * @apiName votesClaimable
+         * @apiGroup Vote History
+         * 
+         * @apiParam {String} voter Username of voter
+         * @apiParam {Integer} lastTs Last timestamp of votes to be queried
+         * 
+         * @apiSuccess {Object[]} votes Complete list of votes made by voter
+         * @apiSuccess {String} votes.author Author of vote
+         * @apiSuccess {String} votes.link Permlink of vote
+         * @apiSuccess {Double} votes.claimable Amount claimable from vote
+         * @apiSuccess {Integer} votes.vt VP spent on vote
+         * @apiSuccess {Integer} votes.ts Timestamp of when the vote was casted
+         * @apiSuccess {Integer} votes.contentTs Timestamp of the content being voted on
+         */
         app.get('/votes/claimable/:voter/:lastTs', (req, res) => {
             let voter = req.params.voter
             let claimableDate = new Date().getTime() - config.ecoClaimTime
@@ -141,7 +187,23 @@ module.exports = {
             })
         })
 
-        // get claimed votes history of a user
+        /**
+         * @api {get} /votes/claimed/:voter/:lastTs Claimed Votes
+         * @apiName votesClaimed
+         * @apiGroup Vote History
+         * 
+         * @apiParam {String} voter Username of voter
+         * @apiParam {Integer} lastTs Last timestamp of votes to be queried
+         * 
+         * @apiSuccess {Object[]} votes Complete list of votes made by voter
+         * @apiSuccess {String} votes.author Author of vote
+         * @apiSuccess {String} votes.link Permlink of vote
+         * @apiSuccess {Double} votes.claimable Amount claimable from vote
+         * @apiSuccess {Double} votes.claimed Timestamp of when the curation rewards from the vote was claimed
+         * @apiSuccess {Integer} votes.vt VP spent on vote
+         * @apiSuccess {Integer} votes.ts Timestamp of when the vote was casted
+         * @apiSuccess {Integer} votes.contentTs Timestamp of the content being voted on
+         */
         app.get('/votes/claimed/:voter/:lastTs', (req, res) => {
             let voter = req.params.voter
             let query = {

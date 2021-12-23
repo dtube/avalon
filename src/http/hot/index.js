@@ -1,9 +1,26 @@
 module.exports = {
     init: (app) => {
-        // get hot
+        /**
+         * @api {get} /hot Hot
+         * @apiName hot
+         * @apiGroup Rankings
+         * 
+         * @apiSuccess {Object[]} contents List of ranked hot contents
+         */
         app.get('/hot', (req, res) => {
             res.send(rankings.contents.hot.slice(0, 50))
         })
+
+        /**
+         * @api {get} /hot/:author/:link Hot (continued)
+         * @apiName hotContinued
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} link Permlink of post to continue from
+         * 
+         * @apiSuccess {Object[]} contents List of ranked hot contents continued
+         */
         app.get('/hot/:author/:link', (req, res) => {
             let filteredContents = []
             let isPastRelativeContent = false
@@ -20,7 +37,17 @@ module.exports = {
             }
             res.send(filteredContents)
         })
+
         // get hot with tags and limit filter
+        /**
+         * @api {get} /hot Hot Filtered
+         * @apiName hotFiltered
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Object[]} contents List of ranked hot contents filtered
+         */
         app.get('/hot/:filter', (req, res) => {
             let filterParam = req.params.filter
             let filter = filterParam.split(':')

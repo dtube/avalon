@@ -1,6 +1,14 @@
 module.exports = {
     init: (app) => {
-        // get blog of user
+        /**
+         * @api {get} /blog/:username User Blog
+         * @apiName blog
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve blog of
+         * 
+         * @apiSuccess {Array} contents List of root contents authored by username
+         */
         app.get('/blog/:username', (req, res) => {
             let username = req.params.username
 
@@ -8,6 +16,17 @@ module.exports = {
                 res.send(contents)
             })
         })
+
+        /**
+         * @api {get} /blog/:username/:filter User Blog with Filter
+         * @apiName blogWithFilter
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve blog of
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Array} posts Filtered list of root posts authored by username
+         */
         app.get('/blog/:username/:filter', (req, res) => {
             let username = req.params.username
             let filterParam = req.params.filter
@@ -44,6 +63,18 @@ module.exports = {
                 res.send(contents)
             })
         })
+
+        /**
+         * @api {get} /blog/:username/:link User Blog (Continued)
+         * @apiName blogContinued
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve blog of
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} link Permlink of post to continue from
+         * 
+         * @apiSuccess {Array} posts List of root posts authored by username continued
+         */
         app.get('/blog/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
                 $and: [

@@ -1,9 +1,26 @@
 module.exports = {
     init: (app) => {
-        // get trending
+        /**
+         * @api {get} /trending Trending
+         * @apiName trending
+         * @apiGroup Rankings
+         * 
+         * @apiSuccess {Object[]} contents List of ranked trending contents
+         */
         app.get('/trending', (req, res) => {
             res.send(rankings.contents.trending.slice(0, 50))
         })
+
+        /**
+         * @api {get} /trending/:author/:link Trending (continued)
+         * @apiName trendingContinued
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} link Permlink of post to continue from
+         * 
+         * @apiSuccess {Object[]} contents List of ranked trending contents continued
+         */
         app.get('/trending/:author/:link', (req, res) => {
             let filteredContents = []
             let isPastRelativeContent = false
@@ -21,6 +38,15 @@ module.exports = {
             res.send(filteredContents)
         })
         // get trending with tags and limit filter
+        /**
+         * @api {get} /trending Trending Filtered
+         * @apiName trendingFiltered
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Object[]} contents List of ranked trending contents filtered
+         */
         app.get('/trending/:filter', (req, res) => {
             let filterParam = req.params.filter
             let filter = filterParam.split(':')

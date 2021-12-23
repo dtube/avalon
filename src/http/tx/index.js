@@ -1,6 +1,20 @@
 module.exports = {
     init: (app) => {
-        // tx lookup by hash
+        /**
+         * @api {get} /tx/:txhash Transaction Info by Hash
+         * @apiName tx
+         * @apiGroup Blockchain
+         * 
+         * @apiParam {String} txhash Hash of transaction to query
+         * 
+         * @apiSuccess {Integer} type Transaction type
+         * @apiSuccess {Object} data Transaction payload
+         * @apiSuccess {String} sender Transacting account username
+         * @apiSuccess {Integer} ts Transaction expiration timestamp
+         * @apiSuccess {String} hash Transaction hash
+         * @apiSuccess {String/Array} signature Transaction signature
+         * @apiSuccess {Integer} includedInBlock Block number in which the transaction is included
+         */
         app.get('/tx/:txhash',(req,res) => {
             if (process.env.TX_HISTORY === '1')
                 db.collection('txs').findOne({ _id: req.params.txhash },(e,tx) => {

@@ -1,11 +1,28 @@
 module.exports = {
     init: (app) => {
-        // get new contents
+        /**
+         * @api {get} /new New
+         * @apiName new
+         * @apiGroup Rankings
+         * 
+         * @apiSuccess {Object[]} contents List of new contents
+         */
         app.get('/new', (req, res) => {
             db.collection('contents').find({ pa: null }, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 res.send(contents)
             })
         })
+
+        /**
+         * @api {get} /new/:author/:link New (continued)
+         * @apiName newContinued
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} link Permlink of post to continue from
+         * 
+         * @apiSuccess {Object[]} contents List of new contents continued
+         */
         app.get('/new/:author/:link', (req, res) => {
             db.collection('contents').findOne({
                 $and: [
@@ -29,6 +46,15 @@ module.exports = {
         })
 
         // get new contents with filter by author, tag, limit, tsrange
+        /**
+         * @api {get} /new New Filtered
+         * @apiName newFiltered
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Object[]} contents List of new contents filtered
+         */
         app.get('/new/:filter', (req, res) => {
             let filterParam = req.params.filter
             let filter = filterParam.split(':')

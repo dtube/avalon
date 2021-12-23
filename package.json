@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node src/main.js",
     "cli": "node src/cli.js",
-    "lint": "eslint ./src/*"
+    "lint": "eslint ./src/*",
+    "apidoc": "apidoc -i src/http -o apidoc"
   },
   "dependencies": {
     "base-x": "^3.0.8",
@@ -49,7 +50,15 @@
     "underlineSuffix": false,
     "uppercaseLabel": false
   },
+  "apidoc": {
+    "name": "Avalon",
+    "title": "Avalon API Documentation",
+    "description": "REST API documentation for Avalon blockchain",
+    "sampleUrl": "https://avalon.oneloved.tube",
+    "version": "1.6.0"
+  },
   "devDependencies": {
+    "apidoc": "^0.50.2",
     "chance": "^1.0.18",
     "eslint": "^8.5.0",
     "javalon": "^1.0.7",

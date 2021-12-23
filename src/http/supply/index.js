@@ -2,7 +2,15 @@ const parallel = require('run-parallel')
 
 module.exports = {
     init: (app) => {
-        // get supply info
+        /**
+         * @api {get} /supply Supply
+         * @apiName supply
+         * @apiGroup Economics
+         * 
+         * @apiSuccess {Integer} circulating Circulating supply in user wallets that are immediately spendable
+         * @apiSuccess {Double} unclaimed Unclaimed content rewards
+         * @apiSuccess {Double} total Circulating supply and unclaimed rewards added
+         */
         app.get('/supply', (req, res) => {
             let executions = [
                 (cb) => db.collection('accounts').aggregate([{ $group: { _id: 0, total: { $sum: '$balance' } } }]).toArray((e, r) => cb(e, r)),

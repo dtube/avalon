@@ -3,6 +3,15 @@ const ogs = require('open-graph-scraper')
 module.exports = {
     init: (app) => {
         // get open graph data for any url
+        /**
+         * @api {get} /opengraph/:url OpenGraph
+         * @apiName opengraph
+         * @apiGroup External
+         * 
+         * @apiParam {String} url The URL to query opengraph data of
+         * 
+         * @apiSuccess {Object} info The opengraph data
+         */
         app.get('/opengraph/:url', (req, res) => {
             if (!req.params.url) {
                 res.sendStatus(500)

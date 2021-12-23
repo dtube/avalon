@@ -1,6 +1,14 @@
 module.exports = {
     init: (app) => {
-        // get feed contents
+        /**
+         * @api {get} /blog/:username User Feed
+         * @apiName feed
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve feed of
+         * 
+         * @apiSuccess {Array} contents List of root contents authored followed accounts
+         */
         app.get('/feed/:username', (req, res) => {
             db.collection('accounts').findOne({ name: req.params.username }, function (err, account) {
                 if (!account || !account.follows)
@@ -16,6 +24,18 @@ module.exports = {
                     })
             })
         })
+
+        /**
+         * @api {get} /blog/:username User Feed (Continued)
+         * @apiName feedContinued
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve feed of
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} permlink Permlink of post to continue from
+         * 
+         * @apiSuccess {Array} posts List of root posts authored by followed accounts continued
+         */
         app.get('/feed/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
                 $and: [
@@ -43,6 +63,16 @@ module.exports = {
         // get feed by tag with limit by certain author
         // filter = author,tag,limit,ts(from, to)
         // $API_URL/filter?author=author1,author2,...,authorN&tag=tag1,tag2,...,tagN&limit=x&ts=tsfrom-tsto
+        /**
+         * @api {get} /blog/:username/:filter User Feed with Filter
+         * @apiName feedWithFilter
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve feed of
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Array} posts Filtered list of root posts authored by followed accounts
+         */
         app.get('/feed/:username/:filter', (req, res) => {
             let filterParam = req.params.filter
             let filter = filterParam.split(':')

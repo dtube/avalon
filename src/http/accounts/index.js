@@ -1,6 +1,14 @@
 module.exports = {
     init: (app) => {
-        // get accounts info
+        /**
+         * @api {get} /accounts/:names Accounts Info (Multi)
+         * @apiName accounts
+         * @apiGroup Accounts
+         * 
+         * @apiParam {String} names Comma-seperated username list
+         * 
+         * @apiSuccess {Array} accounts List of accounts and its details
+         */
         app.get('/accounts/:names', (req, res) => {
             if (!req.params.names || typeof req.params.names !== 'string') {
                 res.sendStatus(500)

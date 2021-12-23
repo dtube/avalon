@@ -2,8 +2,16 @@ const timeout_transact_async = 7500
 
 module.exports = {
     init: (app) => {
-        // add data to the upcoming transactions pool
-        // and return only when the transaction is in a finalized block
+        /**
+         * @api {post} /transactWaitConfirm Transact (Synchronous)
+         * @apiName transactWaitConfirm
+         * @apiGroup Broadcast
+         * 
+         * @apiBody {Object} transaction Signed transaction to be broadcasted to Avalon
+         * 
+         * @apiSuccess {Integer} _id The current block height
+         * @apiError (Invalid Transaction Error) {String} error Error message of the invalid transaction
+         */
         app.post('/transactWaitConfirm', (req, res) => {
             let tx = req.body
             if (!tx) {
