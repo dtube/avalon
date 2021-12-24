@@ -222,7 +222,7 @@ let p2p = {
                 if (blocks.isOpen) {
                     let block = {}
                     try {
-                        blocks.read(message.d)
+                        block = blocks.read(message.d)
                     } catch (e) {
                         break
                     }
