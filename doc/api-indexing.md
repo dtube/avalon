@@ -8,4 +8,5 @@ db.txs.createIndex({'data.target':1})
 db.txs.createIndex({'data.receiver':1})
 db.txs.createIndex({'data.pa':1})
 db.txs.createIndex({'data.author':1})
+db.txs.createIndex({'includedInBlock':-1})
 ```
