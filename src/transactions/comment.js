@@ -19,17 +19,17 @@ module.exports = {
         }
         // users need to vote the content at the same time with vt and tag field
         if (!validate.integer(tx.data.vt, false, true)) {
-            cb(false, 'invalid tx data.vt must be a non-zero integer'); return
+            cb(false, 'VP must be a non-zero integer'); return
         }
         if (!validate.string(tx.data.tag, config.tagMaxLength)) {
             cb(false, 'invalid tx data.tag'); return
         }
         if (tx.data.tag.indexOf('.') > -1 || tx.data.tag.indexOf('$') > -1) {
-            cb(false, 'invalid tx invalid character'); return
+            cb(false, 'tag must not contain \'.\' or \'$\' characters'); return
         }
-        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser)) {
-            cb(false, 'invalid tx not enough vt'); return
-        }
+        let vpCheck = transaction.notEnoughVP(tx.data.vt, ts, legitUser)
+        if (vpCheck.needs)
+            return cb(false, 'not enough VP, attempting to spend '+tx.data.vt+' VP but only has '+vpCheck.has+' VP')
 
         if (tx.data.pa && tx.data.pp) 
             // its a comment of another comment

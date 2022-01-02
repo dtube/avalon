@@ -152,16 +152,17 @@ transaction = {
             cb(err, res)
         })
     },
-    hasEnoughVT: (amount, ts, legitUser) => {
+    notEnoughVP: (amount, ts, legitUser) => {
         // checking if user has enough power for a transaction requiring voting power
         let vtGrowConfig = {
             growth: legitUser.balance / config.vtGrowth,
             max: legitUser.maxVt
         }
         let vtBefore = new GrowInt(legitUser.vt, vtGrowConfig).grow(ts)
-        if (vtBefore.v < Math.abs(amount))
-            return false
-        return true
+        return {
+            has: vtBefore.v,
+            needs: Math.max(Math.abs(amount) - vtBefore.v,0)
+        }
     },
     collectGrowInts: (tx, ts, cb) => {
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {

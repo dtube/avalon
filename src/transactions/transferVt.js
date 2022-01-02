@@ -7,9 +7,9 @@ module.exports = {
         if (!validate.integer(tx.data.amount, false, false)) {
             cb(false, 'invalid tx data.amount'); return
         }
-        if (!transaction.hasEnoughVT(tx.data.amount, ts, legitUser)) {
-            cb(false, 'invalid tx not enough vt'); return
-        }
+        let vpCheck = transaction.notEnoughVP(tx.data.amount, ts, legitUser)
+        if (vpCheck.needs)
+            return cb(false, 'not enough VP, attempting to spend '+tx.data.amount+' VP but only has '+vpCheck.has+' VP')
         cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
             if (err) throw err
             if (!account) cb(false, 'invalid tx receiver does not exist')
