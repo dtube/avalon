@@ -1,5 +1,3 @@
-const blocks = require('../../blocks')
-
 module.exports = {
     init: (app) => {
         /**
@@ -18,7 +16,7 @@ module.exports = {
             let skip = parseInt(req.params.skip)
             let author = req.params.author
 
-            if (blocks.isOpen) {
+            if (process.env.TX_HISTORY === '1') {
                 let query = {
                     $and: [
                         { $or: [
