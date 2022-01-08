@@ -15,8 +15,8 @@ module.exports = {
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
                 var votes = []
-                for (let i = 0; i < contents.length; i++) {
-                    for (let y = 0; y < contents[i].votes.length; y++) {
+                for (let i = 0; i < contents.length; i++) 
+                    for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
                             votes.push({
                                 author: contents[i].author,
@@ -28,8 +28,6 @@ module.exports = {
                                 contentTs: contents[i].ts,
                                 burn: contents[i].votes[y].burn
                             })
-                    }
-                }
                 res.send(votes)
             })
         })
@@ -49,8 +47,8 @@ module.exports = {
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
                 var votes = []
-                for (let i = 0; i < contents.length; i++) {
-                    for (let y = 0; y < contents[i].votes.length; y++) {
+                for (let i = 0; i < contents.length; i++) 
+                    for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
                             votes.push({
                                 author: contents[i].author,
@@ -62,8 +60,6 @@ module.exports = {
                                 contentTs: contents[i].ts,
                                 burn: contents[i].votes[y].burn
                             })
-                    }
-                }
                 res.send(votes)
             })
         })
@@ -71,9 +67,8 @@ module.exports = {
         // get pending votes history of a user
         app.get('/votes/pending/:voter/:lastTs', (req, res) => {
             var voter = req.params.voter
-            var claimableDate = new Date().getTime() - config.ecoClaimTime;
-            var query =
-            {
+            var claimableDate = new Date().getTime() - config.ecoClaimTime
+            var query = {
                 $and: [{}],
                 votes:
                 {
@@ -90,8 +85,8 @@ module.exports = {
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
                 var votes = []
-                for (let i = 0; i < contents.length; i++) {
-                    for (let y = 0; y < contents[i].votes.length; y++) {
+                for (let i = 0; i < contents.length; i++) 
+                    for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
                             votes.push({
                                 author: contents[i].author,
@@ -103,8 +98,6 @@ module.exports = {
                                 contentTs: contents[i].ts,
                                 burn: contents[i].votes[y].burn
                             })
-                    }
-                }
                 res.send(votes)
             })
         })
@@ -112,9 +105,8 @@ module.exports = {
         // get claimable votes history of a user
         app.get('/votes/claimable/:voter/:lastTs', (req, res) => {
             var voter = req.params.voter
-            var claimableDate = new Date().getTime() - config.ecoClaimTime;
-            var query =
-            {
+            var claimableDate = new Date().getTime() - config.ecoClaimTime
+            var query = {
                 $and: [{}],
                 votes:
                 {
@@ -132,8 +124,8 @@ module.exports = {
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
                 var votes = []
-                for (let i = 0; i < contents.length; i++) {
-                    for (let y = 0; y < contents[i].votes.length; y++) {
+                for (let i = 0; i < contents.length; i++) 
+                    for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
                             votes.push({
                                 author: contents[i].author,
@@ -145,8 +137,6 @@ module.exports = {
                                 contentTs: contents[i].ts,
                                 burn: contents[i].votes[y].burn
                             })
-                    }
-                }
                 res.send(votes)
             })
         })
@@ -154,8 +144,7 @@ module.exports = {
         // get claimed votes history of a user
         app.get('/votes/claimed/:voter/:lastTs', (req, res) => {
             var voter = req.params.voter
-            var query =
-            {
+            var query = {
                 $and: [{}],
                 votes:
                 {
@@ -172,8 +161,8 @@ module.exports = {
             db.collection('contents').find(query, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 if (err) throw err
                 var votes = []
-                for (let i = 0; i < contents.length; i++) {
-                    for (let y = 0; y < contents[i].votes.length; y++) {
+                for (let i = 0; i < contents.length; i++) 
+                    for (let y = 0; y < contents[i].votes.length; y++) 
                         if (contents[i].votes[y].u === voter)
                             votes.push({
                                 author: contents[i].author,
@@ -185,8 +174,6 @@ module.exports = {
                                 contentTs: contents[i].ts,
                                 burn: contents[i].votes[y].burn
                             })
-                    }
-                }
                 res.send(votes)
             })
         })

@@ -17,12 +17,13 @@ module.exports = {
             }
         
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
-            if (!account) {
-                cb(false, 'invalid tx sender does not exist'); return
-            }
-            if (!account.keys) {
-                cb(true); return
-            } else {
+            if (!account)
+                cb(false, 'invalid tx sender does not exist')
+            else if (!account.keys)
+                cb(true)
+            else if (config.maxKeys && account.keys.length >= config.maxKeys)
+                cb(false, 'cannot add more than ' + config.maxKeys + ' custom keys')
+            else {
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].id === tx.data.id) {
                         cb(false, 'invalid tx data.id already exists'); return

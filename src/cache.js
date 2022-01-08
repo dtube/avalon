@@ -1,5 +1,6 @@
 const parallel = require('run-parallel')
 const cloneDeep = require('clone-deep')
+const ProcessingQueue = require('./processingQueue')
 var cache = {
     copy: {
         accounts: {},
@@ -17,6 +18,7 @@ var cache = {
     },
     leaders: {},
     leaderChanges: [],
+    writerQueue: new ProcessingQueue(),
     rollback: function() {
         // rolling back changes from copied documents
         for (const key in cache.copy.accounts)
@@ -39,12 +41,11 @@ var cache = {
         cache.inserts = []
 
         // reset leader changes
-        for (let i in cache.leaderChanges) {
+        for (let i in cache.leaderChanges)
             if (cache.leaderChanges[i][1] === 0)
                 cache.addLeader(cache.leaderChanges[i][0],true,()=>{})
             else if (cache.leaderChanges[i][1] === 1)
                 cache.removeLeader(cache.leaderChanges[i][0],true)
-        }
         cache.leaderChanges = []
 
         // and reset the econ data for nextBlock
@@ -200,11 +201,16 @@ var cache = {
             cache.leaderChanges.push([leader,0])
     },
     clear: function() {
-        cache.accounts = {}
-        cache.contents = {}
-        cache.distributed = {}
+        cache.changes = []
+        cache.inserts = []
+        cache.rebuild.changes = []
+        cache.rebuild.inserts = []
+        cache.leaderChanges = []
+        cache.copy.accounts = {}
+        cache.copy.contents = {}
+        cache.copy.distributed = {}
     },
-    writeToDisk: function(cb, rebuild) {
+    writeToDisk: function(rebuild, cb) {
         // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
         let executions = []
         // executing the inserts (new comment / new account)
@@ -248,33 +254,29 @@ var cache = {
                     })
                 })
 
-        // no operation compression (dumb and slow)
-        // for (let i = 0; i < cache.changes.length; i++) {
-        //     executions.push(function(callback) {
-        //         var change = cache.changes[i]
-        //         db.collection(change.collection).updateOne(change.query, change.changes, function() {
-        //             callback()
-        //         })
-        //     })
-        // }
+        // leader stats
+        if (process.env.LEADER_STATS === '1') {
+            let leaderStatsWriteOps = leaderStats.getWriteOps()
+            for (let op in leaderStatsWriteOps)
+                executions.push(leaderStatsWriteOps[op])
+        }
         
-        var timeBefore = new Date().getTime()
-        parallel(executions, function(err, results) {
-            let execTime = new Date().getTime()-timeBefore
-            if (!rebuild && execTime >= config.blockTime/2)
-                logr.warn('Slow write execution: ' + executions.length + ' mongo queries took ' + execTime + 'ms')
-            else
-                logr.debug(executions.length+' mongo queries executed in '+execTime+'ms')
-            cache.changes = []
-            cache.inserts = []
-            cache.rebuild.changes = []
-            cache.rebuild.inserts = []
-            cache.leaderChanges = []
-            cache.copy.accounts = {}
-            cache.copy.contents = {}
-            cache.copy.distributed = {}
-            cb(err, results)
-        })
+        if (typeof cb === 'function') {
+            let timeBefore = new Date().getTime()
+            parallel(executions, function(err, results) {
+                let execTime = new Date().getTime()-timeBefore
+                if (!rebuild && execTime >= config.blockTime/2)
+                    logr.warn('Slow write execution: ' + executions.length + ' mongo queries took ' + execTime + 'ms')
+                else
+                    logr.debug(executions.length+' mongo queries executed in '+execTime+'ms')
+                cache.clear()
+                cb(err, results)
+            })
+        } else {
+            logr.debug(executions.length+' mongo ops queued')
+            cache.writerQueue.push((callback) => parallel(executions,() => callback()))
+            cache.clear()
+        }
     },
     processRebuildOps: (cb,writeToDisk) => {
         for (let i in cache.inserts)
@@ -288,7 +290,7 @@ var cache = {
         cache.copy.contents = {}
         cache.copy.distributed = {}
         if (writeToDisk)
-            cache.writeToDisk(cb,true)
+            cache.writeToDisk(true,cb)
         else
             cb()
     },
@@ -301,11 +303,10 @@ var cache = {
             return '_id'
         }
     },
-    warmup: function(collection, maxDoc, cb) {
-        if (!collection || !maxDoc || maxDoc === 0) {
-            cb(null)
-            return
-        }
+    warmup: (collection, maxDoc) => new Promise((rs,rj) => {
+        if (!collection || !maxDoc || maxDoc === 0)
+            return rs(null)
+
         switch (collection) {
         case 'accounts':
             db.collection(collection).find({}, {
@@ -315,7 +316,7 @@ var cache = {
                 if (err) throw err
                 for (let i = 0; i < accounts.length; i++)
                     cache[collection][accounts[i].name] = accounts[i]
-                cb(null)
+                rs(null)
             })
             break
 
@@ -327,28 +328,31 @@ var cache = {
                 if (err) throw err
                 for (let i = 0; i < contents.length; i++)
                     cache[collection][contents[i]._id] = contents[i]
-                cb(null)
+                rs(null)
             })
             break
     
         default:
-            cb('Collection type not found')
+            rj('Collection type not found')
             break
         }
-    },
-    warmupLeaders: (cb) => {
-        db.collection('accounts').find(
-            {pub_leader: {$exists:true}}
-        ).toArray((e,accs) => {
+    }),
+    warmupLeaders: () => new Promise((rs) => {
+        db.collection('accounts').find({
+            $and: [
+                {pub_leader: {$exists:true}},
+                {pub_leader: {$ne: ''}}
+            ]
+        }).toArray((e,accs) => {
             if (e) throw e
             for (let i in accs) {
                 cache.leaders[accs[i].name] = 1
                 if (!cache.accounts[accs[i].name])
                     cache.accounts[accs[i].name] = accs[i]
             }
-            cb(accs.length)
+            rs(accs.length)
         })
-    }
+    })
 }
 
 module.exports = cache

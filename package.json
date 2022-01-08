@@ -1,6 +1,6 @@
 {
   "name": "avalon",
-  "version": "1.0.0",
+  "version": "1.5.1",
   "description": "",
   "scripts": {
     "start": "node src/main.js",
@@ -26,10 +26,10 @@
     "run-series": "^1.1.9",
     "secp256k1": "^4.0.2",
     "sha256-file": "^1.0.0",
-    "sharp": "^0.27.2",
+    "sharp": "^0.29.3",
     "signale": "^1.4.0",
     "simple-youtube-api": "^5.2.1",
-    "ws": "^7.0.0"
+    "ws": "^7.5.3"
   },
   "engines": {
     "node": ">=4.3.2"
