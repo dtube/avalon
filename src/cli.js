@@ -34,6 +34,20 @@ program.command('account <pub_key> <new_user>')
         writeLine('  $ account fR3e4CcvMRuv8yaGtoQ6t6j1hxfyocqhsKHi2qP9mb1E fr3e4ccvmruv8yagtoq6t6j1hxfyocqhskhi2qp9mb1e -F key.json -M alice')
     })
 
+program.command('account-bw <pub_key> <new_user> <bw>')
+    .description('create a new account with bandwidth from account creator')
+    .action(function(pubKey, newUser, bw) {
+        verifyAndSendTx('createAccountWithBw', pubKey, newUser, bw)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Extra Info:')
+        writeLine('  Account creation will burn coins depending on the chain config')
+        writeLine('  and will transfer <bw> bytes from the account creator to the new account.')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ account d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce cool-name 30000 -F key.json -M alice')
+    })
+
 program.command('claim <author> <link>')
     .description('claims rewards associated with a past vote')
     .action(function(author, link) {
@@ -380,6 +394,23 @@ program.command('unfollow <target>')
         writeLine('')
         writeLine('Example:')
         writeLine('  $ unfollow bob -F key.json -M alice')
+    })
+
+program.command('unset-signature-threshold <types>')
+    .alias('unset-sig-threshold')
+    .description('unset signature thresholds for transaction types')
+    .action(function(thresholds) {
+        verifyAndSendTx('unsetSignatureThreshold', thresholds)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <types>: Array of tx types to unset signature threshold of, falling back to default threshold set using SET_SIG_THRESHOLD or 1.')
+        writeLine('')
+        writeLine('WARNING: Multi-signature setup is for advanced users only.')
+        writeLine('  Please choose the thresholds carefully to prevent being locked out of your account due to insufficient key weight to meet the new signature threshold!')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ unset-signature-threshold [1,3,4] -F key.json -M alice')
     })
 
 program.command('unvote-leader <leader>')

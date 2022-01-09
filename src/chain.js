@@ -585,7 +585,7 @@ let chain = {
                     })
                 i++
             })
-        executions.push((callback) => chain.applyHardfork(block._id,callback))
+        executions.push((callback) => chain.applyHardfork(block,callback))
         
         let blockTimeBefore = new Date().getTime()
         series(executions, async function(err, results) {

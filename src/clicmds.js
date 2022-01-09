@@ -178,6 +178,16 @@ let cmds = {
     setPasswordWeight: (privKey, sender, weight) => {
         let tx = '{"type":22,"data":{"weight":'+weight+'}}'
         return sign(privKey, sender, tx)
+    },
+
+    unsetSignatureThreshold: (privKey, sender, types) => {
+        let tx = '{"type":23,"data":{"types":'+types+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    createAccountWithBw: (privKey, sender, pub, name, bw) => {
+        let tx = '{"type":24,"data":{"pub":"'+pub+'","name":"'+name+'","bw":'+parseInt(bw)+'}}'
+        return sign(privKey, sender, tx)
     }
 }
 
