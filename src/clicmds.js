@@ -188,6 +188,21 @@ let cmds = {
     createAccountWithBw: (privKey, sender, pub, name, bw) => {
         let tx = '{"type":24,"data":{"pub":"'+pub+'","name":"'+name+'","bw":'+parseInt(bw)+'}}'
         return sign(privKey, sender, tx)
+    },
+
+    playlistJson: (privKey, sender, link, json) => {
+        let tx = '{"type":25,"data":{"link":"'+link+'","json":'+json+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    playlistPush: (privKey, sender, link, seq) => {
+        let tx = '{"type":26,"data":{"link":"'+link+'","seq":'+seq+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    playlistPop: (privKey, sender, link, seq) => {
+        let tx = '{"type":27,"data":{"link":"'+link+'","seq":'+seq+'}}'
+        return sign(privKey, sender, tx)
     }
 }
 

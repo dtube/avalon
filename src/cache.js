@@ -6,11 +6,13 @@ let cache = {
     copy: {
         accounts: {},
         contents: {},
-        distributed: {}
+        distributed: {},
+        playlists: {}
     },
     accounts: {},
     contents: {},
     distributed: {},
+    playlists: {},
     changes: [],
     inserts: [],
     rebuild: {
@@ -49,7 +51,7 @@ let cache = {
         eco.nextBlock()
     },
     findOne: function(collection, query, cb) {
-        if (['accounts','blocks','contents'].indexOf(collection) === -1) {
+        if (['accounts','blocks','contents','playlists'].indexOf(collection) === -1) {
             cb(true)
             return
         }

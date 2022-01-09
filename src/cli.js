@@ -248,6 +248,49 @@ program.command('password-weight <weight>')
         writeLine('  $ password-weight 1 -F key.json -M alice')
     })
 
+program.command('playlist-json <link> <json>')
+    .description('set json metadata of a playlist, creating one if it doesn\'t exist already')
+    .action(function(link, json) {
+        verifyAndSendTx('playlistJson', link, json)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: the link of the playlist')
+        writeLine('  <json>: the new json metadata of the playlist')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ playlist-json myplaylist \'{"title": "My awesome video collection"}\' -F key.json -M alice')
+    })
+
+program.command('playlist-push <link> <seq>')
+    .description('append or modify a playlist by its corresponding sequence id in the playlist')
+    .action(function(link, seq) {
+        verifyAndSendTx('playlistPush', link, seq)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: the link of the playlist')
+        writeLine('  <seq>: the json of the sequences to be added or modified, where key is the sequence id (integer)')
+        writeLine('    and its value is the content identifier (string in format of \'author/link\')')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ playlist-push myplaylist \'{"100": "alice/ep-1","200": "alice/ep-2","300": "alice/ep-3"}\' -F key.json -M alice')
+    })
+
+program.command('playlist-pop <link> <seq>')
+    .description('append or modify a playlist by its corresponding sequence id in the playlist')
+    .action(function(link, seq) {
+        verifyAndSendTx('playlistPop', link, seq)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: the link of the playlist')
+        writeLine('  <seq>: the array of sequence ids to be removed from the playlist')
+        writeLine('')
+        writeLine('Example:')
+        writeLine('  $ playlist-pop myplaylist \'[100,200]\' -F key.json -M alice')
+    })
+
 program.command('profile <json>')
     .alias('user-json')
     .description('modify an account profile')

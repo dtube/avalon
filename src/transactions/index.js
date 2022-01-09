@@ -27,7 +27,10 @@ const transactions = [
     require('./setSignThreshold.js'),
     require('./setPasswordWeight.js'),
     require('./unsetSignThreshold.js'),
-    require('./newAccountWithBw.js')
+    require('./newAccountWithBw.js'),
+    require('./playlistJson.js'),
+    require('./playlistPush.js'),
+    require('./playlistPop.js')
 ]
 
 module.exports = {
@@ -56,7 +59,10 @@ module.exports = {
         SET_SIG_THRESHOLD: 21,
         SET_PASSWORD_WEIGHT: 22,
         UNSET_SIG_THRESHOLD: 23,
-        NEW_ACCOUNT_WITH_BW: 24
+        NEW_ACCOUNT_WITH_BW: 24,
+        PLAYLIST_JSON: 25,
+        PLAYLIST_PUSH: 26,
+        PLAYLIST_POP: 27
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')

@@ -154,6 +154,12 @@ let config = {
         },
         25000000: {
             burnAccountIsBlackhole: true,
+            playlistEnabled: true,
+            playlistLinkMin: 3,
+            playlistLinkMax: 50,
+            playlistContentLinkMin: 3,
+            playlistContentLinkMax: 101,
+            playlistSequenceMax: 1000,
             txLimits: {
                 14: 2,
                 15: 2,
