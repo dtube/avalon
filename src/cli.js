@@ -278,7 +278,7 @@ program.command('playlist-push <link> <seq>')
     })
 
 program.command('playlist-pop <link> <seq>')
-    .description('append or modify a playlist by its corresponding sequence id in the playlist')
+    .description('delete a content in a playlist by its corresponding sequence id')
     .action(function(link, seq) {
         verifyAndSendTx('playlistPop', link, seq)
     }).on('--help', function(){
