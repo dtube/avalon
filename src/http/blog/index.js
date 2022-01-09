@@ -18,6 +18,7 @@ module.exports = {
             var filterMap = {}
             var defaultKeys = ['sortBy']
             var filterKeys = []
+            var playlist = ""
 
             var limit = 50
             for (var k=0; k<filterAttrs.length; k++) {
@@ -30,6 +31,8 @@ module.exports = {
 
                     if (key == 'sortBy') 
                         filterMap['sortBy'] = val
+                    else if (key == 'playlist')
+                        playlist = val
                     else if (key == 'limit') {
                         filterMap['limit'] = parseInt(val)
                         limit = filterMap['limit']
@@ -41,9 +44,14 @@ module.exports = {
                 ts = -1
             else if (filterMap['sortBy'] == 'asc') 
                 ts = 1
-            db.collection('contents').find({ pa: null, author: username }, { sort: { ts: ts }, limit: limit }).toArray(function (err, contents) {
-                res.send(contents)
-            })
+            if (playlist !== "")
+                db.collection('contents').find({ pa: null, author: username, "json.playlists": {$in: [playlist]}}, { sort: { ts: ts }, limit: limit }).toArray(function (err, contents) {
+                    res.send(contents)
+                })
+            else
+                db.collection('contents').find({ pa: null, author: username}, { sort: { ts: ts }, limit: limit }).toArray(function (err, contents) {
+                    res.send(contents)
+                })
         })
         app.get('/blog/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
