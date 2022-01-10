@@ -144,6 +144,8 @@ function startDaemon() {
     p2p.init()
     // and connect to peers
     p2p.connect(process.env.PEERS ? process.env.PEERS.split(',') : [], true)
+    // keep peer connection alive
+    setTimeout(p2p.keepAlive,3000)
 
     // regularly clean up old txs from mempool
     setInterval(function() {

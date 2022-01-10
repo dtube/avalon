@@ -2,6 +2,7 @@ const version = '1.5.1'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
+const keep_alive_interval = 2500
 const max_blocks_buffer = 100
 const max_peers = process.env.MAX_PEERS || 15
 const history_interval = 10000
@@ -9,6 +10,8 @@ const keep_history_for = 20000
 const p2p_port = process.env.P2P_PORT || default_port
 const p2p_host = process.env.P2P_HOST || '::'
 const WebSocket = require('ws')
+const dns = require('dns/promises')
+const net = require('net')
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
@@ -83,6 +86,28 @@ let p2p = {
                 }
             }
         }
+    },
+    keepAlive: async () => {
+        // ensure all peers explicitly listed in PEERS are connected when online
+        let peers = process.env.PEERS ? process.env.PEERS.split(',') : []
+        let toConnect = []
+        for (let p in peers) {
+            let connected = false
+            let colonSplit = peers[p].replace('ws://','').split(':')
+            let port = parseInt(colonSplit.pop())
+            let address = colonSplit.join(':').replace('[','').replace(']','')
+            if (!net.isIP(address))
+                address = (await dns.lookup(address)).address
+            for (let s in p2p.sockets)
+                if (p2p.sockets[s]._socket.remoteAddress.replace('::ffff:','') === address && p2p.sockets[s]._socket.remotePort === port) {
+                    connected = true
+                    break
+                }
+            if (!connected)
+                toConnect.push(peers[p])
+        }
+        p2p.connect(toConnect)
+        setTimeout(p2p.keepAlive,keep_alive_interval)
     },
     connect: (newPeers,isInit = false) => {
         newPeers.forEach((peer) => {
