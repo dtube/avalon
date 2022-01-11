@@ -14,7 +14,7 @@ module.exports = {
 
         // validate playlist sequence number to be deleted
         for (let s in tx.data.seq)
-            if (!validate.integer(tx.data.seq[s],true,false))
+            if (!validate.integer(tx.data.seq[s],true,false,config.playlistSequenceIdMax))
                 return cb(false,'invalid playlist sequence '+s)
 
         cb(true)

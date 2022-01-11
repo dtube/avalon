@@ -157,9 +157,10 @@ let config = {
             playlistEnabled: true,
             playlistLinkMin: 3,
             playlistLinkMax: 50,
-            playlistContentLinkMin: 3,
+            playlistContentLinkMin: 1,
             playlistContentLinkMax: 101,
             playlistSequenceMax: 1000,
+            playlistSequenceIdMax: 10000,
             txLimits: {
                 14: 2,
                 15: 2,

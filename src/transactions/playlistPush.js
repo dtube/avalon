@@ -18,7 +18,7 @@ module.exports = {
             let newContents = 0
             for (let s in tx.data.seq) {
                 // validate playlist sequence id
-                if (s !== parseInt(s).toString() || !validate.integer(parseInt(s),true,false))
+                if (s !== parseInt(s).toString() || !validate.integer(parseInt(s),true,false,config.playlistSequenceIdMax))
                     return cb(false,'invalid playlist sequence '+s)
                 
                 // validate content link for every sequence id
