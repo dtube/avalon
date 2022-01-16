@@ -53,6 +53,9 @@ module.exports = {
             'error',
             'smart'
         ],
+        'no-case-declarations': [
+            'off'
+        ],
         'no-magic-numbers': [
             'warn',
             {

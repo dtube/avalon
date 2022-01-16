@@ -5,11 +5,12 @@ var apis = [
     'http://localhost:3001',
     'https://avalon.d.tube',
     'https://avalon.oneloved.tube',
+    'https://avalon.tibfox.com',
 ]
 
 var leaders = [
-    'dtube', 'zurich', 'tokyo', 'techcoderx', 'birdinc33', 'fasolo97',
-    'exnihilo.witness', 'teamhumble', 'hightouch', 'tibfox', 'brishtiteveja0595'
+    'dtube', 'sagar.kothari.88', 'nannal', 'techcoderx', 'dabiggest01', 'fasolo97',
+    'exnihilo.witness', 'teamhumble', 'thecoincritic.com', 'tibfox', 'brishtiteveja0595', 'd00k13', 'wiljman76', 'lintendlor'
 ]
 
 var results = []
