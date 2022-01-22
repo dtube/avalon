@@ -7,11 +7,13 @@ let cache = {
         accounts: {},
         contents: {},
         distributed: {},
+        proposals: {},
         playlists: {}
     },
     accounts: {},
     contents: {},
     distributed: {},
+    proposals: {},
     playlists: {},
     changes: [],
     inserts: [],
@@ -303,7 +305,8 @@ let cache = {
         switch (collection) {
         case 'accounts':
             return 'name'
-        
+        case 'proposals':
+            return 'title'
         default:
             return '_id'
         }

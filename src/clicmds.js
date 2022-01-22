@@ -69,6 +69,17 @@ let cmds = {
         return sign(privKey, sender, tx)
     },
 
+    createProposal: (privKey, sender, title, author, link, totalFund, initialFund, escrowAddress, json) => {
+        var tx = '{"type":28,"data":{"title":"'+
+			title+'", "author":"'+
+			author+'", "link":"'+
+			link+'", "totalFund":"'+
+			totalFund+'", "initialFund":"'+
+			initialFund+'", "escrowAddress":"'+
+			escrowAddress+'","json":'+json+'}}'
+        return sign(privKey, sender, tx)
+    },
+
     vote: (privKey, sender, link, author, weight, tag) => {
         if (!tag) tag = ''
         let tx = '{"type":5,"data":{"link":"'+

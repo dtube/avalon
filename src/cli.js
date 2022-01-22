@@ -81,6 +81,25 @@ program.command('comment <link> <pa> <pp> <json> <vt> <tag>')
         writeLine('  $ comment reply-to-bob bobs-post bob \'{"body": "Hello Bob"}\' 1 my-tag -F key.json -M alice')
     })
 
+program.command('create-proposal <title> <author> <link> <totalFund> <initialFund> <escrowAddress> <json>')
+    .description('publish a new proposal')
+    .action(function(title, author, link, totalFund, initialFund, escrowAddress, json) {
+        verifyAndSendTx('createProposal', title, author, link, totalFund, initialFund, escrowAddress, json)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <title>: The title of the proposal')
+        writeLine('  <author>: Dtube username of the creator of the proposal')
+        writeLine('  <link>: External URL of the detailed proposal description')
+        writeLine('  <totalFund>: Total fund requested for the proposal in DTC')
+        writeLine('  <initialFund>: Initial amount (minimum x% of total fund) of vested DTC towards funding the proposal.')
+        writeLine('  <escrowAddress>: Multisig escrow DTC address where the funding will be received in DTC')
+        writeLine('  <json>: a json object that provides short proposal description (json.description), start date of the proposal(json.startDate), end date of the proposal(json.endDate)')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ create-proposal \'Proposal for playlist feature\' alice \'https://hive.blog/dtube-proposal-1\' 1000 10 qcZgW6HnNvDcct7GyTdVfABHxeAqSVnkcoJP3CUdNi4k \'{"description": "Playlist will be ..", "startDate": "2022-01-01", "endDate": "2022-05-01", "tag": "feature" }\' -F key.json -M alice')
+    })
+
 program.command('enable-node <pub>')
     .description('enable a node for producing blocks')
     .action(function(pub) {
