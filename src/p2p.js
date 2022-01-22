@@ -1,4 +1,4 @@
-const version = '1.5'
+const version = '1.5.1'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
@@ -7,7 +7,7 @@ const max_peers = process.env.MAX_PEERS || 15
 const history_interval = 10000
 const keep_history_for = 20000
 var p2p_port = process.env.P2P_PORT || default_port
-var p2p_host = process.env.P2P_HOST || "::"
+var p2p_host = process.env.P2P_HOST || '::'
 var WebSocket = require('ws')
 const { randomBytes } = require('crypto')
 var secp256k1 = require('secp256k1')
@@ -430,12 +430,11 @@ var p2p = {
         for (let i = 0; i < p2p.sockets.length; i++) {
             if (!p2p.sockets[i].sentUs)
                 continue
-            for (let y = 0; y < p2p.sockets[i].sentUs.length; y++) {
+            for (let y = 0; y < p2p.sockets[i].sentUs.length; y++)
                 if (new Date().getTime() - p2p.sockets[i].sentUs[y][1] > keep_history_for) {
                     p2p.sockets[i].sentUs.splice(y,1)
                     y--
-                }                
-            }
+                }
         }
     }
 }

@@ -19,11 +19,11 @@ const currentNodeV = parseInt(process.versions.node.split('.')[0])
 if (allowNodeV.indexOf(currentNodeV) === -1) {
     logr.fatal('Wrong NodeJS version. Allowed versions: v'+allowNodeV.join(', v'))
     process.exit(1)
-} else if (currentNodeV === 10) {
+} else if (currentNodeV === 10)
     logr.warn('NodeJS v10 has reached end of life, hence v10 support for Avalon will be removed in the future. Please upgrade to the latest supported NodeJS v' + allowNodeV[allowNodeV.length-1])
-} else logr.info('Correctly using NodeJS v'+process.versions.node)
+else logr.info('Correctly using NodeJS v'+process.versions.node)
 
-erroredRebuild = false
+let erroredRebuild = false
 
 // init the database and load most recent blocks in memory directly
 mongo.init(async function() {
@@ -44,7 +44,7 @@ mongo.init(async function() {
 
     // Warmup leader stats
     await leaderStats.loadIndex()
-    
+
     // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
     let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
     let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0

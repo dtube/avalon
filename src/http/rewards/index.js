@@ -6,16 +6,16 @@ module.exports = {
                 res.sendStatus(500)
                 return
             }
-            var claimableDate = new Date().getTime() - config.ecoClaimTime;
+            var claimableDate = new Date().getTime() - config.ecoClaimTime
             db.collection('contents').aggregate([
-                { $unwind: "$votes" },
+                { $unwind: '$votes' },
                 {
                     $match: {
-                        "votes.ts": { $gte: claimableDate },
-                        "votes.u": req.params.name,
-                        "votes.claimed": { $exists: false }
+                        'votes.ts': { $gte: claimableDate },
+                        'votes.u': req.params.name,
+                        'votes.claimed': { $exists: false }
                     }
-                }, { $group: { _id: 0, total: { $sum: {$floor: "$votes.claimable" } } } }
+                }, { $group: { _id: 0, total: { $sum: {$floor: '$votes.claimable' } } } }
             ]).toArray(function (err, result) {
                 if (err) {
                     console.log(err)
@@ -37,16 +37,16 @@ module.exports = {
                 res.sendStatus(500)
                 return
             }
-            var claimableDate = new Date().getTime() - config.ecoClaimTime;
+            var claimableDate = new Date().getTime() - config.ecoClaimTime
             db.collection('contents').aggregate([
-                { $unwind: "$votes" },
+                { $unwind: '$votes' },
                 {
                     $match: {
-                        "votes.ts": { $lt: claimableDate },
-                        "votes.u": req.params.name,
-                        "votes.claimed": { $exists: false }
+                        'votes.ts': { $lt: claimableDate },
+                        'votes.u': req.params.name,
+                        'votes.claimed': { $exists: false }
                     }
-                }, { $group: { _id: 0, total: { $sum: {$floor: "$votes.claimable" } } } }
+                }, { $group: { _id: 0, total: { $sum: {$floor: '$votes.claimable' } } } }
             ]).toArray(function (err, result) {
                 if (err) {
                     console.log(err)
@@ -68,13 +68,13 @@ module.exports = {
                 return
             }
             db.collection('contents').aggregate([
-                { $unwind: "$votes" },
+                { $unwind: '$votes' },
                 {
                     $match: {
-                        "votes.u": req.params.name,
-                        "votes.claimed": { $exists: true }
+                        'votes.u': req.params.name,
+                        'votes.claimed': { $exists: true }
                     }
-                }, { $group: { _id: 0, total: { $sum: {$floor: "$votes.claimable" } } } }
+                }, { $group: { _id: 0, total: { $sum: {$floor: '$votes.claimable' } } } }
             ]).toArray(function (err, result) {
                 if (err) {
                     console.log(err)

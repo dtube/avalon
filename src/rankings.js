@@ -6,6 +6,7 @@ const expireFactor = 5000 // disappears after 5 half times
 var isEnabled = process.env.RANKINGS || false
 
 var rankings = {
+    expireFactor: expireFactor,
     types: {
         hot: {
             halfLife: hotHalfTime,

@@ -23,7 +23,8 @@ module.exports = {
         'closing': 'writable',
         'rankings': 'writable',
         'newRankings': 'writable',
-        'consensus': 'writable'
+        'consensus': 'writable',
+        'leaderStats': 'writable'
     },
     'parserOptions': {
         'ecmaVersion': 2018

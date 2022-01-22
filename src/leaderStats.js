@@ -2,6 +2,8 @@
 let indexer = {
     leaders: {
         dtube: {
+            sinceTs: 0,
+            sinceBlock: 0,
             produced: 1,
             missed: 0,
             voters: 1, // genesis
@@ -37,6 +39,11 @@ let indexer = {
         indexer.leaders[block.miner].last = block._id
         if (block.missedBy) indexer.leaders[block.missedBy].missed += 1
 
+        // Record first time producers whenever applicable
+        if (!indexer.leaders[block.miner].sinceTs) indexer.leaders[block.miner].sinceTs = block.timestamp
+        if (!indexer.leaders[block.miner].sinceBlock) indexer.leaders[block.miner].sinceBlock = block._id
+
+        // Leader updates
         if (!indexer.updates.leaders.includes(block.miner))
             indexer.updates.leaders.push(block.miner)
 
@@ -86,7 +93,7 @@ let indexer = {
             let updatedLeader = indexer.updates.leaders[acc]
             ops.push((cb) => db.collection('leaders').updateOne({_id: updatedLeader },{
                 $set: indexer.leaders[updatedLeader]
-            },{ upsert: true },(e) => cb(null,true)))
+            },{ upsert: true },() => cb(null,true)))
         }
         indexer.updates.leaders = []
         return ops

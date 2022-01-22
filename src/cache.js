@@ -41,12 +41,11 @@ var cache = {
         cache.inserts = []
 
         // reset leader changes
-        for (let i in cache.leaderChanges) {
+        for (let i in cache.leaderChanges)
             if (cache.leaderChanges[i][1] === 0)
                 cache.addLeader(cache.leaderChanges[i][0],true,()=>{})
             else if (cache.leaderChanges[i][1] === 1)
                 cache.removeLeader(cache.leaderChanges[i][0],true)
-        }
         cache.leaderChanges = []
 
         // and reset the econ data for nextBlock
@@ -342,7 +341,7 @@ var cache = {
         db.collection('accounts').find({
             $and: [
                 {pub_leader: {$exists:true}},
-                {pub_leader: {$ne: ""}}
+                {pub_leader: {$ne: ''}}
             ]
         }).toArray((e,accs) => {
             if (e) throw e
