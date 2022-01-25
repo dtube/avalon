@@ -21,6 +21,7 @@ module.exports = {
                 // playlist does not exist, create a new one
                 cache.insertOne('playlists', {
                     _id: tx.sender+'/'+tx.data.link,
+                    ts: ts,
                     json: process.env.PLAYLIST_JSON === '1' ? tx.data.json : {},
                     playlist: {}
                 }, () => cb(true))
