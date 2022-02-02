@@ -26,9 +26,9 @@ if (allowNodeV.indexOf(currentNodeV) === -1) {
 let erroredRebuild = false
 
 // init the database and load most recent blocks in memory directly
-mongo.init(async function() {
+mongo.init(async function(state) {
     // init blocks BSON if not using mongodb for blocks
-    await blocks.init()
+    await blocks.init(state)
 
     // Warmup accounts
     let timeStart = new Date().getTime()
@@ -48,9 +48,9 @@ mongo.init(async function() {
     // Warmup leader stats
     await leaderStats.loadIndex()
 
-    // Rebuild chain state if specified. This verifies the integrity of every block and transactions and rebuild the state.
-    let rebuildResumeBlock = parseInt(process.env.REBUILD_RESUME_BLK)
-    let isResumingRebuild = !isNaN(rebuildResumeBlock) && rebuildResumeBlock > 0
+    // Rebuild chain state if specified
+    let rebuildResumeBlock = state && state.headBlock ? state.headBlock+1 : 0
+    let isResumingRebuild = process.env.REBUILD_STATE === '1' && rebuildResumeBlock
 
     // alert when rebuild without validation/signture verification, only use if you know what you are doing
     if (process.env.REBUILD_STATE === '1')
@@ -60,7 +60,7 @@ mongo.init(async function() {
             logr.info('Rebuilding without signature verification. Only use this if you know what you are doing!')
 
     if (process.env.REBUILD_STATE === '1' && !isResumingRebuild) {
-        logr.info('Chain state rebuild requested'+(process.env.UNZIP_BLOCKS === '1' ? ', unzipping blocks.zip...' : ''))
+        logr.info('Chain state rebuild requested'+(process.env.UNZIP_BLOCKS === '1' && !blocks.isOpen ? ', unzipping blocks.zip...' : ''))
         if (!blocks.isOpen)
             mongo.restoreBlocks((e)=>{
                 if (e) return logr.error(e)
@@ -108,7 +108,7 @@ function startRebuild(startBlock) {
             erroredRebuild = true
             return logr.error('Error rebuilding chain at block',headBlockNum, e)
         } else if (headBlockNum <= chain.restoredBlocks)
-            logr.info('Rebuild interrupted, so far it took ' + (new Date().getTime() - rebuildStartTime) + ' ms. To resume, start Avalon with REBUILD_RESUME_BLK=' + headBlockNum)
+            logr.info('Rebuild interrupted at block '+headBlockNum+', so far it took ' + (new Date().getTime() - rebuildStartTime) + ' ms.')
         else
             logr.info('Rebuilt ' + headBlockNum + ' blocks successfully in ' + (new Date().getTime() - rebuildStartTime) + ' ms')
         logr.info('Writing rebuild data to disk...')

@@ -5,7 +5,6 @@ const fs = require('fs')
 const sha256File = require('sha256-file')
 const spawn = require('child_process').spawn
 const spawnSync = require('child_process').spawnSync
-let isResumingRebuild = !isNaN(parseInt(process.env.REBUILD_RESUME_BLK)) && parseInt(process.env.REBUILD_RESUME_BLK) > 0
 
 let mongo = {
     init: (cb) => {
@@ -23,12 +22,14 @@ let mongo = {
             } catch (e) {}
             logr.info('Connected to '+db_url+'/'+this.db.databaseName)
 
+            let state = await this.db.collection('state').findOne({_id: 0})
+
             // MongoDB init stops here when using blocks BSON store
             if (process.env.BLOCKS_DIR)
-                return cb()
+                return cb(state)
 
             // If a rebuild is specified, drop the database
-            if (process.env.REBUILD_STATE === '1' && !isResumingRebuild)
+            if (process.env.REBUILD_STATE === '1' && (!state || !state.headBlock))
                 return db.dropDatabase(() => mongo.initGenesis().then(cb))
 
             // check if genesis block exists or not
@@ -39,7 +40,7 @@ let mongo = {
                         logr.fatal('Block #0 hash doesn\'t match config. Did you forget to db.dropDatabase() ?')
                         process.exit(1)
                     }
-                    cb()
+                    cb(state)
                 } else mongo.initGenesis().then(cb)
             })
             

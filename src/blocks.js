@@ -4,7 +4,6 @@ const BSON = require('bson')
 const logr = require('./logger')
 const mongo = require('./mongo')
 const isRebuild = process.env.REBUILD_STATE === '1'
-const isResumingRebuild = !isNaN(parseInt(process.env.REBUILD_RESUME_BLK)) && parseInt(process.env.REBUILD_RESUME_BLK) > 0
 
 let blocks = {
     fd: 0,
@@ -14,7 +13,7 @@ let blocks = {
     dataDir: process.env.BLOCKS_DIR ? process.env.BLOCKS_DIR.replace(/\/$/,''): '',
     isOpen: false,
     notOpenError: 'Blockchain is not open',
-    init: async () => {
+    init: async (state) => {
         if (!process.env.BLOCKS_DIR) return
 
         let bsonPath = blocks.dataDir+'/blocks.bson'
@@ -22,7 +21,7 @@ let blocks = {
 
         // If blocks.bson does not exist, initialize genesis state
         if (!fs.existsSync(bsonPath)) {
-            if (isRebuild || isResumingRebuild) {
+            if (isRebuild) {
                 logr.fatal('Cannot rebuild from non-existent blocks.bson file')
                 process.exit(1)
             }
@@ -57,7 +56,14 @@ let blocks = {
         else
             logr.info('Opened blockchain with latest block #'+blocks.height)
 
-        if (isRebuild && !isResumingRebuild) {
+        const hasState = state && state.headBlock
+        if (hasState && state.headBlock > blocks.height) {
+            logr.fatal('Head block state exceeds blockchain height')
+            blocks.close()
+            process.exit(1)
+        }
+
+        if (isRebuild && !hasState) {
             await db.dropDatabase()
             await mongo.initGenesis()
         }
