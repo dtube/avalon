@@ -10,6 +10,7 @@
 #export DB_NAME=avalon
 #export DB_URL=mongodb://localhost:27017
 
+# Directory to folder containing blocks.bson file
 #export BLOCKS_DIR=
 
 # Peering configuration
