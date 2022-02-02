@@ -10,6 +10,8 @@
 #export DB_NAME=avalon
 #export DB_URL=mongodb://localhost:27017
 
+#export BLOCKS_DIR=
+
 # Peering configuration
 #export OFFLINE=1
 #export NO_DISCOVERY=1
@@ -20,6 +22,8 @@
 #export RANKINGS=1
 #export CONTENTS=1
 #export LEADER_STATS=1
+#export TX_HISTORY=1
+#export PLAYLIST_JSON=1
 
 # Cache warmup option
 export WARMUP_ACCOUNTS=100000
@@ -39,7 +43,7 @@ export REPLAY_OUTPUT=10000
 # Do not forget to comment this out after rebuild
 #export REBUILD_STATE=1
 #export REBUILD_WRITE_INTERVAL=10000
-#export REBUILD_RESUME_BLK=
+#export REBUILD_NO_VALIDATE=1
 
 # default peers to connect with on startup
 export PEERS=
