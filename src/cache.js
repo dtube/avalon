@@ -305,8 +305,6 @@ let cache = {
         switch (collection) {
         case 'accounts':
             return 'name'
-        case 'proposals':
-            return 'title'
         default:
             return '_id'
         }
