@@ -154,6 +154,7 @@ let config = {
             masterNoPreloadAcc: true
         },
         25000000: {
+            /*
             burnAccountIsBlackhole: true,
             playlistEnabled: true,
             playlistLinkMin: 3,
@@ -169,6 +170,7 @@ let config = {
                 24: 0,
                 28: 0
             }
+            */
         }
     },
     read: (blockNum) => {
