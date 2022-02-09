@@ -1,4 +1,4 @@
-const version = '1.5.1'
+const version = '1.5.2'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
