@@ -31,7 +31,9 @@ const transactions = [
     require('./playlistJson.js'),
     require('./playlistPush.js'),
     require('./playlistPop.js'),
-    require('./commentEdit.js')
+    require('./commentEdit.js'),
+    require('./accountAuthorize.js'),
+    require('./accountRevoke.js')
 ]
 
 module.exports = {
@@ -64,7 +66,9 @@ module.exports = {
         PLAYLIST_JSON: 25,
         PLAYLIST_PUSH: 26,
         PLAYLIST_POP: 27,
-        COMMENT_EDIT: 28
+        COMMENT_EDIT: 28,
+        ACCOUNT_AUTHORIZE: 29,
+        ACCOUNT_REVOKE: 30
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')

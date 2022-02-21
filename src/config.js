@@ -155,6 +155,7 @@ let config = {
         },
         25000000: {
             /*
+            accountAuthEnabled: true,
             burnAccountIsBlackhole: true,
             playlistEnabled: true,
             playlistLinkMin: 3,

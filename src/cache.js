@@ -50,6 +50,9 @@ let cache = {
         // and reset the econ data for nextBlock
         eco.nextBlock()
     },
+    findOnePromise: function(collection, query) {
+        return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d)))
+    },
     findOne: function(collection, query, cb) {
         if (['accounts','blocks','contents','playlists'].indexOf(collection) === -1) {
             cb(true)

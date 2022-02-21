@@ -48,6 +48,37 @@ program.command('account-bw <pub_key> <new_user> <bw>')
         writeLine('  $ account d2EdJPNgFBwd1y9vhMzxw6vELRneC1gSHVEjguTG74Ce cool-name 30000 -F key.json -M alice')
     })
 
+program.command('account-authorize <user> <id> <allowed_txs> <weight>')
+    .description('authorize an account auth with custom perms and weight to transact using their custom key id <id>')
+    .action(function(user, id, allowedTxs, weight) {
+        verifyAndSendTx('accountAuthorize', user, id, allowedTxs, weight)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Transaction Types:')
+        for (const key in TransactionType)
+            writeLine('  '+TransactionType[key]+': '+key)
+        writeLine('')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ account-authorize bob posting [4,5,6,7,8] 1 -F key.json -M alice')
+        writeLine('  $ account-authorize bob finance [3] 2 -F key.json -M alice')
+    })
+
+program.command('account-revoke <user> <id>')
+    .description('revoke an account auth by their custom key id <id>')
+    .action(function(user, id) {
+        verifyAndSendTx('accountRevoke', user, id)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <user>: authorized username')        
+        writeLine('  <id>: custom key id of the authorized user')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ account-revoke bob posting -F key.json -M alice')
+        writeLine('  $ account-revoke bob finance -F key.json -M alice')
+    })
+
 program.command('claim <author> <link>')
     .description('claims rewards associated with a past vote')
     .action(function(author, link) {
@@ -79,6 +110,21 @@ program.command('comment <link> <pa> <pp> <json> <vt> <tag>')
         writeLine('Examples:')
         writeLine('  $ comment root-comment \'\' \'\' \'{"body": "Hello World"}\' 777 my-tag -F key.json -M alice')
         writeLine('  $ comment reply-to-bob bobs-post bob \'{"body": "Hello Bob"}\' 1 my-tag -F key.json -M alice')
+    })
+
+program.command('comment-edit <link> <json>')
+    .description('edit the JSON metadata of a content')
+    .action(function(link, json) {
+        verifyAndSendTx('commentEdit', link, json)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <link>: content identifier')
+        writeLine('  <json>: the edited json object')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ comment-edit root-comment \'{"body": "Hello World"}\' -F key.json -M alice')
+        writeLine('  $ comment-edit reply-to-bob \'{"body": "Hello Bob"}\' -F key.json -M alice')
     })
 
 program.command('enable-node <pub>')

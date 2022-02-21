@@ -328,7 +328,7 @@ let chain = {
     },
     isValidSignature: (user, txType, hash, sign, cb) => {
         // verify signature and bandwidth
-        cache.findOne('accounts', {name: user}, function(err, account) {
+        cache.findOne('accounts', {name: user}, async function(err, account) {
             if (err) throw err
             if (!account) {
                 cb(false); return
@@ -344,6 +344,18 @@ let chain = {
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
                         allowedPubKeys.push([account.keys[i].pub, account.keys[i].weight || 1])
+            // account authorities
+            if (account.auths && typeof txType === 'number' && Number.isInteger(txType))
+                for (let i in account.auths)
+                    if (account.auths[i].types.indexOf(txType) > -1) {
+                        let authorizedAcc = await cache.findOnePromise('accounts',{name: account.auths[i].user})
+                        if (authorizedAcc && authorizedAcc.keys)
+                            for (let a in authorizedAcc.keys)
+                                if (authorizedAcc.keys[a].id === account.auths[i].id) {
+                                    allowedPubKeys.push([authorizedAcc.keys[a].pub, account.auths[i].weight || 1])
+                                    break
+                                }
+                    }
 
             // if there is no transaction type
             // it means we are verifying a block signature
