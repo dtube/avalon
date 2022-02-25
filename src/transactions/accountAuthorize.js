@@ -16,7 +16,10 @@ module.exports = {
         for (let i = 0; i < tx.data.types.length; i++)
             if (!Number.isInteger(tx.data.types[i]))
                 return cb(false, 'invalid tx all types must be integers')
-        
+
+        if (!validate.integer(tx.data.weight,false,false))
+            return cb(false, 'invalid tx data.weight must be a positive integer')
+
         cache.findOne('accounts', {name: tx.data.user}, (e,authorizedAcc) => {
             if (!authorizedAcc)
                 return cb(false, 'authorized account does not exist')
