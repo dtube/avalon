@@ -2,10 +2,18 @@ const timeout_transact_async = 7500
 
 module.exports = {
     init: (app) => {
-        // add data to the upcoming transactions pool
-        // and return only when the transaction is in a finalized block
+        /**
+         * @api {post} /transactWaitConfirm Transact (Synchronous)
+         * @apiName transactWaitConfirm
+         * @apiGroup Broadcast
+         * 
+         * @apiBody {Object} transaction Signed transaction to be broadcasted to Avalon
+         * 
+         * @apiSuccess {Integer} _id The current block height
+         * @apiError (Invalid Transaction Error) {String} error Error message of the invalid transaction
+         */
         app.post('/transactWaitConfirm', (req, res) => {
-            var tx = req.body
+            let tx = req.body
             if (!tx) {
                 res.sendStatus(500)
                 return
@@ -23,7 +31,7 @@ module.exports = {
                     p2p.broadcast({ t: 5, d: tx })
                     transaction.addToPool([tx])
 
-                    var transactTimeout = setTimeout(function () {
+                    let transactTimeout = setTimeout(function () {
                         transaction.eventConfirmation.removeListener(tx.hash, () => { })
                         res.status(408).send({ error: 'transaction timeout' })
                     }, timeout_transact_async)

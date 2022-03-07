@@ -1,6 +1,14 @@
 module.exports = {
     init: (app) => {
-        // get feed contents
+        /**
+         * @api {get} /blog/:username User Feed
+         * @apiName feed
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve feed of
+         * 
+         * @apiSuccess {Array} contents List of root contents authored followed accounts
+         */
         app.get('/feed/:username', (req, res) => {
             db.collection('accounts').findOne({ name: req.params.username }, function (err, account) {
                 if (!account || !account.follows)
@@ -16,6 +24,18 @@ module.exports = {
                     })
             })
         })
+
+        /**
+         * @api {get} /blog/:username User Feed (Continued)
+         * @apiName feedContinued
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve feed of
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} permlink Permlink of post to continue from
+         * 
+         * @apiSuccess {Array} posts List of root posts authored by followed accounts continued
+         */
         app.get('/feed/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
                 $and: [
@@ -43,82 +63,90 @@ module.exports = {
         // get feed by tag with limit by certain author
         // filter = author,tag,limit,ts(from, to)
         // $API_URL/filter?author=author1,author2,...,authorN&tag=tag1,tag2,...,tagN&limit=x&ts=tsfrom-tsto
+        /**
+         * @api {get} /blog/:username/:filter User Feed with Filter
+         * @apiName feedWithFilter
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve feed of
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Array} posts Filtered list of root posts authored by followed accounts
+         */
         app.get('/feed/:username/:filter', (req, res) => {
-            var filterParam = req.params.filter
-            var filter = filterParam.split(':')
-            var filterBy = filter[1]
-            var filterAttrs = filterBy.split('&')
+            let filterParam = req.params.filter
+            let filter = filterParam.split(':')
+            let filterBy = filter[1]
+            let filterAttrs = filterBy.split('&')
 
-            var filterMap = {}
-            var defaultKeys = ['authors', 'tags', 'limit', 'tsrange']
-            var filterKeys = []
+            let filterMap = {}
+            let defaultKeys = ['authors', 'tags', 'limit', 'tsrange']
+            let filterKeys = []
 
-            for (var k=0; k<filterAttrs.length; k++) {
-                var kv = filterAttrs[k].split('=')
+            for (let k=0; k<filterAttrs.length; k++) {
+                let kv = filterAttrs[k].split('=')
 
-                if (kv.length == 2) {
-                    var key = kv[0]
+                if (kv.length === 2) {
+                    let key = kv[0]
                     filterKeys.push(key)
-                    var val = kv[1]
+                    let val = kv[1]
 
-                    if (key == 'authors') 
+                    if (key === 'authors') 
                         filterMap['authors'] = val.split(',')
-                    else if (key == 'tags') 
+                    else if (key === 'tags') 
                         filterMap['tags'] = val.split(',')
-                    else if (key == 'limit') 
+                    else if (key === 'limit') 
                         filterMap['limit'] = parseInt(val)
-                    else if (key == 'tsrange') 
+                    else if (key === 'tsrange') 
                         filterMap['tsrange'] = val.split(',')
                 }
             }
 
-            for (var k=0; k<defaultKeys.length; k++) {
-                var key = defaultKeys[k]
+            for (let k=0; k<defaultKeys.length; k++) {
+                let key = defaultKeys[k]
 
-                if (filterKeys.includes(key) == false) 
-                    if (key == 'authors') {
+                if (!filterKeys.includes(key)) 
+                    if (key === 'authors') {
                         filterMap['authors'] = []
                         filterMap['authors'].push('all')
-                    } else if (key == 'tags') {
+                    } else if (key === 'tags') {
                         filterMap['tags'] = []
                         filterMap['tags'].push('all')
-                    } else if (key == 'limit') {
+                    } else if (key === 'limit') 
                         filterMap['limit'] = 50
-                    } else if (key == 'tsrange') {
+                    else if (key === 'tsrange') {
                         filterMap['tsrange'] = []
                         filterMap['tsrange'].push(0)
                         filterMap['tsrange'].push(Number.MAX_SAFE_INTEGER)
                     }
             }
 
-            authors = filterMap['authors']
+            let authors = filterMap['authors']
 
-            authors_in = []
-            authors_ex = []
-            for(var i=0; i<authors.length; i++) 
-                if(authors[i].includes('^')) {
-                    s = authors[i].substring(1, authors[i].length)
-                    authors_ex.push(s)
-                }
+            let authors_in = []
+            let authors_ex = []
+            for(let i=0; i<authors.length; i++) 
+                if(authors[i].includes('^'))
+                    authors_ex.push(authors[i].substring(1, authors[i].length))
                 else 
                     authors_in.push(authors[i])
-            tags = filterMap['tags']
+            let tags = filterMap['tags']
 
-            tags_in = []
-            tags_ex = []
-            for(var i=0; i<tags.length; i++) 
-                if(tags[i].includes('^')) {
-                    s = tags[i].substring(1, tags[i].length)
-                    tags_ex.push(s)
-                } else 
+            let tags_in = []
+            let tags_ex = []
+            for(let i=0; i<tags.length; i++) 
+                if(tags[i].includes('^'))
+                    tags_ex.push(tags[i].substring(1, tags[i].length))
+                else 
                     tags_in.push(tags[i])
-            limit = filterMap['limit']
+            let limit = filterMap['limit']
 
-            if(limit == -1) 
+            if(limit === -1 || isNaN(limit)) 
                 limit = Number.MAX_SAFE_INTEGER
 
-            tsrange = filterMap['tsrange']
-            if (tsrange.length == 2) {
+            let tsrange = filterMap['tsrange']
+            let tsfrom, tsto
+            if (tsrange.length === 2) {
                 tsfrom = parseInt(tsrange[0]) * 1000
                 tsto = parseInt(tsrange[1]) * 1000
             } else 

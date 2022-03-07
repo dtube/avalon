@@ -1,15 +1,18 @@
 const parallel = require('run-parallel')
 const cloneDeep = require('clone-deep')
 const ProcessingQueue = require('./processingQueue')
-var cache = {
+const txHistory = require('./txHistory')
+let cache = {
     copy: {
         accounts: {},
         contents: {},
-        distributed: {}
+        distributed: {},
+        playlists: {}
     },
     accounts: {},
     contents: {},
     distributed: {},
+    playlists: {},
     changes: [],
     inserts: [],
     rebuild: {
@@ -21,21 +24,17 @@ var cache = {
     writerQueue: new ProcessingQueue(),
     rollback: function() {
         // rolling back changes from copied documents
-        for (const key in cache.copy.accounts)
-            cache.accounts[key] = cloneDeep(cache.copy.accounts[key])
-        for (const key in cache.copy.contents)
-            cache.contents[key] = cloneDeep(cache.copy.contents[key])
-        for (const key in cache.copy.distributed)
-            cache.distributed[key] = cloneDeep(cache.copy.distributed[key])
-        cache.copy.accounts = {}
-        cache.copy.contents = {}
-        cache.copy.distributed = {}
+        for (let c in cache.copy) {
+            for (const key in cache.copy[c])
+                cache[c][key] = cloneDeep(cache.copy[c][key])
+            cache.copy[c] = {}
+        }
         cache.changes = []
 
         // and discarding new inserts
         for (let i = 0; i < cache.inserts.length; i++) {
-            var toRemove = cache.inserts[i]
-            var key = cache.keyByCollection(toRemove.collection)
+            let toRemove = cache.inserts[i]
+            let key = cache.keyByCollection(toRemove.collection)
             delete cache[toRemove.collection][toRemove.document[key]]
         }
         cache.inserts = []
@@ -51,12 +50,15 @@ var cache = {
         // and reset the econ data for nextBlock
         eco.nextBlock()
     },
+    findOnePromise: function(collection, query) {
+        return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d)))
+    },
     findOne: function(collection, query, cb) {
-        if (['accounts','blocks','contents'].indexOf(collection) === -1) {
+        if (['accounts','blocks','contents','playlists'].indexOf(collection) === -1) {
             cb(true)
             return
         }
-        var key = cache.keyByCollection(collection)
+        let key = cache.keyByCollection(collection)
         // searching in cache
         if (cache[collection][query[key]]) {
             let res = cloneDeep(cache[collection][query[key]])
@@ -87,15 +89,15 @@ var cache = {
             if (!obj) {
                 cb(null, false); return
             }
-            var key = cache.keyByCollection(collection)
+            let key = cache.keyByCollection(collection)
 
             if (!cache.copy[collection][obj[key]])
                 cache.copy[collection][obj[key]] = cloneDeep(cache[collection][obj[key]])
             
-            for (var c in changes) 
+            for (let c in changes) 
                 switch (c) {
                 case '$inc':
-                    for (var i in changes[c]) 
+                    for (let i in changes[c]) 
                         if (!cache[collection][obj[key]][i])
                             cache[collection][obj[key]][i] = changes[c][i]
                         else
@@ -104,7 +106,7 @@ var cache = {
                     break
 
                 case '$push':
-                    for (var p in changes[c]) {
+                    for (let p in changes[c]) {
                         if (!cache[collection][obj[key]][p])
                             cache[collection][obj[key]][p] = []
                         cache[collection][obj[key]][p].push(changes[c][p])
@@ -112,10 +114,10 @@ var cache = {
                     break
 
                 case '$pull':
-                    for (var l in changes[c]) 
+                    for (let l in changes[c]) 
                         for (let y = 0; y < cache[collection][obj[key]][l].length; y++)
                             if (typeof changes[c][l] === 'object') {
-                                var matching = true
+                                let matching = true
                                 for (const v in changes[c][l])
                                     if (cache[collection][obj[key]][l][y][v] !== changes[c][l][v]) {
                                         matching = false
@@ -129,13 +131,13 @@ var cache = {
                     break
 
                 case '$set':
-                    for (var s in changes[c]) 
+                    for (let s in changes[c]) 
                         cache[collection][obj[key]][s] = changes[c][s]
                     
                     break
 
                 case '$unset':
-                    for (var u in changes[c]) 
+                    for (let u in changes[c]) 
                         delete cache[collection][obj[key]][u]
                     
                     break
@@ -153,16 +155,16 @@ var cache = {
         })
     },
     updateMany: function(collection, query, changes, cb) {
-        var key = cache.keyByCollection(collection)
+        let key = cache.keyByCollection(collection)
         if (!query[key] || !query[key]['$in']) 
             throw 'updateMany requires a $in operator'
         
 
-        var indexesToUpdate = query[key]['$in']
-        var executions = []
+        let indexesToUpdate = query[key]['$in']
+        let executions = []
         for (let i = 0; i < indexesToUpdate.length; i++) 
             executions.push(function(callback) {
-                var newQuery = {}
+                let newQuery = {}
                 newQuery[key] = indexesToUpdate[i]
                 cache.updateOne(collection, newQuery, changes, function(err, result) {
                     callback(null, result)
@@ -174,7 +176,7 @@ var cache = {
         })
     },
     insertOne: function(collection, document, cb) {
-        var key = cache.keyByCollection(collection)
+        let key = cache.keyByCollection(collection)
         if (cache[collection][document[key]]) {
             cb(null, false); return
         }
@@ -206,9 +208,8 @@ var cache = {
         cache.rebuild.changes = []
         cache.rebuild.inserts = []
         cache.leaderChanges = []
-        cache.copy.accounts = {}
-        cache.copy.contents = {}
-        cache.copy.distributed = {}
+        for (let c in cache.copy)
+            cache.copy[c] = {}
     },
     writeToDisk: function(rebuild, cb) {
         // if (cache.inserts.length) logr.debug(cache.inserts.length+' Inserts')
@@ -226,16 +227,14 @@ var cache = {
 
         // then the update with simple operation compression
         // 1 update per document concerned (even if no real change)
-        let docsToUpdate = {
-            accounts: {},
-            contents: {},
-            distributed: {}
-        }
+        let docsToUpdate = {}
+        for (let c in cache.copy)
+            docsToUpdate[c] = {}
         let changesArr = rebuild ? cache.rebuild.changes : cache.changes
         for (let i = 0; i < changesArr.length; i++) {
-            var change = changesArr[i]
-            var collection = change.collection
-            var key = change.query[cache.keyByCollection(collection)]
+            let change = changesArr[i]
+            let collection = change.collection
+            let key = change.query[cache.keyByCollection(collection)]
             docsToUpdate[collection][key] = cache[collection][key]
         }
 
@@ -244,9 +243,9 @@ var cache = {
         for (const col in docsToUpdate) 
             for (const i in docsToUpdate[col]) 
                 executions.push(function(callback) {
-                    var key = cache.keyByCollection(col)
-                    var newDoc = docsToUpdate[col][i]
-                    var query = {}
+                    let key = cache.keyByCollection(col)
+                    let newDoc = docsToUpdate[col][i]
+                    let query = {}
                     query[key] = newDoc[key]
                     db.collection(col).replaceOne(query, newDoc, function(err) {
                         if (err) throw err
@@ -260,6 +259,16 @@ var cache = {
             for (let op in leaderStatsWriteOps)
                 executions.push(leaderStatsWriteOps[op])
         }
+
+        // tx history
+        if (process.env.TX_HISTORY === '1') {
+            let txHistoryWriteOps = txHistory.getWriteOps()
+            for (let op in txHistoryWriteOps)
+                executions.push(txHistoryWriteOps[op])
+        }
+
+        // current state at block number
+        executions.push((callback) => db.collection('state').updateOne({_id: 0},{$set:{headBlock:chain.getLatestBlock()._id}},{ upsert: true },() => callback(null,true)))
         
         if (typeof cb === 'function') {
             let timeBefore = new Date().getTime()
@@ -286,9 +295,8 @@ var cache = {
         cache.inserts = []
         cache.changes = []
         cache.leaderChanges = []
-        cache.copy.accounts = {}
-        cache.copy.contents = {}
-        cache.copy.distributed = {}
+        for (let c in cache.copy)
+            cache.copy[c] = {}
         if (writeToDisk)
             cache.writeToDisk(true,cb)
         else

@@ -8,3 +8,5 @@ tmptx.json
 bin
 dump
 genesis
+apidoc
+.DS_Store

@@ -4,7 +4,7 @@
 
 #### Dependencies
 * [MongoDB](https://mongodb.com)
-* [NodeJS](https://nodejs.org/en/download/) **v12/14/16** (LTS)
+* [NodeJS](https://nodejs.org/en/download/) **v14/16** (LTS)
 * [ntpd](https://linux.die.net/man/8/ntpd) or any NTP alternative for your system. ntpd comes pre-installed on most linux distributions
 
 ## Install and run an Avalon node for Linux

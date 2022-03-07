@@ -1,13 +1,30 @@
 module.exports = {
     init: (app) => {
-        // get trending
+        /**
+         * @api {get} /trending Trending
+         * @apiName trending
+         * @apiGroup Rankings
+         * 
+         * @apiSuccess {Object[]} contents List of ranked trending contents
+         */
         app.get('/trending', (req, res) => {
             res.send(rankings.contents.trending.slice(0, 50))
         })
+
+        /**
+         * @api {get} /trending/:author/:link Trending (continued)
+         * @apiName trendingContinued
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} link Permlink of post to continue from
+         * 
+         * @apiSuccess {Object[]} contents List of ranked trending contents continued
+         */
         app.get('/trending/:author/:link', (req, res) => {
-            var filteredContents = []
-            var isPastRelativeContent = false
-            var added = 0
+            let filteredContents = []
+            let isPastRelativeContent = false
+            let added = 0
             for (let i = 0; i < rankings.contents.trending.length; i++) {
                 if (isPastRelativeContent) {
                     filteredContents.push(rankings.contents.trending[i])
@@ -21,57 +38,64 @@ module.exports = {
             res.send(filteredContents)
         })
         // get trending with tags and limit filter
+        /**
+         * @api {get} /trending Trending Filtered
+         * @apiName trendingFiltered
+         * @apiGroup Rankings
+         * 
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Object[]} contents List of ranked trending contents filtered
+         */
         app.get('/trending/:filter', (req, res) => {
-            var filterParam = req.params.filter
-            var filter = filterParam.split(':')
-            var filterBy = filter[1]
-            var filterAttrs = filterBy.split('&')
+            let filterParam = req.params.filter
+            let filter = filterParam.split(':')
+            let filterBy = filter[1]
+            let filterAttrs = filterBy.split('&')
 
-            var filterMap = {}
-            var defaultKeys = ['tags', 'limit']
-            var filterKeys = []
+            let filterMap = {}
+            let defaultKeys = ['tags', 'limit']
+            let filterKeys = []
 
-            for (var k=0; k<filterAttrs.length; k++) {
-                var kv = filterAttrs[k].split('=')
+            for (let k=0; k<filterAttrs.length; k++) {
+                let kv = filterAttrs[k].split('=')
 
-                if (kv.length == 2) {
-                    var key = kv[0]
+                if (kv.length === 2) {
+                    let key = kv[0]
                     filterKeys.push(key)
-                    var val = kv[1]
+                    let val = kv[1]
 
-                    if (key == 'tags') 
+                    if (key === 'tags') 
                         filterMap['tags'] = val.split(',')
-                    else if (key == 'limit') 
+                    else if (key === 'limit') 
                         filterMap['limit'] = parseInt(val)
                 }
             }
 
-            for (var k=0; k<defaultKeys.length; k++) {
-                var key = defaultKeys[k]
+            for (let k = 0; k<defaultKeys.length; k++) {
+                let key = defaultKeys[k]
 
-                if (filterKeys.includes(key) == false) 
-                    if (key == 'tags') {
+                if (!filterKeys.includes(key)) 
+                    if (key === 'tags') {
                         filterMap['tags'] = []
                         filterMap['tags'].push('all')
-                    } else if (key == 'limit') {
+                    } else if (key === 'limit') 
                         filterMap['limit'] = Number.MAX_SAFE_INTEGER
-                    }
             }
 
-            tags = filterMap['tags']
+            let tags = filterMap['tags']
 
-            tags_in = []
-            tags_ex = []
-            for(var i=0; i<tags.length; i++) 
-                if(tags[i].includes('^')) {
-                    s = tags[i].substring(1, tags[i].length)
-                    tags_ex.push(s)
-                } else 
+            let tags_in = []
+            let tags_ex = []
+            for(let i = 0; i < tags.length; i++) 
+                if(tags[i].includes('^'))
+                    tags_ex.push(tags[i].substring(1, tags[i].length))
+                else 
                     tags_in.push(tags[i])
 
-            limit = filterMap['limit']
+            let limit = filterMap['limit']
 
-            if(limit == -1) 
+            if(limit === -1 || isNaN(limit)) 
                 limit = Number.MAX_SAFE_INTEGER
 
             let minTs = new Date().getTime() - rankings.types['trending'].halfLife*rankings.expireFactor

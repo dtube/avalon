@@ -1,5 +1,5 @@
-var config = require('./config.js').read(0)
-var CryptoJS = require('crypto-js')
+let config = require('./config.js').read(0)
+const CryptoJS = require('crypto-js')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 //const bs58 = require('bs58')
@@ -9,16 +9,16 @@ let sign = (privKey, sender, tx) => {
     // add timestamp to seed the hash (avoid transactions reuse)
     tx.sender = sender
     tx.ts = new Date().getTime()
-    var txString = JSON.stringify(tx)
+    let txString = JSON.stringify(tx)
 
     // hash the transaction
     tx.hash = CryptoJS.SHA256(txString).toString()
 
     // decode the key
-    var rawPriv = bs58.decode(privKey)
+    let rawPriv = bs58.decode(privKey)
 
     // sign the tx
-    var signature = secp256k1.ecdsaSign(Buffer.from(tx.hash, 'hex'), rawPriv)
+    let signature = secp256k1.ecdsaSign(Buffer.from(tx.hash, 'hex'), rawPriv)
 
     // convert signature to base58
     tx.signature = bs58.encode(signature.signature)
@@ -31,36 +31,36 @@ let cmds = {
     },
 
     createAccount: (privKey, sender, pub, name) => {
-        var tx = '{"type":0,"data":{"pub":"'+pub+'","name":"'+name+'"}}'
+        let tx = '{"type":0,"data":{"pub":"'+pub+'","name":"'+name+'"}}'
         return sign(privKey, sender, tx)
     }, 
 
     approveNode: (privKey, sender, nodeName) => {
-        var tx = '{"type":1,"data":{"target":"'+ nodeName +'"}}'
+        let tx = '{"type":1,"data":{"target":"'+ nodeName +'"}}'
         return sign(privKey, sender, tx)
     }, 
 	
     disapproveNode: (privKey, sender, nodeName) => {
-        var tx = '{"type":2,"data":{"target":"'+ nodeName +'"}}'
+        let tx = '{"type":2,"data":{"target":"'+ nodeName +'"}}'
         return sign(privKey, sender, tx)
     },
 
     transfer: (privKey, sender, receiver, amount, memo) => {
         if (!memo) memo=''
-        var tx = '{"type":3,"data":{"receiver":"'+
+        let tx = '{"type":3,"data":{"receiver":"'+
 			receiver+'", "amount":'+
 			parseInt(amount)+', "memo":"'+memo+'"}}'
         return sign(privKey, sender, tx)
     },
 
     post: (privKey, sender, uri, content) => {
-        var tx = '{"type":4,"data":{"link":"'+
+        let tx = '{"type":4,"data":{"link":"'+
 			uri+'","json":'+content+'}}'
         return sign(privKey, sender, tx)
     },
 
     comment: (privKey, sender, uri, pa, pp, content, weight, tag) => {
-        var tx = '{"type":4,"data":{"link":"'+
+        let tx = '{"type":4,"data":{"link":"'+
 			uri+'", "pa":"'+
 			pa+'", "pp":"'+
 			pp+'", "vt":'+
@@ -71,7 +71,7 @@ let cmds = {
 
     vote: (privKey, sender, link, author, weight, tag) => {
         if (!tag) tag = ''
-        var tx = '{"type":5,"data":{"link":"'+
+        let tx = '{"type":5,"data":{"link":"'+
 			link+'", "author":"'+
 			author+'", "vt": '+
 			parseInt(weight)+', "tag": "'+tag+'"}}'
@@ -79,39 +79,39 @@ let cmds = {
     },
 	
     profile: (privKey, sender, content) => {
-        var tx = '{"type":6,"data":{"json":'+content+'}}'
+        let tx = '{"type":6,"data":{"json":'+content+'}}'
         return sign(privKey, sender, tx)
     },
 	
     follow: (privKey, sender, username) => {
-        var tx = '{"type":7,"data":{"target":"'+username+'"}}'
+        let tx = '{"type":7,"data":{"target":"'+username+'"}}'
         return sign(privKey, sender, tx)
     },
 	
     unfollow: (privKey, sender, username) => {
-        var tx = '{"type":8,"data":{"target":"'+username+'"}}'
+        let tx = '{"type":8,"data":{"target":"'+username+'"}}'
         return sign(privKey, sender, tx)
     },
 	
     newKey: (privKey, sender, id, pub, types) => {
-        var tx = '{"type":10,"data":{"id":"'+
+        let tx = '{"type":10,"data":{"id":"'+
 			id+'","pub":"'+
 			pub+'","types":'+types+'}}'
         return sign(privKey, sender, tx)
     },
 	
     removeKey: (privKey, sender, id) => {
-        var tx = '{"type":11,"data":{"id":"'+id+'"}}'
+        let tx = '{"type":11,"data":{"id":"'+id+'"}}'
         return sign(privKey, sender, tx)
     },
 	
     changePassword: (privKey, sender, pub) => {
-        var tx = '{"type":12,"data":{"pub":"'+pub+'"}}'
+        let tx = '{"type":12,"data":{"pub":"'+pub+'"}}'
         return sign(privKey, sender, tx)
     },
 	
     promotedComment: (privKey, sender, uri, pa, pp, content, weight, tag, burn) => {
-        var tx = '{"type":13,"data":{"link":"'+
+        let tx = '{"type":13,"data":{"link":"'+
 			uri+'", "pa":"'+
 			pa+'", "pp":"'+
 			pp+'", "vt":'+
@@ -121,14 +121,14 @@ let cmds = {
     },
 
     transferVt: (privKey, sender, receiver, amount) => {
-        var tx = '{"type":14,"data":{"receiver":"'+
+        let tx = '{"type":14,"data":{"receiver":"'+
 			receiver+'", "amount":'+
 			parseInt(amount)+'}}'
         return sign(privKey, sender, tx)
     },
 
     transferBw: (privKey, sender, receiver, amount) => {
-        var tx = '{"type":15,"data":{"receiver":"'+
+        let tx = '{"type":15,"data":{"receiver":"'+
 			receiver+'", "amount":'+
 			parseInt(amount)+'}}'
         return sign(privKey, sender, tx)
@@ -137,19 +137,19 @@ let cmds = {
     limitVt: (privKey, sender, amount) => {
         amount = parseInt(amount)
         if (amount === -1) amount = null
-        var tx = '{"type":16,"data":{"amount":'+
+        let tx = '{"type":16,"data":{"amount":'+
 			amount+'}}'
         return sign(privKey, sender, tx)
     },
 
     claimReward: (privKey, sender, author, link) => {
-        var tx = '{"type":17,"data":{"author":"'+
+        let tx = '{"type":17,"data":{"author":"'+
 			author+'", "link": "'+link+'"}}'
         return sign(privKey, sender, tx)
     },
 
     enableNode: (privKey, sender, pub) => {
-        var tx = '{"type":18,"data":{"pub":"'+
+        let tx = '{"type":18,"data":{"pub":"'+
 			pub+'"}}'
         return sign(privKey, sender, tx)
     },
@@ -177,6 +177,46 @@ let cmds = {
 
     setPasswordWeight: (privKey, sender, weight) => {
         let tx = '{"type":22,"data":{"weight":'+weight+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    unsetSignatureThreshold: (privKey, sender, types) => {
+        let tx = '{"type":23,"data":{"types":'+types+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    createAccountWithBw: (privKey, sender, pub, name, bw) => {
+        let tx = '{"type":24,"data":{"pub":"'+pub+'","name":"'+name+'","bw":'+parseInt(bw)+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    playlistJson: (privKey, sender, link, json) => {
+        let tx = '{"type":25,"data":{"link":"'+link+'","json":'+json+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    playlistPush: (privKey, sender, link, seq) => {
+        let tx = '{"type":26,"data":{"link":"'+link+'","seq":'+seq+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    playlistPop: (privKey, sender, link, seq) => {
+        let tx = '{"type":27,"data":{"link":"'+link+'","seq":'+seq+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    commentEdit: (privKey, sender, link, json) => {
+        let tx = '{"type":28,"data":{"link":"'+link+'","json":'+json+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    accountAuthorize: (privKey, sender, user, id, types, weight) => {
+        let tx = '{"type":29,"data":{"user":"'+user+'","id":"'+id+'","types":'+types+',"weight":'+weight+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    accountRevoke: (privKey, sender, user, id) => {
+        let tx = '{"type":30,"data":{"user":"'+user+'","id":"'+id+'"}}'
         return sign(privKey, sender, tx)
     }
 }

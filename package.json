@@ -1,15 +1,17 @@
 {
   "name": "avalon",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "",
   "scripts": {
     "start": "node src/main.js",
     "cli": "node src/cli.js",
-    "lint": "eslint ./src/*"
+    "lint": "eslint ./src/*",
+    "apidoc": "apidoc -i src/http -o apidoc"
   },
   "dependencies": {
     "base-x": "^3.0.8",
     "body-parser": "^1.15.2",
+    "bson": "^4.6.0",
     "clone-deep": "^4.0.1",
     "commander": "^2.20.0",
     "cors": "^2.8.5",
@@ -18,10 +20,10 @@
     "express": "^4.16.4",
     "growint": "^1.0.1",
     "log4js": "^3.0.6",
-    "mongodb": "^3.6.2",
+    "mongodb": "^4.2.2",
     "node-fetch": "^2.3.0",
     "oembed-parser": "^1.2.2",
-    "open-graph-scraper": "^3.6.1",
+    "open-graph-scraper": "^4.11.0",
     "run-parallel": "^1.1.10",
     "run-series": "^1.1.9",
     "secp256k1": "^4.0.2",
@@ -48,9 +50,17 @@
     "underlineSuffix": false,
     "uppercaseLabel": false
   },
+  "apidoc": {
+    "name": "Avalon",
+    "title": "Avalon API Documentation",
+    "description": "REST API documentation for Avalon blockchain",
+    "sampleUrl": "https://avalon.oneloved.tube",
+    "version": "1.6.0"
+  },
   "devDependencies": {
+    "apidoc": "^0.50.2",
     "chance": "^1.0.18",
-    "eslint": "^5.16.0",
+    "eslint": "^8.5.0",
     "javalon": "^1.0.7",
     "pkg": "^4.4.9"
   }

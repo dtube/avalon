@@ -1,50 +1,80 @@
 module.exports = {
     init: (app) => {
-        // get blog of user
+        /**
+         * @api {get} /blog/:username User Blog
+         * @apiName blog
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve blog of
+         * 
+         * @apiSuccess {Array} contents List of root contents authored by username
+         */
         app.get('/blog/:username', (req, res) => {
-            var username = req.params.username
+            let username = req.params.username
 
             db.collection('contents').find({ pa: null, author: username }, { sort: { ts: -1 }, limit: 50 }).toArray(function (err, contents) {
                 res.send(contents)
             })
         })
+
+        /**
+         * @api {get} /blog/:username/:filter User Blog with Filter
+         * @apiName blogWithFilter
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve blog of
+         * @apiParam {String} filter Filter parameters
+         * 
+         * @apiSuccess {Array} posts Filtered list of root posts authored by username
+         */
         app.get('/blog/:username/:filter', (req, res) => {
-            var username = req.params.username
-            var filterParam = req.params.filter
-            var filter = filterParam.split(':')
-            var filterBy = filter[1]
-            var filterAttrs = filterBy.split('&')
+            let username = req.params.username
+            let filterParam = req.params.filter
+            let filter = filterParam.split(':')
+            let filterBy = filter[1]
+            let filterAttrs = filterBy.split('&')
 
-            var filterMap = {}
-            var defaultKeys = ['sortBy']
-            var filterKeys = []
+            let filterMap = {}
+            let filterKeys = []
 
-            var limit = 50
-            for (var k=0; k<filterAttrs.length; k++) {
-                var kv = filterAttrs[k].split('=')
+            let limit = 50
+            for (let k=0; k<filterAttrs.length; k++) {
+                let kv = filterAttrs[k].split('=')
 
-                if (kv.length == 2) {
-                    var key = kv[0]
+                if (kv.length === 2) {
+                    let key = kv[0]
                     filterKeys.push(key)
-                    var val = kv[1]
+                    let val = kv[1]
 
-                    if (key == 'sortBy') 
+                    if (key === 'sortBy') 
                         filterMap['sortBy'] = val
-                    else if (key == 'limit') {
+                    else if (key === 'limit') {
                         filterMap['limit'] = parseInt(val)
                         limit = filterMap['limit']
                     }
                 }
             }
-            var ts = -1
-            if (filterMap['sortBy'] == 'desc') 
+            let ts = -1
+            if (filterMap['sortBy'] === 'desc') 
                 ts = -1
-            else if (filterMap['sortBy'] == 'asc') 
+            else if (filterMap['sortBy'] === 'asc') 
                 ts = 1
             db.collection('contents').find({ pa: null, author: username }, { sort: { ts: ts }, limit: limit }).toArray(function (err, contents) {
                 res.send(contents)
             })
         })
+
+        /**
+         * @api {get} /blog/:username/:link User Blog (Continued)
+         * @apiName blogContinued
+         * @apiGroup Contents
+         * 
+         * @apiParam {String} username Username to retrieve blog of
+         * @apiParam {String} author Author of post to continue from
+         * @apiParam {String} link Permlink of post to continue from
+         * 
+         * @apiSuccess {Array} posts List of root posts authored by username continued
+         */
         app.get('/blog/:username/:author/:link', (req, res) => {
             db.collection('contents').findOne({
                 $and: [
@@ -56,7 +86,7 @@ module.exports = {
                     res.send([])
                     return
                 }
-                var username = req.params.username
+                let username = req.params.username
                 db.collection('contents').find({
                     $and: [
                         { pa: null },

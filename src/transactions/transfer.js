@@ -38,6 +38,8 @@ module.exports = {
                     accSender.balance += tx.data.amount
                     transaction.updateGrowInts(accSender, ts, function() {
                         transaction.adjustNodeAppr(accSender, -tx.data.amount, function() {
+                            if (config.burnAccountIsBlackhole && tx.data.receiver === config.burnAccount)
+                                return cb(true,0,tx.data.amount)
                             // add funds to receiver
                             cache.updateOne('accounts', 
                                 {name: tx.data.receiver},

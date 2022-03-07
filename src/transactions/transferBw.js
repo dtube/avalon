@@ -1,4 +1,4 @@
-var GrowInt = require('growint')
+const GrowInt = require('growint')
 
 module.exports = {
     fields: ['receiver', 'amount'],
@@ -11,7 +11,7 @@ module.exports = {
         }
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             if (err) throw err
-            var bwBefore = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth)}).grow(ts)
+            let bwBefore = new GrowInt(account.bw, {growth:account.balance/(config.bwGrowth)}).grow(ts)
             if (bwBefore.v < tx.data.amount) {
                 cb(false, 'invalid tx not enough bw'); return
             }
@@ -23,6 +23,8 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
+        if (config.burnAccountIsBlackhole && tx.data.receiver === config.burnAccount)
+            return cb(true)
         cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
             if (err) throw err
             account.bw.v += tx.data.amount

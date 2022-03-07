@@ -1,5 +1,14 @@
 module.exports = {
     init: (app) => {
+        /**
+         * @api {get} /rank/:key Account Ranks
+         * @apiName rank
+         * @apiGroup Accounts
+         * 
+         * @apiParam {String} key The key to query rank by. Valid values: `balance`, `subs` and `leaders`.
+         * 
+         * @apiSuccess {Object[]} accounts The account rankings
+         */
         app.get('/rank/:key',(req,res) => {
             let sorting = {$sort: {}}
             let projecting = {
@@ -36,13 +45,13 @@ module.exports = {
             }
 
             let aggregation = [projecting, sorting, {$limit: 100}]
-            if (req.params.key == 'leaders')
+            if (req.params.key === 'leaders')
                 aggregation.push(matching)
 
             db.collection('accounts').aggregate(aggregation).toArray((e,r) => {
                 if (e)
                     return res.status(500).send(e)
-                if (req.params.key != 'leaders')
+                if (req.params.key !== 'leaders')
                     return res.send(r)
                 else {
                     for (let leader = 0; leader < r.length; leader++) {

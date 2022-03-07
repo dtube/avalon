@@ -14,7 +14,7 @@ const TransactionType = require('./transactions').Types
 // 5- Downvotes print the same DTC amount as an upvote would. But they also reduce upvote rewards by X% of that amount
 // 6- Use weighted averages for rewardPool data to smooth it out
 
-var eco = {
+let eco = {
     startRewardPool: null,
     lastRewardPool: null,
     currentBlock: {
@@ -116,7 +116,7 @@ var eco = {
         }
         
 
-        var avail = theoricalPool - distributed - eco.currentBlock.dist
+        let avail = theoricalPool - distributed - eco.currentBlock.dist
         if (avail < 0) avail = 0
         burned += eco.currentBlock.burn
         distributed += eco.currentBlock.dist
@@ -135,43 +135,43 @@ var eco = {
         }
     },
     accountPrice: (username) => {
-        var price = config.accountPriceMin
-        var extra = config.accountPriceBase - config.accountPriceMin
-        var mult = Math.pow(config.accountPriceChars / username.length, config.accountPriceCharMult)
+        let price = config.accountPriceMin
+        let extra = config.accountPriceBase - config.accountPriceMin
+        let mult = Math.pow(config.accountPriceChars / username.length, config.accountPriceCharMult)
         price += Math.round(extra*mult)
         return price
     },
     curation: (author, link, cb) => {
         cache.findOne('contents', {_id: author+'/'+link}, function(err, content) {
-            var currentVote = content.votes[content.votes.length-1]
+            let currentVote = content.votes[content.votes.length-1]
 
             // first loop to calculate the VP of active votes
-            var sumVtWinners = 0
+            let sumVtWinners = 0
             for (let i = 0; i < content.votes.length; i++)
                 if (!content.votes[i].claimed)
                     if (currentVote.vt*content.votes[i].vt > 0)
                         sumVtWinners += content.votes[i].vt
 
             // second loop to calculate each active votes shares
-            var winners = []
+            let winners = []
             for (let i = 0; i < content.votes.length; i++)
                 if (!content.votes[i].claimed)
                     if (currentVote.vt*content.votes[i].vt > 0) {
                         // same vote direction => winner
-                        var winner = content.votes[i]
+                        let winner = content.votes[i]
                         winner.share = winner.vt / sumVtWinners
                         winners.push(winner)
                     }
 
             let thNewCoins = eco.print(currentVote.vt)
             // share the new coins between winners
-            var newCoins = 0
+            let newCoins = 0
             for (let i = 0; i < winners.length; i++) {
                 if (!winners[i].gross)
                     winners[i].gross = 0
                 
-                var won = thNewCoins * winners[i].share
-                var rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
+                let won = thNewCoins * winners[i].share
+                let rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
                 won *= rentabilityWinner
                 won = eco.floor(won)
                 winners[i].gross += won
@@ -183,7 +183,7 @@ var eco = {
             newCoins = eco.round(newCoins)
 
             // reconstruct the votes array
-            var newVotes = []
+            let newVotes = []
             for (let i = 0; i < content.votes.length; i++)
                 if (!content.votes[i].claimed && currentVote.vt*content.votes[i].vt > 0) {
                     for (let y = 0; y < winners.length; y++)
@@ -193,9 +193,9 @@ var eco = {
 
             // if there are opposite votes
             // burn 50% of the printed DTC in anti-chronological order
-            var newBurn = 0
-            var takeAwayAmount = thNewCoins*config.ecoPunishPercent
-            var i = content.votes.length - 1
+            let newBurn = 0
+            let takeAwayAmount = thNewCoins*config.ecoPunishPercent
+            let i = content.votes.length - 1
             while (takeAwayAmount !== 0 && i>=0) {
                 if (i === 0 && !config.ecoPunishAuthor)
                     break
@@ -264,10 +264,10 @@ var eco = {
             }, function() {
                 if (config.masterFee > 0 && newCoins > 0) {
                     // apply the master fee
-                    var distBefore = content.dist
+                    let distBefore = content.dist
                     if (!distBefore) distBefore = 0
-                    var distAfter = distBefore + newCoins
-                    var benefReward = Math.floor(distAfter/config.masterFee) - Math.floor(distBefore/config.masterFee)
+                    let distAfter = distBefore + newCoins
+                    let benefReward = Math.floor(distAfter/config.masterFee) - Math.floor(distBefore/config.masterFee)
                     if (benefReward > 0) 
                         cache.updateOne('accounts', {name: config.masterName}, {$inc: {balance: benefReward}}, function() {
                             cache.insertOne('distributed', {
@@ -300,7 +300,7 @@ var eco = {
         if (stats.avail === 0)
             return 0
 
-        var thNewCoins = 0
+        let thNewCoins = 0
 
         // if theres no vote in reward pool stats, we print 1 coin (minimum)
         if (stats.votes === 0)
@@ -323,21 +323,21 @@ var eco = {
         return thNewCoins
     },
     rentability: (ts1, ts2) => {
-        var ts = ts2 - ts1
+        let ts = ts2 - ts1
         if (ts < 0) throw 'Invalid timestamp in rentability calculation'
 
         // https://imgur.com/a/GTLvs37
-        var startRentability = config.ecoStartRent
-        var baseRentability = config.ecoBaseRent
-        var rentabilityStartTime = config.ecoRentStartTime
-        var rentabilityEndTime = config.ecoRentEndTime
-        var claimRewardTime = config.ecoClaimTime
+        let startRentability = config.ecoStartRent
+        let baseRentability = config.ecoBaseRent
+        let rentabilityStartTime = config.ecoRentStartTime
+        let rentabilityEndTime = config.ecoRentEndTime
+        let claimRewardTime = config.ecoClaimTime
 
         // requires that :
         // rentabilityStartTime < rentabilityEndTime < claimRewardTime
 
         // between rentStart and rentEnd => 100% max rentability
-        var rentability = 1
+        let rentability = 1
 
         if (ts === 0)
             rentability = startRentability

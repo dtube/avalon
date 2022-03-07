@@ -9,14 +9,15 @@ module.exports = {
             cb(false, 'invalid tx data.link'); return
         }
         if (!validate.integer(tx.data.vt, false, true)) {
-            cb(false, 'invalid tx data.vt must be a non-zero integer'); return
+            cb(false, 'VP must be a non-zero integer'); return
         }
         if (!validate.string(tx.data.tag, config.tagMaxLength)) {
             cb(false, 'invalid tx data.tag'); return
         }
-        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser)) {
-            cb(false, 'invalid tx not enough vt'); return
-        }
+        let vpCheck = transaction.notEnoughVP(tx.data.vt, ts, legitUser)
+        if (vpCheck.needs)
+            return cb(false, 'not enough VP, attempting to spend '+tx.data.vt+' VP but only has '+vpCheck.has+' VP')
+
         // checking if content exists
         cache.findOne('contents', {_id: tx.data.author+'/'+tx.data.link}, function(err, content) {
             if (!content) {
@@ -31,7 +32,7 @@ module.exports = {
         })
     },
     execute: (tx, ts, cb) => {
-        var vote = {
+        let vote = {
             u: tx.sender,
             ts: ts,
             vt: tx.data.vt
@@ -48,9 +49,9 @@ module.exports = {
                         cb(true, distCurators+distMaster, burnCurator)
                     })
                 // update top tags
-                var topTags = []
+                let topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
-                    var exists = false
+                    let exists = false
                     for (let y = 0; y < topTags.length; y++)
                         if (topTags[y].tag === content.votes[i].tag) {
                             exists = true

@@ -1,8 +1,17 @@
 module.exports = {
     init: (app) => {
-        // add data to the upcoming transactions pool
+        /**
+         * @api {post} /transact Transact (Asynchronous)
+         * @apiName transact
+         * @apiGroup Broadcast
+         * 
+         * @apiBody {Object} transaction Signed transaction to be broadcasted to Avalon
+         * 
+         * @apiSuccess {Integer} _id The current block height
+         * @apiError (Invalid Transaction Error) {String} error Error message of the invalid transaction
+         */
         app.post('/transact', (req, res) => {
-            var tx = req.body
+            let tx = req.body
             if (!tx) {
                 res.sendStatus(500)
                 return

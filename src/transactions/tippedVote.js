@@ -9,13 +9,14 @@ module.exports = {
             return cb(false, 'invalid tx data.link')
         
         if (!validate.integer(tx.data.vt, false, true))
-            return cb(false, 'invalid tx data.vt must be a non-zero integer')
+            return cb(false, 'VP must be a non-zero integer')
         
         if (!validate.string(tx.data.tag, config.tagMaxLength))
             return cb(false, 'invalid tx data.tag')
         
-        if (!transaction.hasEnoughVT(tx.data.vt, ts, legitUser))
-            return cb(false, 'invalid tx not enough vt')
+        let vpCheck = transaction.notEnoughVP(tx.data.vt, ts, legitUser)
+        if (vpCheck.needs)
+            return cb(false, 'not enough VP, attempting to spend '+tx.data.vt+' VP but only has '+vpCheck.has+' VP')
 
         // tip should be between 1 and 10^config.tippedVotePrecision
         if (!validate.integer(tx.data.tip,false,false,Math.pow(10,config.tippedVotePrecision),1))
@@ -54,7 +55,7 @@ module.exports = {
     },
     execute: (tx, ts, cb) => {
         // same as vote but with (tx.data.tip / 10^config.tippedVotePrecision) of rewards tipped to author (first vote)
-        var vote = {
+        let vote = {
             u: tx.sender,
             ts: ts,
             vt: tx.data.vt,
@@ -72,9 +73,9 @@ module.exports = {
                         cb(true, distCurators+distMaster, burnCurator)
                     })
                 // update top tags
-                var topTags = []
+                let topTags = []
                 for (let i = 0; i < content.votes.length; i++) {
-                    var exists = false
+                    let exists = false
                     for (let y = 0; y < topTags.length; y++)
                         if (topTags[y].tag === content.votes[i].tag) {
                             exists = true

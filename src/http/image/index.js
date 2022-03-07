@@ -21,7 +21,17 @@ let imageCache = {
 
 module.exports = {
     init: (app) => {
-        // get avatar for an account
+        /**
+         * @api {get} /image/avatar/:name/:size Avatar
+         * @apiName avatar
+         * @apiGroup Image
+         * 
+         * @apiParam {String} name Username to retrieve avatar of
+         * @apiParam {String} size Size of avatar. Valid values: `small`, `medium` and `large`.
+         * 
+         * @apiSuccess {Binary} image The image file of the avatar
+         * @apiSampleRequest off
+         */
         app.get('/image/avatar/:name/:size?', (req, res) => {
             if (!req.params.name)
                 return res.status(400).send({error: 'username is required'})
@@ -68,6 +78,16 @@ module.exports = {
             })
         })
 
+        /**
+         * @api {get} /image/cover/:name Cover
+         * @apiName cover
+         * @apiGroup Image
+         * 
+         * @apiParam {String} name Username to retrieve channel cover of
+         * 
+         * @apiSuccess {Binary} image The image file of the cover
+         * @apiSampleRequest off
+         */
         app.get('/image/cover/:name',(req,res) => {
             if (!req.params.name)
                 return res.status(400).send({error: 'username is required'})
@@ -117,7 +137,7 @@ async function fetchAndRespondImage(imageUrl,res,width,height,cacher) {
         let img = await resizeImage(buffer,width,height)
         imageResponse(res,img)
         cacher(img.toJSON())
-    } catch {
+    } catch (e) {
         res.status(500).send({error: 'errored while retrieving avatar'})
     }
 }

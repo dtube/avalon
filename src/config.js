@@ -1,4 +1,4 @@
-var config = {
+let config = {
     history: {
         0: {
             // this is the block 0 configuration for mainnet
@@ -132,7 +132,10 @@ var config = {
             txLimits: {
                 14: 2,
                 15: 2,
-                19: 0
+                19: 0,
+                23: 1,
+                24: 1,
+                28: 1
             }
         },
         4860000: {
@@ -148,11 +151,31 @@ var config = {
             leaders: 15
         },
         8595000: {
-            hotfix2: true
+            masterNoPreloadAcc: true
+        },
+        25000000: {
+            /*
+            accountAuthEnabled: true,
+            burnAccountIsBlackhole: true,
+            playlistEnabled: true,
+            playlistLinkMin: 3,
+            playlistLinkMax: 50,
+            playlistContentLinkMin: 1,
+            playlistContentLinkMax: 101,
+            playlistSequenceMax: 1000,
+            playlistSequenceIdMax: 10000,
+            txLimits: {
+                14: 2,
+                15: 2,
+                23: 0,
+                24: 0,
+                28: 0
+            }
+            */
         }
     },
     read: (blockNum) => {
-        var finalConfig = {}
+        let finalConfig = {}
         for (const key in config.history) 
             if (blockNum >= key) {
                 if (blockNum === parseInt(key) && blockNum !== 0)

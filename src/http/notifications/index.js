@@ -1,6 +1,15 @@
 module.exports = {
     init: (app) => {
         // get notifications for a user
+        /**
+         * @api {get} /notifications/:name Notifications
+         * @apiName notifications
+         * @apiGroup Accounts
+         * 
+         * @apiParam {String} name Username to query account notifications of
+         * 
+         * @apiSuccess {Object[]} notifications List of latest account notifications
+         */
         app.get('/notifications/:name', (req, res) => {
             if (!req.params.name) {
                 res.sendStatus(500)

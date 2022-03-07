@@ -1,4 +1,4 @@
-var log4js = require('log4js')
+let log4js = require('log4js')
 
 log4js.configure({
     levels: {
@@ -27,6 +27,6 @@ log4js.configure({
     }
 })
 
-var logger = log4js.getLogger()
+let logger = log4js.getLogger()
 logger.info('Logger initialized')
 module.exports = logger
