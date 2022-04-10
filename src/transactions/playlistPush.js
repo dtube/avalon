@@ -17,7 +17,7 @@ module.exports = {
                 return cb(false, 'playlist does not exist')
             let newContents = 0
             for (let s in tx.data.seq) {
-                if (!validate.array(tx.data.seq[s]))
+                if (!validate.array(tx.data.seq[s],2))
                     return cb(false, 'invalid playlist seq index #'+s+' array')
 
                 // validate playlist sequence id
