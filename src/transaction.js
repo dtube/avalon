@@ -7,6 +7,12 @@ const Transaction = require('./transactions')
 const TransactionType = Transaction.Types
 const max_mempool = process.env.MEMPOOL_SIZE || 200
 
+// probably due to non standard utf8 characters that were not properly written to mongodb/bson file
+// for now we skip them until such bug can be reproduced
+const skiphash = {
+    '7dedc07cb42c96b5013710161bf487a2488fce789b80286e3df910075f98a4d1': '16de2c5c847962f3683aec852072e702fb8c4ffd81c3d23cf85b8d2da031bd8e' // tx in block 14,874,851
+}
+
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     eventConfirmation: new EventEmitter(),
@@ -114,7 +120,8 @@ transaction = {
         let newTx = cloneDeep(tx)
         delete newTx.signature
         delete newTx.hash
-        if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
+        let computedHash = CryptoJS.SHA256(JSON.stringify(newTx)).toString()
+        if (computedHash !== tx.hash && (skiphash[tx.hash] !== computedHash || (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks))) {
             cb(false, 'invalid tx hash does not match'); return
         }
         // checking transaction signature
