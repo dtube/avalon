@@ -1,4 +1,4 @@
-const version = '1.5.1'
+const version = '1.5.2'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
@@ -97,7 +97,12 @@ let p2p = {
             let port = parseInt(colonSplit.pop())
             let address = colonSplit.join(':').replace('[','').replace(']','')
             if (!net.isIP(address))
-                address = (await dns.lookup(address)).address
+                try {
+                    address = (await dns.lookup(address)).address
+                } catch (e) {
+                    logr.debug('dns lookup failed for '+address)
+                    continue
+                }
             for (let s in p2p.sockets)
                 if (p2p.sockets[s]._socket.remoteAddress.replace('::ffff:','') === address && p2p.sockets[s]._socket.remotePort === port) {
                     connected = true

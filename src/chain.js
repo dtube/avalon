@@ -91,10 +91,10 @@ let chain = {
         return new Block(nextIndex, previousBlock.hash, nextTimestamp, txs, process.env.NODE_OWNER)
     },
     hashAndSignBlock: (block) => {
-        let nextHash = chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned)
+        let nextHash = chain.calculateHashForBlock(block)
         let signature = secp256k1.ecdsaSign(Buffer.from(nextHash, 'hex'), bs58.decode(process.env.NODE_OWNER_PRIV))
         signature = bs58.encode(signature.signature)
-        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.distributed, block.burned, signature, nextHash)
+        return new Block(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn, signature, nextHash)
     },
     canMineBlock: (cb) => {
         if (chain.shuttingDown) {
@@ -126,8 +126,8 @@ let chain = {
                 // and only add the valid txs to the new block
                 newBlock.txs = validTxs
 
-                if (distributed) newBlock.distributed = distributed
-                if (burned) newBlock.burned = burned
+                if (distributed) newBlock.dist = distributed
+                if (burned) newBlock.burn = burned
 
                 // always record the failure of others
                 if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name !== process.env.NODE_OWNER)
@@ -156,17 +156,16 @@ let chain = {
     validateAndAddBlock: (newBlock, revalidate, cb) => {
         // when we receive an outside block and check whether we should add it to our chain or not
         if (chain.shuttingDown) return
-        chain.isValidNewBlock(newBlock, revalidate, revalidate, function(isValid) {
+        chain.isValidNewBlock(newBlock, revalidate, false, function(isValid) {
             if (!isValid) {
                 logr.error('Invalid block')
                 cb(true, newBlock); return
             }
             // straight execution
-            chain.executeBlockTransactions(newBlock, false, true, function(validTxs, distributed, burned) {
+            chain.executeBlockTransactions(newBlock, revalidate, true, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats a fatal error
-                // transactions should have been verified in isValidNewBlock
                 if (newBlock.txs.length !== validTxs.length) {
-                    logr.fatal('Invalid tx(s) in block found after starting execution')
+                    logr.error('Invalid tx(s) in block')
                     cb(true, newBlock); return
                 }
 
@@ -328,7 +327,7 @@ let chain = {
     },
     isValidSignature: (user, txType, hash, sign, cb) => {
         // verify signature and bandwidth
-        cache.findOne('accounts', {name: user}, function(err, account) {
+        cache.findOne('accounts', {name: user}, async function(err, account) {
             if (err) throw err
             if (!account) {
                 cb(false); return
@@ -344,6 +343,18 @@ let chain = {
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
                         allowedPubKeys.push([account.keys[i].pub, account.keys[i].weight || 1])
+            // account authorities
+            if (account.auths && typeof txType === 'number' && Number.isInteger(txType))
+                for (let i in account.auths)
+                    if (account.auths[i].types.indexOf(txType) > -1) {
+                        let authorizedAcc = await cache.findOnePromise('accounts',{name: account.auths[i].user})
+                        if (authorizedAcc && authorizedAcc.keys)
+                            for (let a in authorizedAcc.keys)
+                                if (authorizedAcc.keys[a].id === account.auths[i].id) {
+                                    allowedPubKeys.push([authorizedAcc.keys[a].pub, account.auths[i].weight || 1])
+                                    break
+                                }
+                    }
 
             // if there is no transaction type
             // it means we are verifying a block signature
@@ -404,7 +415,7 @@ let chain = {
     },
     isValidHashAndSignature: (newBlock, cb) => {
         // and that the hash is correct
-        let theoreticalHash = chain.calculateHashForBlock(newBlock)
+        let theoreticalHash = chain.calculateHashForBlock(newBlock,true)
         if (theoreticalHash !== newBlock.hash) {
             logr.debug(typeof (newBlock.hash) + ' ' + typeof theoreticalHash)
             logr.error('invalid hash: ' + theoreticalHash + ' ' + newBlock.hash)
@@ -732,10 +743,20 @@ let chain = {
             })
         })
     },
-    calculateHashForBlock: (block) => {
-        return chain.calculateHash(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn)
+    calculateHashForBlock: (block,deleteExisting) => {
+        if (config.blockHashSerialization === 1)
+            return chain.calculateHashV1(block._id, block.phash, block.timestamp, block.txs, block.miner, block.missedBy, block.dist, block.burn)
+        else if (config.blockHashSerialization === 2) {
+            let clonedBlock
+            if (deleteExisting) {
+                clonedBlock = cloneDeep(block)
+                delete clonedBlock.hash
+                delete clonedBlock.signature
+            }
+            return CryptoJS.SHA256(JSON.stringify(deleteExisting ? clonedBlock : block)).toString()
+        }
     },
-    calculateHash: (index, phash, timestamp, txs, miner, missedBy, distributed, burned) => {
+    calculateHashV1: (index, phash, timestamp, txs, miner, missedBy, distributed, burned) => {
         let string = index + phash + timestamp + txs + miner
         if (missedBy) string += missedBy
         if (distributed) string += distributed

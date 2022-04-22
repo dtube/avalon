@@ -214,6 +214,21 @@ let cmds = {
     playlistPop: (privKey, sender, link, seq) => {
         let tx = '{"type":27,"data":{"link":"'+link+'","seq":'+seq+'}}'
         return sign(privKey, sender, tx)
+    },
+
+    commentEdit: (privKey, sender, link, json) => {
+        let tx = '{"type":28,"data":{"link":"'+link+'","json":'+json+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    accountAuthorize: (privKey, sender, user, id, types, weight) => {
+        let tx = '{"type":29,"data":{"user":"'+user+'","id":"'+id+'","types":'+types+',"weight":'+weight+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    accountRevoke: (privKey, sender, user, id) => {
+        let tx = '{"type":30,"data":{"user":"'+user+'","id":"'+id+'"}}'
+        return sign(privKey, sender, tx)
     }
 }
 

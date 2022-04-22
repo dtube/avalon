@@ -2,10 +2,33 @@ const GrowInt = require('growint')
 const CryptoJS = require('crypto-js')
 const { EventEmitter } = require('events')
 const cloneDeep = require('clone-deep')
-
+const bson = require('bson')
 const Transaction = require('./transactions')
 const TransactionType = Transaction.Types
 const max_mempool = process.env.MEMPOOL_SIZE || 200
+
+// probably due to non standard utf8 characters that were not properly written to mongodb/bson file
+// for now we skip them until such bug can be reproduced
+const skiphash = {
+    '7dedc07cb42c96b5013710161bf487a2488fce789b80286e3df910075f98a4d1': '16de2c5c847962f3683aec852072e702fb8c4ffd81c3d23cf85b8d2da031bd8e' // tx in block 14,874,851
+}
+
+// transaction types with arbitrary string input that requires bson serialization validation
+const serializeValidation = [
+    TransactionType.TRANSFER,
+    TransactionType.COMMENT,
+    TransactionType.VOTE,
+    TransactionType.USER_JSON,
+    TransactionType.NEW_KEY,
+    TransactionType.PROMOTED_COMMENT,
+    TransactionType.ENABLE_NODE,
+    TransactionType.TIPPED_VOTE,
+    TransactionType.NEW_WEIGHTED_KEY,
+    TransactionType.PLAYLIST_JSON,
+    TransactionType.PLAYLIST_PUSH,
+    TransactionType.COMMENT_EDIT,
+    TransactionType.ACCOUNT_AUTHORIZE
+]
 
 transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
@@ -114,8 +137,17 @@ transaction = {
         let newTx = cloneDeep(tx)
         delete newTx.signature
         delete newTx.hash
-        if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
+        let computedHash = CryptoJS.SHA256(JSON.stringify(newTx)).toString()
+        if (computedHash !== tx.hash && (skiphash[tx.hash] !== computedHash || (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks))) {
             cb(false, 'invalid tx hash does not match'); return
+        }
+        // ensure nothing gets lost when serialized in bson
+        // skipped during replays or rebuilds
+        if (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks && serializeValidation.includes(tx.type)) {
+            let bsonified = bson.deserialize(bson.serialize(newTx))
+            let bsonifiedHash = CryptoJS.SHA256(JSON.stringify(bsonified)).toString()
+            if (computedHash !== bsonifiedHash)
+                return cb(false, 'unserializable transaction, perhaps due to non-utf8 character?')
         }
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser,e) {

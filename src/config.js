@@ -17,6 +17,8 @@ let config = {
             b58Alphabet: '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz',
             // the block #0 genesis timestamp
             block0ts: 1601477849000,
+            // the block hash serialization revision
+            blockHashSerialization: 1,
             // the block time in ms
             blockTime: 3000,
             // the number of ms needed for 0.01 DTC to generate 1 byte of bw
@@ -134,7 +136,8 @@ let config = {
                 15: 2,
                 19: 0,
                 23: 1,
-                24: 1
+                24: 1,
+                28: 1
             }
         },
         4860000: {
@@ -153,6 +156,9 @@ let config = {
             masterNoPreloadAcc: true
         },
         25000000: {
+            /*
+            accountAuthEnabled: true,
+            blockHashSerialization: 2,
             burnAccountIsBlackhole: true,
             playlistEnabled: true,
             playlistLinkMin: 3,
@@ -165,8 +171,10 @@ let config = {
                 14: 2,
                 15: 2,
                 23: 0,
-                24: 0
+                24: 0,
+                28: 0
             }
+            */
         }
     },
     read: (blockNum) => {
