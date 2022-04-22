@@ -34,7 +34,7 @@ const transactions = [
     require('./commentEdit.js'),
     require('./accountAuthorize.js'),
     require('./accountRevoke.js'),
-    require('./createProposal.js')
+    require('./proposalCreate.js')
 ]
 
 module.exports = {
@@ -70,7 +70,7 @@ module.exports = {
         COMMENT_EDIT: 28,
         ACCOUNT_AUTHORIZE: 29,
         ACCOUNT_REVOKE: 30,
-        CREATE_PROPOSAL: 31
+        PROPOSAL_CREATE: 31
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')
