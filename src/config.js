@@ -160,6 +160,8 @@ let config = {
             accountAuthEnabled: true,
             blockHashSerialization: 2,
             burnAccountIsBlackhole: true,
+
+            // playlists
             playlistEnabled: true,
             playlistLinkMin: 3,
             playlistLinkMax: 50,
@@ -167,6 +169,15 @@ let config = {
             playlistContentLinkMax: 101,
             playlistSequenceMax: 1000,
             playlistSequenceIdMax: 10000,
+
+            // avalon dao
+            daoEnabled: true,
+            proposalCreationBaseFee: 10000,
+            proposalCreationSubFee: 1,
+            proposalCreationSubMult: 100,
+            proposalCreationSubStart: 100000,
+
+            // update tx type restrictions
             txLimits: {
                 14: 2,
                 15: 2,
