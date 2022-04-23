@@ -43,9 +43,14 @@ module.exports = {
             requested: tx.data.requested,
             fee: fee,
             raised: 0,
+            approvals: 0,
+            disapprovals: 0,
             status: 0,
             json: tx.data.json,
-            ts: ts
+            ts: ts,
+            votingEnds: ts+(config.proposalVotingPeriodSeconds*1000),
+            fundingEnds: ts+(config.proposalVotingPeriodSeconds*1000)+(config.proposalFundingPeriodSeconds*1000),
+            leaderSnapshot: dao.leaderSnapshot()
         }, () => {
             // deduct fee
             cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -fee}}, async () => {

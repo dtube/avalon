@@ -6,6 +6,12 @@ let dao = {
             return baseFee
         let subseqFee = Math.ceil((subseqAmounts*config.proposalCreationSubFee)/config.proposalCreationSubMult)
         return baseFee+subseqFee
+    },
+    leaderSnapshot: () => {
+        let lastLeaders = {}
+        for (let b = 1; b <= config.daoLeaderSnapshotBlocks; b++)
+            lastLeaders[chain.recentBlocks[chain.recentBlocks.length-b]] = 1
+        return Object.keys(lastLeaders)
     }
 }
 
