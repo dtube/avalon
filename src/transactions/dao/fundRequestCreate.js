@@ -1,13 +1,10 @@
-const dao = require('../dao')
+const dao = require('../../dao')
 
 module.exports = {
-    fields: ['id', 'requested', 'receiver', 'json'],
+    fields: ['requested', 'receiver', 'json', 'deadline'],
     validate: async (tx, ts, legitUser, cb) => {
         if (!config.daoEnabled)
-            return cb(false, 'proposals system is not enabled')
-
-        if (!validate.string(tx.data.id, config.accountMaxLength, config.accountMinLengthconfig.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle))
-            return cb(false, 'invalid proposal id')
+            return cb(false, 'dao is not enabled')
 
         // total amount requested
         if (!validate.integer(tx.data.requested,false,false))
@@ -21,12 +18,15 @@ module.exports = {
         if (!validate.json(tx.data.json, config.jsonMaxBytes))
             return cb(false, 'invalid proposal json metadata')
 
-        let proposal = await cache.findOnePromise('proposals',{_id: tx.sender+'/'+tx.data.id})
+        // proposal job deadline
+        let minDeadline = ts+(config.daoVotingPeriodSeconds*1000)+(config.fundRequestContribPeriodSeconds*1000)
+        let maxDeadline = minDeadline+(config.fundRequestDeadlineSeconds*1000)
+        if (!validate.integer(tx.data.deadline,false,false,maxDeadline,minDeadline))
+            return cb(false, 'invalid proposal deadline')
+
         let creator = await cache.findOnePromise('accounts',{ name: tx.sender })
         let receipient = await cache.findOnePromise('accounts',{ name: tx.data.receiver })
         let fee = dao.proposalCreationFee(tx.data.requested)
-        if (proposal)
-            return cb(false, 'proposal id already exists')
         if (!receipient)
             return cb(false, 'receipient does not exist')
         if (creator.balance < fee)
@@ -37,7 +37,8 @@ module.exports = {
     execute: (tx, ts, cb) => {
         let fee = dao.proposalCreationFee(tx.data.requested)
         cache.insertOne('proposals', {
-            _id: tx.sender+'/'+tx.data.id,
+            _id: dao.nextID,
+            type: dao.governanceTypes.fundRequest,
             creator: tx.sender,
             receiver: tx.data.receiver,
             requested: tx.data.requested,
@@ -48,10 +49,12 @@ module.exports = {
             status: 0,
             json: tx.data.json,
             ts: ts,
-            votingEnds: ts+(config.proposalVotingPeriodSeconds*1000),
-            fundingEnds: ts+(config.proposalVotingPeriodSeconds*1000)+(config.proposalFundingPeriodSeconds*1000),
+            votingEnds: ts+(config.daoVotingPeriodSeconds*1000),
+            fundingEnds: ts+(config.daoVotingPeriodSeconds*1000)+(config.fundRequestContribPeriodSeconds*1000),
+            deadline: tx.data.deadline,
             leaderSnapshot: dao.leaderSnapshot()
         }, () => {
+            dao.incrementID()
             // deduct fee
             cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -fee}}, async () => {
                 let sender = await cache.findOnePromise('accounts', {name: tx.sender})

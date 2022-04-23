@@ -4,6 +4,7 @@ const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 const series = require('run-series')
 const cloneDeep = require('clone-deep')
+const dao = require('./dao')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
 const txHistory = require('./txHistory')
@@ -123,6 +124,7 @@ let chain = {
             // so we will execute transactions in order and revalidate after each execution
             chain.executeBlockTransactions(newBlock, true, false, function(validTxs, distributed, burned) {
                 cache.rollback()
+                dao.resetID()
                 // and only add the valid txs to the new block
                 newBlock.txs = validTxs
 
@@ -256,6 +258,7 @@ let chain = {
         chain.applyHardforkPostBlock(block._id)
         eco.appendHistory(block)
         eco.nextBlock()
+        dao.nextBlock()
         leaderStats.processBlock(block)
         txHistory.processBlock(block)
 
@@ -434,6 +437,7 @@ let chain = {
     isValidBlockTxs: (newBlock, cb) => {
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
+            dao.resetID()
             if (validTxs.length !== newBlock.txs.length) {
                 logr.error('invalid block transaction')
                 cb(false); return
@@ -874,6 +878,7 @@ let chain = {
                 // update the config if an update was scheduled
                 config = require('./config.js').read(blockToRebuild._id)
                 chain.applyHardforkPostBlock(blockToRebuild._id)
+                dao.nextBlock()
                 eco.nextBlock()
                 eco.appendHistory(blockToRebuild)
                 chain.cleanMemory()

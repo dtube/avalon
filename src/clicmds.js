@@ -69,17 +69,6 @@ let cmds = {
         return sign(privKey, sender, tx)
     },
 
-    createProposal: (privKey, sender, title, author, link, totalFund, initialFund, escrowAddress, json) => {
-        var tx = '{"type":28,"data":{"title":"'+
-			title+'", "author":"'+
-			author+'", "link":"'+
-			link+'", "totalFund":"'+
-			totalFund+'", "initialFund":"'+
-			initialFund+'", "escrowAddress":"'+
-			escrowAddress+'","json":'+json+'}}'
-        return sign(privKey, sender, tx)
-    },
-
     vote: (privKey, sender, link, author, weight, tag) => {
         if (!tag) tag = ''
         let tx = '{"type":5,"data":{"link":"'+
@@ -228,6 +217,16 @@ let cmds = {
 
     accountRevoke: (privKey, sender, user, id) => {
         let tx = '{"type":30,"data":{"user":"'+user+'","id":"'+id+'"}}'
+        return sign(privKey, sender, tx)
+    },
+
+    fundRequestCreate: (privKey, sender, requested, receiver, json, deadline) => {
+        let tx = '{"type":31,"data":{"requested":'+requested+',"receiver":"'+receiver+'","json":'+json+',"deadline":'+deadline+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    daoVote: (privKey, sender, id, amount) => {
+        let tx = '{"type":32,"data":{"id":'+id+',"amount":'+amount+'}}'
         return sign(privKey, sender, tx)
     }
 }

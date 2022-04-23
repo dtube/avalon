@@ -85,6 +85,9 @@ let cache = {
             }
         })
     },
+    updateOnePromise: function (collection, query, changes) {
+        return new Promise((rs,rj) => cache.updateOne(collection,query,changes,(e,d) => e ? rj(e) : rs(true)))
+    },
     updateOne: function(collection, query, changes, cb) {
         cache.findOne(collection, query, function(err, obj) {
             if (err) throw err

@@ -241,9 +241,25 @@ transaction = {
                 break
             }
 
-            // update both at the same time !
+            // update vote lock for proposals
+            let newLock = 0
+            let activeProposalVotes = []
+            if (account.voteLock)
+                for (let v in account.proposalVotes)
+                    if (account.proposalVotes[v].end > ts && account.proposalVotes[v].amount - account.proposalVotes[v].bonus > newLock) {
+                        newLock = account.proposalVotes[v].amount - account.proposalVotes[v].bonus
+                        activeProposalVotes.push(account.proposalVotes[v])
+                    }
+
+            // update all at the same time !
             let changes = {bw: bw}
             if (vt) changes.vt = vt
+            if (account.voteLock) {
+                if (account.voteLock !== newLock)
+                    changes.voteLock = newLock
+                if (account.proposalVotes.length !== activeProposalVotes.length)
+                    changes.proposalVotes = activeProposalVotes
+            }
             logr.trace('GrowInt Collect', account.name, changes)
             cache.updateOne('accounts', 
                 {name: account.name},

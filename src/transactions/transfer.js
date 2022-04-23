@@ -1,3 +1,5 @@
+const dao = require('../dao')
+
 module.exports = {
     fields: ['receiver', 'amount', 'memo'],
     validate: (tx, ts, legitUser, cb) => {
@@ -16,9 +18,9 @@ module.exports = {
 
         cache.findOne('accounts', {name: tx.sender}, function(err, account) {
             if (err) throw err
-            if (account.balance < tx.data.amount) {
-                cb(false, 'invalid tx not enough balance'); return
-            }
+            if (dao.availableBalance(account,ts) < tx.data.amount)
+                return cb(false, 'invalid tx not enough balance')
+
             cache.findOne('accounts', {name: tx.data.receiver}, function(err, account) {
                 if (err) throw err
                 if (!account) cb(false, 'invalid tx receiver does not exist')

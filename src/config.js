@@ -172,10 +172,16 @@ let config = {
 
             // avalon dao
             daoEnabled: true,
-            proposalCreationBaseFee: 10000,
-            proposalCreationSubFee: 1,
-            proposalCreationSubMult: 100,
-            proposalCreationSubStart: 100000,
+            daoLeaderSnapshotBlocks: 30,
+            daoVotingPeriodSeconds: 604800,
+            daoVotingThreshold: 50000000,
+            daoVotingLeaderBonus: 1000000,
+            fundRequestBaseFee: 10000,
+            fundRequestSubFee: 1,
+            fundRequestSubMult: 100,
+            fundRequestSubStart: 100000,
+            fundRequestContribPeriodSeconds: 1209600,
+            fundRequestDeadlineSeconds: 31536000,
 
             // update tx type restrictions
             txLimits: {
