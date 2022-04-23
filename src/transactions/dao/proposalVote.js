@@ -25,7 +25,7 @@ module.exports = {
         let availWeight = voter.balance
         if (proposal.leaderSnapshot.includes(tx.sender))
             availWeight += config.daoVotingLeaderBonus
-        if (amount > availWeight)
+        if (tx.data.amount > availWeight)
             return cb(false, 'insufficient voting weight')
 
         cb(true)
@@ -42,7 +42,7 @@ module.exports = {
         // update voter info
         let proposal = await cache.findOnePromise('proposals',{ _id: tx.data.id })
         let voter = await cache.findOnePromise('accounts', { name: tx.sender })
-        let incVoteLock = tx.data.amount - voter.voteLock
+        let incVoteLock = tx.data.amount - (voter.voteLock || 0)
         let bonusApplied = 0
         if (proposal.leaderSnapshot.includes(tx.sender)) {
             incVoteLock -= config.daoVotingLeaderBonus

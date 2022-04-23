@@ -19,7 +19,8 @@ let dao = {
     leaderSnapshot: () => {
         let lastLeaders = {}
         for (let b = 1; b <= config.daoLeaderSnapshotBlocks; b++)
-            lastLeaders[chain.recentBlocks[chain.recentBlocks.length-b].miner] = 1
+            if (chain.recentBlocks.length-b >= 0)
+                lastLeaders[chain.recentBlocks[chain.recentBlocks.length-b].miner] = 1
         return Object.keys(lastLeaders)
     },
     loadID: async () => {

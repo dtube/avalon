@@ -56,10 +56,9 @@ let cache = {
         return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d)))
     },
     findOne: function(collection, query, cb) {
-        if (['accounts','blocks','contents','playlists'].indexOf(collection) === -1) {
-            cb(true)
-            return
-        }
+        if (!cache.copy[collection])
+            return cb('invalid collection')
+
         let key = cache.keyByCollection(collection)
         // searching in cache
         if (cache[collection][query[key]]) {
