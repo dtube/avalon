@@ -258,7 +258,7 @@ let chain = {
         chain.applyHardforkPostBlock(block._id)
         eco.appendHistory(block)
         eco.nextBlock()
-        dao.nextBlock()
+        dao.nextBlock(block.timestamp)
         leaderStats.processBlock(block)
         txHistory.processBlock(block)
 
@@ -623,11 +623,15 @@ let chain = {
             // execute periodic burn
             let additionalBurn = await chain.decayBurnAccount(block)
 
+            // execute dao triggers
+            let daoBurn = await dao.runTriggers(block.timestamp)
+
             // add rewards for the leader who mined this block
             chain.leaderRewards(block.miner, block.timestamp, function(dist) {
                 distributedInBlock += dist
                 distributedInBlock = Math.round(distributedInBlock*1000) / 1000
                 burnedInBlock += additionalBurn
+                burnedInBlock += daoBurn
                 burnedInBlock = Math.round(burnedInBlock*1000) / 1000
                 cb(executedSuccesfully, distributedInBlock, burnedInBlock)
             })
@@ -878,7 +882,7 @@ let chain = {
                 // update the config if an update was scheduled
                 config = require('./config.js').read(blockToRebuild._id)
                 chain.applyHardforkPostBlock(blockToRebuild._id)
-                dao.nextBlock()
+                dao.nextBlock(blockToRebuild.timestamp)
                 eco.nextBlock()
                 eco.appendHistory(blockToRebuild)
                 chain.cleanMemory()

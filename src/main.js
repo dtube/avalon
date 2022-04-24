@@ -49,8 +49,9 @@ mongo.init(async function(state) {
     // Warmup leader stats
     await leaderStats.loadIndex()
 
-    // Load proposal head ID
+    // Load proposal head ID and active proposals
     await dao.loadID()
+    await dao.loadActiveFundRequests()
 
     // Rebuild chain state if specified
     let rebuildResumeBlock = state && state.headBlock ? state.headBlock+1 : 0

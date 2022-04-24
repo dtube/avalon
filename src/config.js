@@ -182,6 +182,7 @@ let config = {
             fundRequestSubStart: 100000,
             fundRequestContribPeriodSeconds: 1209600,
             fundRequestDeadlineSeconds: 31536000,
+            fundRequestReviewPeriodSeconds: 259200,
 
             // update tx type restrictions
             txLimits: {

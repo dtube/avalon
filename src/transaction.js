@@ -30,7 +30,7 @@ const serializeValidation = [
     TransactionType.ACCOUNT_AUTHORIZE
 ]
 
-transaction = {
+let transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     eventConfirmation: new EventEmitter(),
     addToPool: (txs) => {
@@ -276,6 +276,11 @@ transaction = {
             Transaction.execute(tx, ts, function(executed, distributed, burned) {
                 cb(executed, distributed, burned)
             })
+        })
+    },
+    updateIntsAndNodeApprPromise: (account, ts, change) => {
+        return new Promise((rs) => {
+            transaction.updateGrowInts(account,ts,() => transaction.adjustNodeAppr(account,change,() => rs(true)))
         })
     },
     updateGrowInts: (account, ts, cb) => {

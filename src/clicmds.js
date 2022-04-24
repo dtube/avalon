@@ -225,8 +225,18 @@ let cmds = {
         return sign(privKey, sender, tx)
     },
 
-    daoVote: (privKey, sender, id, amount) => {
+    fundRequestContrib: (privKey, sender, id, amount) => {
         let tx = '{"type":32,"data":{"id":'+id+',"amount":'+amount+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    fundRequestWork: (privKey, sender, id, work) => {
+        let tx = '{"type":33,"data":{"id":'+id+',"work":'+work+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    daoVote: (privKey, sender, id, amount) => {
+        let tx = '{"type":34,"data":{"id":'+id+',"amount":'+amount+'}}'
         return sign(privKey, sender, tx)
     }
 }

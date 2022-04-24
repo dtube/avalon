@@ -59,6 +59,7 @@ module.exports = {
                     id: tx.data.id,
                     amount: Math.abs(tx.data.amount),
                     bonus: bonusApplied,
+                    veto: tx.data.amount < 0,
                     end: proposal.votingEnds
                 }
             }

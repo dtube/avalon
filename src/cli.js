@@ -191,6 +191,34 @@ program.command('fundrequest-create <requested> <receiver> <json> <deadline>')
         writeLine('  $ fundrequest-create 10000 alice \'{"title": "An example proposal","description": "Description of the example proposal" }\' 1650716841000 -F key.json -M alice')
     })
 
+program.command('fundrequest-contrib <id> <amount>')
+    .description('contribute to a funding request')
+    .action(function(id, amount) {
+        verifyAndSendTx('fundRequestContrib', id, amount)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <id>: id of the fund request proposal')
+        writeLine('  <amount>: amount to contribute')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ fundrequest-contrib 1 50000 -F key.json -M john')
+    })
+
+program.command('fundrequest-work <id> <work>')
+    .description('submit work details to a fund request for review')
+    .action(function(id, work) {
+        verifyAndSendTx('fundRequestWork', id, work)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <id>: id of the fund request proposal')
+        writeLine('  <work>: json work details')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ fundrequest-work 1 \'{"work":"this is some work for a proposal, more details in a url."}\' -F key.json -M alice')
+    })
+
 program.command('keypair')
     .description('generate a new keypair')
     .alias('key')
