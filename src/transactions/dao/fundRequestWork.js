@@ -36,6 +36,7 @@ module.exports = {
             $set: {
                 work: tx.data.work,
                 workTs: ts,
+                reviewDeadline: ts+(config.fundRequestReviewPeriodSeconds*1000),
                 status: dao.fundRequestStatus.reviewInProgress
             }
         })

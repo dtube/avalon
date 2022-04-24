@@ -31,7 +31,7 @@ let dao = {
                 return dao.fundRequestStatus.proposalExpired
             else
                 return dao.fundRequestStatus.fundingSuccess
-        else if (!proposal.paid && proposal.workTs+(config.fundRequestReviewPeriodSeconds*1000) > ts)
+        else if (!proposal.paid && proposal.reviewDeadline > ts)
             return dao.fundRequestStatus.reviewInProgress
         else
             return dao.fundRequestStatus.proposalComplete
@@ -125,7 +125,7 @@ let dao = {
                     dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].deadline
                     break
                 case 5:
-                    dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].workTs+(config.fundRequestReviewPeriodSeconds*1000)
+                    dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].reviewDeadline
                     break
             }
         }

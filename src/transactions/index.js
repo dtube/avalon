@@ -75,7 +75,7 @@ module.exports = {
         ACCOUNT_REVOKE: 30,
         FUND_REQUEST_CREATE: 31,
         FUND_REQUEST_CONTRIB: 32,
-        FIND_REQUEST_WORK: 33,
+        FUND_REQUEST_WORK: 33,
         DAO_VOTE: 34
     },
     validate: (tx, ts, legitUser, cb) => {
