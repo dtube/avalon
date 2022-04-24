@@ -220,8 +220,8 @@ let cmds = {
         return sign(privKey, sender, tx)
     },
 
-    fundRequestCreate: (privKey, sender, requested, receiver, json, deadline) => {
-        let tx = '{"type":31,"data":{"requested":'+requested+',"receiver":"'+receiver+'","json":'+json+',"deadline":'+deadline+'}}'
+    fundRequestCreate: (privKey, sender, title, description, url, requested, receiver) => {
+        let tx = '{"type":31,"data":{"title":"'+title+'","description":"'+description+'","url":"'+url+'","requested":'+requested+',"receiver":"'+receiver+'"}}'
         return sign(privKey, sender, tx)
     },
 
@@ -235,8 +235,18 @@ let cmds = {
         return sign(privKey, sender, tx)
     },
 
-    daoVote: (privKey, sender, id, amount) => {
-        let tx = '{"type":34,"data":{"id":'+id+',"amount":'+amount+'}}'
+    fundRequestWorkReview: (privKey, sender, id, approve, memo) => {
+        let tx = '{"type":34,"data":{"id":'+id+',"approve":'+approve+',"memo":"'+memo+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    proposalVote: (privKey, sender, id, amount) => {
+        let tx = '{"type":35,"data":{"id":'+id+',"amount":'+amount+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    proposalEdit: (privKey, sender, id, title, description, url) => {
+        let tx = '{"type":36,"data":{"id":'+id+',"title":"'+title+'","description":"'+description+'","url":"'+url+'"}}'
         return sign(privKey, sender, tx)
     }
 }

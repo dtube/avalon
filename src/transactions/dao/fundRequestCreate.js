@@ -1,7 +1,7 @@
 const dao = require('../../dao')
 
 module.exports = {
-    fields: ['title', 'description', 'url', 'requested', 'receiver', 'deadline'],
+    fields: ['title', 'description', 'url', 'requested', 'receiver'],
     validate: async (tx, ts, legitUser, cb) => {
         if (!config.daoEnabled)
             return cb(false, 'dao is not enabled')
@@ -24,12 +24,6 @@ module.exports = {
         if (!validate.string(tx.data.url, config.memoMaxLength))
             return cb(false, 'invalid proposal url string')
 
-        // proposal job deadline
-        let minDeadline = ts+(config.daoVotingPeriodSeconds*1000)+(config.fundRequestContribPeriodSeconds*1000)
-        let maxDeadline = minDeadline+(config.fundRequestDeadlineSeconds*1000)
-        if (!validate.integer(tx.data.deadline,false,false,maxDeadline,minDeadline))
-            return cb(false, 'invalid proposal deadline')
-
         let creator = await cache.findOnePromise('accounts',{ name: tx.sender })
         let receipient = await cache.findOnePromise('accounts',{ name: tx.data.receiver })
         let fee = dao.proposalCreationFee(tx.data.requested)
@@ -42,6 +36,9 @@ module.exports = {
     },
     execute: (tx, ts, cb) => {
         let fee = dao.proposalCreationFee(tx.data.requested)
+        let votingEnds = ts+(config.daoVotingPeriodSeconds*1000)
+        let fundingEnds = votingEnds+(config.fundRequestContribPeriodSeconds*1000)
+        let deadline = fundingEnds+(config.fundRequestDeadlineSeconds*1000)
         cache.insertOne('proposals', {
             _id: dao.nextID,
             type: dao.governanceTypes.fundRequest,
@@ -57,9 +54,9 @@ module.exports = {
             disapprovals: 0,
             status: 0,
             ts: ts,
-            votingEnds: ts+(config.daoVotingPeriodSeconds*1000),
-            fundingEnds: ts+(config.daoVotingPeriodSeconds*1000)+(config.fundRequestContribPeriodSeconds*1000),
-            deadline: tx.data.deadline,
+            votingEnds: votingEnds,
+            fundingEnds: fundingEnds,
+            deadline: deadline,
             leaderSnapshot: dao.leaderSnapshot()
         }, () => {
             dao.incrementID()
