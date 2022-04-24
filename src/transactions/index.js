@@ -37,8 +37,8 @@ const transactions = [
     require('./dao/fundRequestCreate.js'),
     require('./dao/fundRequestContrib'),
     require('./dao/fundRequestWork'),
-    require('./dao/proposalVote.js'),
-    require('./dao/fundRequestWorkReview.js')
+    require('./dao/fundRequestWorkReview.js'),
+    require('./dao/proposalVote.js')
 ]
 
 module.exports = {
@@ -77,8 +77,8 @@ module.exports = {
         FUND_REQUEST_CREATE: 31,
         FUND_REQUEST_CONTRIB: 32,
         FUND_REQUEST_WORK: 33,
-        DAO_VOTE: 34,
-        FUND_REQUEST_WORK_REVIEW: 35
+        FUND_REQUEST_WORK_REVIEW: 34,
+        DAO_VOTE: 35,
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')
