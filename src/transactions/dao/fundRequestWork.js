@@ -27,7 +27,7 @@ module.exports = {
             return cb(false, 'work is already under review')
         else if (status === dao.fundRequestStatus.proposalComplete)
             return cb(false, 'proposal is already complete')
-        else if (status !== dao.fundRequestStatus.fundingSuccess)
+        else if (status !== dao.fundRequestStatus.fundingSuccess && status !== dao.fundRequestStatus.revisionRequired)
             return cb(false, 'proposal job is inactive')
         cb(true)
     },
@@ -36,6 +36,9 @@ module.exports = {
             $set: {
                 work: tx.data.work,
                 workTs: ts,
+                reviews: [],
+                reviewApprovals: 0,
+                reviewDisapprovals: 0,
                 reviewDeadline: ts+(config.fundRequestReviewPeriodSeconds*1000),
                 status: dao.fundRequestStatus.reviewInProgress
             }

@@ -31,10 +31,17 @@ let dao = {
                 return dao.fundRequestStatus.proposalExpired
             else
                 return dao.fundRequestStatus.fundingSuccess
-        else if (!proposal.paid && proposal.reviewDeadline > ts)
-            return dao.fundRequestStatus.reviewInProgress
+        else if (!proposal.paid)
+            if (!proposal.reviewDeadline)
+                return dao.fundRequestStatus.revisionRequired
+            else if (proposal.reviewDeadline > ts)
+                return dao.fundRequestStatus.reviewInProgress
         else
             return dao.fundRequestStatus.proposalComplete
+    },
+    getFundRequestReviewThreshold: (proposal) => {
+        let snapshotLength = proposal.leaderSnapshot.length
+        return Math.ceil((snapshotLength*2)/3)
     },
     refundContributors: async (proposal,ts) => {
         if (!proposal.contrib)
@@ -81,9 +88,7 @@ let dao = {
                 else if (newStatus === dao.fundRequestStatus.fundingSuccess)
                     dao.updateProposalTrigger(p,proposal.deadline)
                 else if (newStatus === dao.fundRequestStatus.proposalComplete) {
-                    logr.trace('Beneficiary balance before',(await cache.findOnePromise('accounts',{name:proposal.receiver})).balance)
                     await dao.disburseFundRequest(proposal.receiver,proposal.raised+proposal.fee,ts)
-                    logr.trace('Beneficiary balance after',(await cache.findOnePromise('accounts',{name:proposal.receiver})).balance)
                     updateOp.$set.paid = ts
                     dao.finalizeProposal(p)
                 }
@@ -115,16 +120,17 @@ let dao = {
         for (let i in activeRequests) {
             cache.proposals[activeRequests[i]._id] = activeRequests[i]
             switch (activeRequests[i].status) {
-                case 0:
+                case dao.fundRequestStatus.votingActive:
                     dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].votingEnds
                     break
-                case 2:
+                case dao.fundRequestStatus.fundingActive:
                     dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].fundingEnds
                     break
-                case 3:
+                case dao.fundRequestStatus.fundingSuccess:
+                case dao.fundRequestStatus.revisionRequired:
                     dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].deadline
                     break
-                case 5:
+                case dao.fundRequestStatus.reviewInProgress:
                     dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].reviewDeadline
                     break
             }
@@ -180,7 +186,8 @@ let dao = {
         fundingFailed: 4,
         reviewInProgress: 5,
         proposalComplete: 6,
-        proposalExpired: 7
+        proposalExpired: 7,
+        revisionRequired: 8
     }
 }
 
