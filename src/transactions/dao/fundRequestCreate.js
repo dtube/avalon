@@ -1,7 +1,7 @@
 const dao = require('../../dao')
 
 module.exports = {
-    fields: ['requested', 'receiver', 'json', 'deadline'],
+    fields: ['title', 'description', 'url', 'requested', 'receiver', 'deadline'],
     validate: async (tx, ts, legitUser, cb) => {
         if (!config.daoEnabled)
             return cb(false, 'dao is not enabled')
@@ -14,9 +14,15 @@ module.exports = {
         if (!validate.string(tx.data.receiver, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle))
             return cb(false, 'invalid proposal funding receiver')
 
-        // proposal json metadata
-        if (!validate.json(tx.data.json, config.jsonMaxBytes))
-            return cb(false, 'invalid proposal json metadata')
+        // proposal metadata
+        if (!validate.string(tx.data.title, config.memoMaxLength))
+            return cb(false, 'invalid proposal title string')
+
+        if (!validate.string(tx.data.description, config.jsonMaxBytes))
+            return cb(false, 'invalid proposal description string')
+
+        if (!validate.string(tx.data.url, config.memoMaxLength))
+            return cb(false, 'invalid proposal url string')
 
         // proposal job deadline
         let minDeadline = ts+(config.daoVotingPeriodSeconds*1000)+(config.fundRequestContribPeriodSeconds*1000)
@@ -39,6 +45,9 @@ module.exports = {
         cache.insertOne('proposals', {
             _id: dao.nextID,
             type: dao.governanceTypes.fundRequest,
+            title: tx.data.title,
+            description: tx.data.description,
+            url: tx.data.url,
             creator: tx.sender,
             receiver: tx.data.receiver,
             requested: tx.data.requested,
@@ -47,7 +56,6 @@ module.exports = {
             approvals: 0,
             disapprovals: 0,
             status: 0,
-            json: tx.data.json,
             ts: ts,
             votingEnds: ts+(config.daoVotingPeriodSeconds*1000),
             fundingEnds: ts+(config.daoVotingPeriodSeconds*1000)+(config.fundRequestContribPeriodSeconds*1000),
