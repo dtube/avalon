@@ -79,6 +79,22 @@ program.command('account-revoke <user> <id>')
         writeLine('  $ account-revoke bob finance -F key.json -M alice')
     })
 
+program.command('chainupdate-create <title> <description> <url> <changes>')
+    .description('create a new chain update proposal')
+    .action(function(title, description, url, changes) {
+        verifyAndSendTx('chainUpdateCreate', title, description, url, changes)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <title>: proposal title')
+        writeLine('  <description>: proposal description')
+        writeLine('  <url>: proposal reference url')
+        writeLine('  <changes>: array of 2-element key-value arrays of proposed parameter changes')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ chainupdate-create \'An example chain update title\' \'Some description to describe it\' \'https://d.tube/#!/v/alice/chain-update-proposal\' [["vtPerBurn",100],["rewardPoolAmount",100000]] -F key.json -M alice')
+    })
+
 program.command('claim <author> <link>')
     .description('claims rewards associated with a past vote')
     .action(function(author, link) {

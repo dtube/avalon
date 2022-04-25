@@ -26,7 +26,7 @@ module.exports = {
 
         let creator = await cache.findOnePromise('accounts',{ name: tx.sender })
         let receipient = await cache.findOnePromise('accounts',{ name: tx.data.receiver })
-        let fee = dao.proposalCreationFee(tx.data.requested)
+        let fee = dao.fundRequestCreationFee(tx.data.requested)
         if (!receipient)
             return cb(false, 'receipient does not exist')
         if (dao.availableBalance(creator) < fee)
@@ -35,7 +35,7 @@ module.exports = {
         cb(true)
     },
     execute: (tx, ts, cb) => {
-        let fee = dao.proposalCreationFee(tx.data.requested)
+        let fee = dao.fundRequestCreationFee(tx.data.requested)
         let votingEnds = ts+(config.daoVotingPeriodSeconds*1000)
         let fundingEnds = votingEnds+(config.fundRequestContribPeriodSeconds*1000)
         let deadline = fundingEnds+(config.fundRequestDeadlineSeconds*1000)

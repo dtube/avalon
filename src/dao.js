@@ -8,13 +8,23 @@ let dao = {
                 newLock = account.proposalVotes[v].amount - account.proposalVotes[v].bonus
         return account.balance - newLock
     },
-    proposalCreationFee: (requestedFund = 1) => {
+    fundRequestCreationFee: (requestedFund = 1) => {
         let baseFee = config.fundRequestBaseFee
         let subseqAmounts = requestedFund-config.fundRequestSubStart
         if (subseqAmounts <= 0)
             return baseFee
         let subseqFee = Math.ceil((subseqAmounts*config.fundRequestSubFee)/config.fundRequestSubMult)
         return baseFee+subseqFee
+    },
+    getChainUpdateStatus: (proposal,ts) => {
+        if (proposal.votingEnds > ts)
+            return dao.chainUpdateStatus.votingActive
+        else if (proposal.votingEnds <= ts && (proposal.approvals < config.daoVotingThreshold || proposal.approvals < proposal.disapprovals))
+            return dao.chainUpdateStatus.votingRejected
+        else if (proposal.executionTs > ts)
+            return dao.chainUpdateStatus.votingSuccess
+        else
+            return dao.chainUpdateStatus.executed
     },
     getFundRequestStatus: (proposal,ts) => {
         if (proposal.votingEnds > ts)
@@ -48,9 +58,16 @@ let dao = {
             return
         for (let c in proposal.contrib) {
             let refundee = cache.findOnePromise('accounts',{ name: c })
-            await cache.updateOnePromise('accounts',{ name: c },{ $inc: proposal.contrib[c] })
+            await cache.updateOnePromise('accounts',{ name: c },{ $inc: { balance: proposal.contrib[c] }})
             await transaction.updateIntsAndNodeApprPromise(refundee,ts,proposal.contrib[c])
         }
+    },
+    refundProposalFee: async (proposal,ts) => {
+        if (!proposal.fee)
+            return
+        let refundee = cache.findOnePromise('accounts',{ name: proposal.creator })
+        await cache.updateOnePromise('accounts',{ name: proposal.creator },{ $inc: { balance: proposal.fee }})
+        await transaction.updateIntsAndNodeApprPromise(refundee,ts,proposal.fee)
     },
     disburseFundRequest: async (receiver,amount,ts) => {
         let beneficiary = await cache.findOnePromise('accounts',{ name: receiver })
@@ -90,6 +107,23 @@ let dao = {
                 else if (newStatus === dao.fundRequestStatus.proposalComplete) {
                     await dao.disburseFundRequest(proposal.receiver,proposal.raised+proposal.fee,ts)
                     updateOp.$set.paid = ts
+                    dao.finalizeProposal(p)
+                }
+
+                await cache.updateOnePromise('proposals',{ _id: p },updateOp)
+            } else if (proposal && proposal.type === dao.governanceTypes.chainUpdate) {
+                let newStatus = dao.getChainUpdateStatus(proposal,ts)
+                let updateOp = { $set: { status: newStatus }}
+                logr.trace('DAO trigger',newStatus,proposal)
+                if (newStatus === dao.chainUpdateStatus.votingRejected) {
+                    feeBurn += proposal.fee
+                    dao.finalizeProposal(p)
+                } else if (newStatus === dao.chainUpdateStatus.votingSuccess) {
+                    let executionTs = proposal.votingEnds+(config.chainUpdateGracePeriodSeconds*1000)
+                    updateOp.$set.executionTs = executionTs
+                    dao.updateProposalTrigger(p,executionTs)
+                } else if (newStatus === dao.chainUpdateStatus.executed) {
+                    await dao.refundProposalFee(proposal,ts)
                     dao.finalizeProposal(p)
                 }
 
@@ -188,6 +222,12 @@ let dao = {
         proposalComplete: 6,
         proposalExpired: 7,
         revisionRequired: 8
+    },
+    chainUpdateStatus: {
+        votingActive: 0,
+        votingRejected: 1,
+        votingSuccess: 2,
+        executed: 3
     }
 }
 
@@ -203,4 +243,10 @@ functingActive to fundingFailed -> trigger
 fundingSuccess to reviewInProgress -> tx (submit work)
 fundingSuccess to proposalExpired -> trigger
 reviewInProgress to proposalComplete -> trigger or tx
+
+Chain update status transitions:
+
+votingActive to votingRejected -> trigger
+votingActive to votingSuccess -> trigger
+votingSuccess to executed -> trigger
 */

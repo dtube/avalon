@@ -248,6 +248,11 @@ let cmds = {
     proposalEdit: (privKey, sender, id, title, description, url) => {
         let tx = '{"type":36,"data":{"id":'+id+',"title":"'+title+'","description":"'+description+'","url":"'+url+'"}}'
         return sign(privKey, sender, tx)
+    },
+
+    chainUpdateCreate: (privKey, sender, title, description, url, changes) => {
+        let tx = '{"type":37,"data":{"title":"'+title+'","description":"'+description+'","url":"'+url+'","changes":'+changes+'}}'
+        return sign(privKey, sender, tx)
     }
 }
 
