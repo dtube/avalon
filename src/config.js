@@ -29,6 +29,8 @@ let config = {
             consensusRounds: 2,
             // base rentability of votes
             ecoBaseRent: 0.50,
+            // downvote rentability factor
+            ecoDvRentFactor: 1,
             // the number of blocks from the past taken into consideration for econonomics
             ecoBlocks: 9600, // 8 hours
             // the precision of the claimable amounts
@@ -96,14 +98,10 @@ let config = {
             originHash: 'da5fe18d0844f1f97bf5a94e7780dec18b4ab015e32383ede77158e059bacbb2',
             // the default number of random bytes to use for new key generation
             randomBytesLength: 32,
-            // the minimum hourly reward pool (including leader rewards)
-            rewardPoolMin: 1,
-            // the multiplier for the reward pool, modifying it is a bad practise
-            rewardPoolMult: 5, // 0.05 DTC / user / cycle => 1.05 DTC / user / week
             // the maximum share of the reward pool a single distribution can generate
             rewardPoolMaxShare: 0.1,
-            // the estimated number of active users on the network
-            rewardPoolUsers: 30000,
+            // theoretical max reward pool in a cycle including leader rewards
+            rewardPoolAmount: 150001,
             // the maximum length of tags (on votes)
             tagMaxLength: 25,
             tagMaxPerContent: 5,

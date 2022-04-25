@@ -31,9 +31,6 @@ let eco = {
             eco.lastRewardPool = eco.startRewardPool
         eco.startRewardPool = null
     },
-    inflation: () => {
-        return config.rewardPoolMult * config.rewardPoolUsers + config.rewardPoolMin
-    },
     loadHistory: () => {
         eco.history = []
         let lastCBurn = 0
@@ -84,7 +81,7 @@ let eco = {
         return votes
     },
     rewardPool: () => {
-        let theoricalPool = eco.inflation()
+        let theoricalPool = config.rewardPoolAmount
         let burned = 0
         let distributed = 0
         let votes = 0
@@ -171,7 +168,7 @@ let eco = {
                     winners[i].gross = 0
                 
                 let won = thNewCoins * winners[i].share
-                let rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts)
+                let rentabilityWinner = eco.rentability(winners[i].ts, currentVote.ts, currentVote.vt < 0)
                 won *= rentabilityWinner
                 won = eco.floor(won)
                 winners[i].gross += won
@@ -322,11 +319,12 @@ let eco = {
         logr.econ('PRINT:'+vt+' VT => '+thNewCoins+' dist', stats.avail)
         return thNewCoins
     },
-    rentability: (ts1, ts2) => {
+    rentability: (ts1, ts2, isDv) => {
         let ts = ts2 - ts1
         if (ts < 0) throw 'Invalid timestamp in rentability calculation'
 
         // https://imgur.com/a/GTLvs37
+        let directionRent = isDv ? config.ecoDvRentFactor : 1
         let startRentability = config.ecoStartRent
         let baseRentability = config.ecoBaseRent
         let rentabilityStartTime = config.ecoRentStartTime
@@ -356,7 +354,7 @@ let eco = {
             rentability = baseRentability + (1-baseRentability) * (claimRewardTime-ts) / (claimRewardTime-rentabilityEndTime)
 
 
-        rentability = Math.floor(rentability*Math.pow(10, config.ecoRentPrecision))/Math.pow(10, config.ecoRentPrecision)
+        rentability = Math.floor(directionRent*rentability*Math.pow(10, config.ecoRentPrecision))/Math.pow(10, config.ecoRentPrecision)
         return rentability
     },
     round: (val = 0) => Math.round(val*Math.pow(10,config.ecoClaimPrecision))/Math.pow(10,config.ecoClaimPrecision),
