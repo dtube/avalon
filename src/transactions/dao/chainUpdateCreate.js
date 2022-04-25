@@ -39,8 +39,8 @@ module.exports = {
         // check for group changes that must be bundled together in the proposal
         for (let p in changesObj)
             if (cc.groupsInv[p] && !groupChanges.includes(cc.groupsInv[p])) {
-                for (let member in cc.groups[p].members)
-                    if (!changesObj[cc.groups[p].members[member]])
+                for (let member in cc.groups[cc.groupsInv[p]].members)
+                    if (!changesObj[cc.groups[cc.groupsInv[p]].members[member]])
                         return cb(false, 'incomplete parameter group '+cc.groupsInv[p])
                 groupChanges.push(cc.groupsInv[p])
             }
@@ -61,8 +61,8 @@ module.exports = {
 
         cb(true)
     },
-    execute: async (tx, ts, cb) => {
-        await cache.insertOnePromise('proposals', {
+    execute: (tx, ts, cb) => {
+        cache.insertOne('proposals', {
             _id: dao.nextID,
             type: dao.governanceTypes.chainUpdate,
             title: tx.data.title,
@@ -77,12 +77,13 @@ module.exports = {
             ts: ts,
             votingEnds: ts+(config.daoVotingPeriodSeconds*1000),
             leaderSnapshot: dao.leaderSnapshot()
+        }, async () => {
+            dao.incrementID()
+            // deduct fee
+            let sender = await cache.findOnePromise('accounts', {name: tx.sender})
+            await cache.updateOnePromise('accounts', {name: tx.sender}, {$inc: {balance: -config.chainUpdateFee}})
+            await transaction.updateIntsAndNodeApprPromise(sender, ts, -config.chainUpdateFee)
+            cb(true)
         })
-        dao.incrementID()
-        // deduct fee
-        let sender = await cache.findOnePromise('accounts', {name: tx.sender})
-        await cache.updateOnePromise('accounts', {name: tx.sender}, {$inc: {balance: -config.chainUpdateFee}})
-        await transaction.updateIntsAndNodeApprPromise(sender, ts, -config.chainUpdateFee)
-        cb(true)
     }
 }

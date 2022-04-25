@@ -52,6 +52,7 @@ mongo.init(async function(state) {
     // Load proposal head ID and active proposals
     await dao.loadID()
     await dao.loadActiveFundRequests()
+    await dao.loadActiveChainUpdateProposals()
 
     // Rebuild chain state if specified
     let rebuildResumeBlock = state && state.headBlock ? state.headBlock+1 : 0

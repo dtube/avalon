@@ -21,7 +21,7 @@ let dao = {
             return dao.chainUpdateStatus.votingActive
         else if (proposal.votingEnds <= ts && (proposal.approvals < config.daoVotingThreshold || proposal.approvals < proposal.disapprovals))
             return dao.chainUpdateStatus.votingRejected
-        else if (proposal.executionTs > ts)
+        else if (!proposal.executionTs || proposal.executionTs > ts)
             return dao.chainUpdateStatus.votingSuccess
         else
             return dao.chainUpdateStatus.executed
@@ -65,7 +65,7 @@ let dao = {
     refundProposalFee: async (proposal,ts) => {
         if (!proposal.fee)
             return
-        let refundee = cache.findOnePromise('accounts',{ name: proposal.creator })
+        let refundee = await cache.findOnePromise('accounts',{ name: proposal.creator })
         await cache.updateOnePromise('accounts',{ name: proposal.creator },{ $inc: { balance: proposal.fee }})
         await transaction.updateIntsAndNodeApprPromise(refundee,ts,proposal.fee)
     },
@@ -166,6 +166,26 @@ let dao = {
                     break
                 case dao.fundRequestStatus.reviewInProgress:
                     dao.activeProposalIDs[activeRequests[i]._id] = activeRequests[i].reviewDeadline
+                    break
+            }
+        }
+    },
+    loadActiveChainUpdateProposals: async () => {
+        let activeProposals = await db.collection('proposals').find({$and: [
+            {type:2},
+            {$or: [
+                {status: 0},
+                {status: 2}
+            ]}
+        ]}).toArray()
+        for (let i in activeProposals) {
+            cache.proposals[activeProposals[i]._id] = activeProposals[i]
+            switch (activeProposals[i].status) {
+                case dao.chainUpdateStatus.votingActive:
+                    dao.activeProposalIDs[activeProposals[i]._id] = activeProposals[i].votingEnds
+                    break
+                case dao.chainUpdateStatus.votingSuccess:
+                    dao.activeProposalIDs[activeProposals[i]._id] = activeProposals[i].executionTs
                     break
             }
         }
