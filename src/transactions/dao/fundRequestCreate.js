@@ -59,7 +59,7 @@ module.exports = {
             deadline: deadline,
             leaderSnapshot: dao.leaderSnapshot()
         }, () => {
-            dao.incrementID()
+            dao.incrementID(ts)
             // deduct fee
             cache.updateOne('accounts', {name: tx.sender}, {$inc: {balance: -fee}}, async () => {
                 let sender = await cache.findOnePromise('accounts', {name: tx.sender})

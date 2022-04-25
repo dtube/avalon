@@ -258,7 +258,7 @@ let chain = {
         chain.applyHardforkPostBlock(block._id)
         eco.appendHistory(block)
         eco.nextBlock()
-        dao.nextBlock(block.timestamp)
+        dao.nextBlock()
         leaderStats.processBlock(block)
         txHistory.processBlock(block)
 
@@ -882,7 +882,7 @@ let chain = {
                 // update the config if an update was scheduled
                 config = require('./config.js').read(blockToRebuild._id)
                 chain.applyHardforkPostBlock(blockToRebuild._id)
-                dao.nextBlock(blockToRebuild.timestamp)
+                dao.nextBlock()
                 eco.nextBlock()
                 eco.appendHistory(blockToRebuild)
                 chain.cleanMemory()

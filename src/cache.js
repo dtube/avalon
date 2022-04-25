@@ -8,13 +8,15 @@ let cache = {
         contents: {},
         distributed: {},
         proposals: {},
-        playlists: {}
+        playlists: {},
+        state: {}
     },
     accounts: {},
     contents: {},
     distributed: {},
     proposals: {},
     playlists: {},
+    state: {},
     changes: [],
     inserts: [],
     rebuild: {

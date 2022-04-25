@@ -212,7 +212,12 @@ let config = {
                 
                 break
             }
-            
+        if (typeof cache !== 'undefined' && cache.state && cache.state[1]) {
+            let govConfig = cache.state[1]
+            for (let k in govConfig)
+                if (k !== '_id' && govConfig[k].effectiveBlock <= blockNum)
+                    finalConfig[k] = govConfig[k].value
+        }
         
         return finalConfig
     }

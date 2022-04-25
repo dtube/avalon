@@ -123,6 +123,13 @@ let dao = {
                     updateOp.$set.executionTs = executionTs
                     dao.updateProposalTrigger(p,executionTs)
                 } else if (newStatus === dao.chainUpdateStatus.executed) {
+                    let configChanges = { $set: {}}
+                    for (let c in proposal.changes)
+                        configChanges.$set[proposal.changes[c][0]] = {
+                            effectiveBlock: chain.getLatestBlock()._id+1,
+                            value: proposal.changes[c][1]
+                        }
+                    await cache.updateOnePromise('state', { _id: 1 },configChanges)
                     await dao.refundProposalFee(proposal,ts)
                     dao.finalizeProposal(p)
                 }
@@ -140,6 +147,11 @@ let dao = {
     finalizeProposal: (id) => {
         dao.activeProposalFinalizes[id] = dao.activeProposalIDs[id]
         delete dao.activeProposalIDs[id]
+    },
+    loadGovConfig: async () => {
+        let govConfig = await cache.findOnePromise('state',{ _id: 1 })
+        if (!govConfig)
+            await db.collection('state').insertOne({ _id: 1 })
     },
     loadActiveFundRequests: async () => {
         let activeRequests = await db.collection('proposals').find({$and: [
@@ -197,10 +209,15 @@ let dao = {
             dao.nextID = dao.lastID+1
         }
     },
-    incrementID: () => dao.nextID++,
+    incrementID: (currentBlockTs) => {
+        dao.nextID++
+        if (!dao.nextVotingPeriod)
+            dao.nextVotingPeriod = currentBlockTs+(config.daoVotingPeriodSeconds*1000)
+    },
     resetID: () => {
-        // resrt last id
+        // reset last id
         dao.nextID = dao.lastID+1
+        dao.nextVotingPeriod = 0
 
         // reset proposal triggers
         for (let p in dao.activeProposalTriggerLast)
@@ -212,17 +229,19 @@ let dao = {
             dao.activeProposalIDs[p] = dao.activeProposalFinalizes[p]
         dao.activeProposalFinalizes = {}
     },
-    nextBlock: async (ts) => {
+    nextBlock: async () => {
         // update ids for new proposals
         if (dao.nextID - dao.lastID >= 2)
             for (let i = dao.lastID+1; i < dao.nextID; i++)
-                dao.activeProposalIDs[i] = ts+(config.daoVotingPeriodSeconds*1000)
+                dao.activeProposalIDs[i] = dao.nextVotingPeriod
         dao.lastID = dao.nextID-1
+        dao.nextVotingPeriod = 0
 
         // clear old triggers and finalizes
         dao.activeProposalTriggerLast = {}
         dao.activeProposalFinalizes = {}
     },
+    nextVotingPeriod: 0,
     nextID: 1,
     lastID: 0,
     activeProposalIDs: {},

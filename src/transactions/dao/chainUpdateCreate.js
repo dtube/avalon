@@ -78,7 +78,7 @@ module.exports = {
             votingEnds: ts+(config.daoVotingPeriodSeconds*1000),
             leaderSnapshot: dao.leaderSnapshot()
         }, async () => {
-            dao.incrementID()
+            dao.incrementID(ts)
             // deduct fee
             let sender = await cache.findOnePromise('accounts', {name: tx.sender})
             await cache.updateOnePromise('accounts', {name: tx.sender}, {$inc: {balance: -config.chainUpdateFee}})
