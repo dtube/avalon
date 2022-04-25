@@ -28,6 +28,10 @@ module.exports = {
             if (status !== dao.fundRequestStatus.votingActive &&
                 status !== dao.fundRequestStatus.fundingActive)
                     return cb(false, 'cannot edit inactive proposals or fund requests past its funding stage')
+        } else if (proposal.type === dao.governanceTypes.chainUpdate) {
+            let status = dao.getChainUpdateStatus(proposal,ts)
+            if (status !== dao.chainUpdateStatus.votingActive)
+                return cb(false, 'cannot edit chain update proposals past its voting period')
         }
         cb(true)
     },
