@@ -199,11 +199,13 @@ let config = {
     },
     read: (blockNum) => {
         let finalConfig = {}
+        let latestHf = 0
         for (const key in config.history) 
             if (blockNum >= key) {
                 if (blockNum === parseInt(key) && blockNum !== 0)
                     logr.info('Hard Fork #'+key)
                 Object.assign(finalConfig, config.history[key])
+                latestHf = parseInt(key)
             }
             else {
                 if (config.history[key].ecoBlocks > finalConfig.ecoBlocks
@@ -215,7 +217,7 @@ let config = {
         if (typeof cache !== 'undefined' && cache.state && cache.state[1]) {
             let govConfig = cache.state[1]
             for (let k in govConfig)
-                if (k !== '_id' && govConfig[k].effectiveBlock <= blockNum)
+                if (k !== '_id' && govConfig[k].effectiveBlock >= latestHf)
                     finalConfig[k] = govConfig[k].value
         }
         
