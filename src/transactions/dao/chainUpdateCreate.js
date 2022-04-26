@@ -74,6 +74,7 @@ module.exports = {
             approvals: 0,
             disapprovals: 0,
             status: 0,
+            state: dao.proposalState.active,
             ts: ts,
             votingEnds: ts+(config.daoVotingPeriodSeconds*1000),
             leaderSnapshot: dao.leaderSnapshot()

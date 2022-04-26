@@ -95,9 +95,11 @@ let dao = {
                 logr.trace('DAO trigger',newStatus,proposal)
                 if (newStatus === dao.fundRequestStatus.votingRejected) {
                     feeBurn += proposal.fee
+                    updateOp.$set.state = dao.proposalState.failed
                     dao.finalizeProposal(p)
                 } else if (newStatus === dao.fundRequestStatus.fundingFailed || newStatus === dao.fundRequestStatus.proposalExpired) {
                     feeBurn += proposal.fee
+                    updateOp.$set.state = dao.proposalState.failed
                     await dao.refundContributors(proposal,ts)
                     dao.finalizeProposal(p)
                 } else if (newStatus === dao.fundRequestStatus.fundingActive)
@@ -107,6 +109,7 @@ let dao = {
                 else if (newStatus === dao.fundRequestStatus.proposalComplete) {
                     await dao.disburseFundRequest(proposal.receiver,proposal.raised+proposal.fee,ts)
                     updateOp.$set.paid = ts
+                    updateOp.$set.state = dao.proposalState.success
                     dao.finalizeProposal(p)
                 }
 
@@ -117,6 +120,7 @@ let dao = {
                 logr.trace('DAO trigger',newStatus,proposal)
                 if (newStatus === dao.chainUpdateStatus.votingRejected) {
                     feeBurn += proposal.fee
+                    updateOp.$set.state = dao.proposalState.failed
                     dao.finalizeProposal(p)
                 } else if (newStatus === dao.chainUpdateStatus.votingSuccess) {
                     let executionTs = proposal.votingEnds+(config.chainUpdateGracePeriodSeconds*1000)
@@ -129,6 +133,7 @@ let dao = {
                             effectiveBlock: chain.getLatestBlock()._id+1,
                             value: proposal.changes[c][1]
                         }
+                    updateOp.$set.state = dao.proposalState.success
                     await cache.updateOnePromise('state', { _id: 1 },configChanges)
                     await dao.refundProposalFee(proposal,ts)
                     dao.finalizeProposal(p)
@@ -250,6 +255,12 @@ let dao = {
     governanceTypes: {
         fundRequest: 1,
         chainUpdate: 2
+    },
+    proposalState: {
+        // for query purposes only
+        active: 0,
+        failed: 1,
+        success: 2
     },
     fundRequestStatus: {
         votingActive: 0,

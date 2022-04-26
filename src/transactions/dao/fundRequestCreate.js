@@ -53,6 +53,7 @@ module.exports = {
             approvals: 0,
             disapprovals: 0,
             status: 0,
+            state: dao.proposalState.active,
             ts: ts,
             votingEnds: votingEnds,
             fundingEnds: fundingEnds,
