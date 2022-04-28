@@ -96,10 +96,12 @@ let dao = {
                 if (newStatus === dao.fundRequestStatus.votingRejected) {
                     feeBurn += proposal.fee
                     updateOp.$set.state = dao.proposalState.failed
+                    updateOp.$set.threshold = config.daoVotingThreshold
                     dao.finalizeProposal(p)
                 } else if (newStatus === dao.fundRequestStatus.fundingFailed || newStatus === dao.fundRequestStatus.proposalExpired) {
                     feeBurn += proposal.fee
                     updateOp.$set.state = dao.proposalState.failed
+                    updateOp.$set.threshold = config.daoVotingThreshold
                     await dao.refundContributors(proposal,ts)
                     dao.finalizeProposal(p)
                 } else if (newStatus === dao.fundRequestStatus.fundingActive)
@@ -121,10 +123,12 @@ let dao = {
                 if (newStatus === dao.chainUpdateStatus.votingRejected) {
                     feeBurn += proposal.fee
                     updateOp.$set.state = dao.proposalState.failed
+                    updateOp.$set.threshold = config.daoVotingThreshold
                     dao.finalizeProposal(p)
                 } else if (newStatus === dao.chainUpdateStatus.votingSuccess) {
                     let executionTs = proposal.votingEnds+(config.chainUpdateGracePeriodSeconds*1000)
                     updateOp.$set.executionTs = executionTs
+                    updateOp.$set.threshold = config.daoVotingThreshold
                     dao.updateProposalTrigger(p,executionTs)
                 } else if (newStatus === dao.chainUpdateStatus.executed) {
                     let configChanges = { $set: {}}
