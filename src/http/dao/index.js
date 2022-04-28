@@ -10,9 +10,10 @@ module.exports = {
             })
         })
 
-        app.get('/dao/:state/:type', async (req,res) => {
+        app.get('/dao/:state/:type/:sort?', async (req,res) => {
             const state = req.params.state
             const type = req.params.type
+            let sort = -1
             const query = {$and: []}
             if (type !== 'all')
                 query.$and.push({type: parseInt(type)})
@@ -20,8 +21,10 @@ module.exports = {
                 query.$and.push({state: parseInt(state)})
             if (query.$and.length === 0)
                 delete query.$and
+            if (req.params.sort === 'asc')
+                sort = 1
             try {
-                res.send(await db.collection('proposals').find(query).toArray())
+                res.send(await db.collection('proposals').find(query,{sort:{_id:sort}}).toArray())
             } catch (e) {
                 res.status(500).send({error: e.toString()})
             }
