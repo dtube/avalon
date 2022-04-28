@@ -101,12 +101,12 @@ let dao = {
                 } else if (newStatus === dao.fundRequestStatus.fundingFailed || newStatus === dao.fundRequestStatus.proposalExpired) {
                     feeBurn += proposal.fee
                     updateOp.$set.state = dao.proposalState.failed
-                    updateOp.$set.threshold = config.daoVotingThreshold
                     await dao.refundContributors(proposal,ts)
                     dao.finalizeProposal(p)
-                } else if (newStatus === dao.fundRequestStatus.fundingActive)
+                } else if (newStatus === dao.fundRequestStatus.fundingActive) {
+                    updateOp.$set.threshold = config.daoVotingThreshold
                     dao.updateProposalTrigger(p,proposal.fundingEnds)
-                else if (newStatus === dao.fundRequestStatus.fundingSuccess)
+                } else if (newStatus === dao.fundRequestStatus.fundingSuccess)
                     dao.updateProposalTrigger(p,proposal.deadline)
                 else if (newStatus === dao.fundRequestStatus.proposalComplete) {
                     await dao.disburseFundRequest(proposal.receiver,proposal.raised+proposal.fee,ts)
