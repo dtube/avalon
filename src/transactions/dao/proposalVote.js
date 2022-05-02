@@ -1,3 +1,5 @@
+const dao = require("../../dao")
+
 module.exports = {
     fields: ['id','amount'],
     validate: async (tx, ts, legitUser, cb) => {
@@ -63,6 +65,14 @@ module.exports = {
                     end: proposal.votingEnds
                 }
             }
+        })
+        dao.pushVote({
+            _id: tx.sender+'/'+tx.data.id,
+            proposal_id: tx.data.id,
+            amount: Math.abs(tx.data.amount),
+            bonus: bonusApplied,
+            veto: tx.data.amount < 0,
+            end: proposal.votingEnds
         })
         cb(true)
     }

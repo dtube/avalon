@@ -237,8 +237,19 @@ let dao = {
         for (let p in dao.activeProposalFinalizes)
             dao.activeProposalIDs[p] = dao.activeProposalFinalizes[p]
         dao.activeProposalFinalizes = {}
+
+        // reset new votes
+        dao.newVotes = []
     },
-    nextBlock: async () => {
+    pushVote: (vote) => {
+        if (process.env.DAO_VOTES === '1')
+            dao.newVotes.push(vote)
+    },
+    writeVotes: async (votes) => {
+        for (let v in votes)
+            await db.collection('proposalVotes').insertOne(votes[v])
+    },
+    nextBlock: () => {
         // update ids for new proposals
         if (dao.nextID - dao.lastID >= 2)
             for (let i = dao.lastID+1; i < dao.nextID; i++)
@@ -249,6 +260,11 @@ let dao = {
         // clear old triggers and finalizes
         dao.activeProposalTriggerLast = {}
         dao.activeProposalFinalizes = {}
+
+        // write new votes to db
+        let votes = dao.newVotes
+        dao.newVotes = []
+        dao.writeVotes(votes)
     },
     nextVotingPeriod: 0,
     nextID: 1,
@@ -256,6 +272,7 @@ let dao = {
     activeProposalIDs: {},
     activeProposalTriggerLast: {},
     activeProposalFinalizes: {},
+    newVotes: [],
     governanceTypes: {
         fundRequest: 1,
         chainUpdate: 2
