@@ -69,6 +69,7 @@ module.exports = {
         dao.pushVote({
             _id: tx.sender+'/'+tx.data.id,
             proposal_id: tx.data.id,
+            voter: tx.sender,
             amount: Math.abs(tx.data.amount),
             bonus: bonusApplied,
             veto: tx.data.amount < 0,
