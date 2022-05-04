@@ -54,7 +54,7 @@
     "name": "Avalon",
     "title": "Avalon API Documentation",
     "description": "REST API documentation for Avalon blockchain",
-    "sampleUrl": "https://avalon.oneloved.tube",
+    "sampleUrl": "https://api.avalonblocks.com",
     "version": "1.6.0"
   },
   "devDependencies": {
