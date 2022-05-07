@@ -1,5 +1,3 @@
-const master = require('./daoMaster')
-
 let dao = {
     availableBalance: (account,ts) => {
         if (!account.voteLock)
@@ -220,7 +218,6 @@ let dao = {
             dao.lastID = latestProposal[0]._id
             dao.nextID = dao.lastID+1
         }
-        await master.loadID()
     },
     incrementID: (currentBlockTs) => {
         dao.nextID++
@@ -244,9 +241,6 @@ let dao = {
 
         // reset new votes
         dao.newVotes = []
-
-        // master controller
-        master.resetID()
     },
     pushVote: (vote) => {
         if (process.env.DAO_VOTES === '1')
@@ -272,9 +266,6 @@ let dao = {
         let votes = dao.newVotes
         dao.newVotes = []
         dao.writeVotes(votes)
-
-        // master controller
-        master.nextBlock()
     },
     nextVotingPeriod: 0,
     nextID: 1,

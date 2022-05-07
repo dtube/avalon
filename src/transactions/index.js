@@ -40,7 +40,9 @@ const transactions = [
     require('./dao/fundRequestWorkReview.js'),
     require('./dao/proposalVote.js'),
     require('./dao/proposalEdit.js'),
-    require('./dao/chainUpdateCreate.js')
+    require('./dao/chainUpdateCreate.js'),
+    require('./dao/mdQueue.js'),
+    require('./dao/mdSign.js')
 ]
 
 module.exports = {
@@ -82,7 +84,9 @@ module.exports = {
         FUND_REQUEST_WORK_REVIEW: 34,
         PROPOSAL_VOTE: 35,
         PROPOSAL_EDIT: 36,
-        CHAIN_UPDATE_CREATE: 37
+        CHAIN_UPDATE_CREATE: 37,
+        MD_QUEUE: 38,
+        MD_SIGN: 39
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')

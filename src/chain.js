@@ -5,6 +5,7 @@ const bs58 = require('base-x')(config.b58Alphabet)
 const series = require('run-series')
 const cloneDeep = require('clone-deep')
 const dao = require('./dao')
+const daoMaster = require('./daoMaster')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
 const txHistory = require('./txHistory')
@@ -125,6 +126,7 @@ let chain = {
             chain.executeBlockTransactions(newBlock, true, false, function(validTxs, distributed, burned) {
                 cache.rollback()
                 dao.resetID()
+                daoMaster.resetID()
                 // and only add the valid txs to the new block
                 newBlock.txs = validTxs
 
@@ -259,6 +261,7 @@ let chain = {
         eco.appendHistory(block)
         eco.nextBlock()
         dao.nextBlock()
+        daoMaster.nextBlock()
         leaderStats.processBlock(block)
         txHistory.processBlock(block)
 
@@ -438,6 +441,7 @@ let chain = {
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
             dao.resetID()
+            daoMaster.resetID()
             if (validTxs.length !== newBlock.txs.length) {
                 logr.error('invalid block transaction')
                 cb(false); return
@@ -883,6 +887,7 @@ let chain = {
                 config = require('./config.js').read(blockToRebuild._id)
                 chain.applyHardforkPostBlock(blockToRebuild._id)
                 dao.nextBlock()
+                daoMaster.nextBlock()
                 eco.nextBlock()
                 eco.appendHistory(blockToRebuild)
                 chain.cleanMemory()

@@ -1,5 +1,5 @@
 // dao controller for master account
-const transactions = require('./transactions')
+let transactions
 
 let daoMaster = {
     validateOperation: (type,data,ts,cb) => {
@@ -52,6 +52,7 @@ let daoMaster = {
             daoMaster.lastID = latestOperation[0]._id
             daoMaster.nextID = daoMaster.lastID+1
         }
+        transactions = require('./transactions')
     },
     incrementID: () => {
         daoMaster.nextID++
