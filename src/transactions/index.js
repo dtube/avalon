@@ -126,5 +126,6 @@ module.exports = {
 
             cb(isValid, dist, burn)
         })
-    }
+    },
+    transactions: transactions
 }

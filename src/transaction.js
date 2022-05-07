@@ -13,23 +13,6 @@ const skiphash = {
     '7dedc07cb42c96b5013710161bf487a2488fce789b80286e3df910075f98a4d1': '16de2c5c847962f3683aec852072e702fb8c4ffd81c3d23cf85b8d2da031bd8e' // tx in block 14,874,851
 }
 
-// transaction types with arbitrary string input that requires bson serialization validation
-const serializeValidation = [
-    TransactionType.TRANSFER,
-    TransactionType.COMMENT,
-    TransactionType.VOTE,
-    TransactionType.USER_JSON,
-    TransactionType.NEW_KEY,
-    TransactionType.PROMOTED_COMMENT,
-    TransactionType.ENABLE_NODE,
-    TransactionType.TIPPED_VOTE,
-    TransactionType.NEW_WEIGHTED_KEY,
-    TransactionType.PLAYLIST_JSON,
-    TransactionType.PLAYLIST_PUSH,
-    TransactionType.COMMENT_EDIT,
-    TransactionType.ACCOUNT_AUTHORIZE
-]
-
 let transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     eventConfirmation: new EventEmitter(),
@@ -143,7 +126,7 @@ let transaction = {
         }
         // ensure nothing gets lost when serialized in bson
         // skipped during replays or rebuilds
-        if (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks && serializeValidation.includes(tx.type)) {
+        if (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks && Transaction.transactions[tx.type].bsonValidate) {
             let bsonified = bson.deserialize(bson.serialize(newTx))
             let bsonifiedHash = CryptoJS.SHA256(JSON.stringify(bsonified)).toString()
             if (computedHash !== bsonifiedHash)

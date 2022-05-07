@@ -1,6 +1,7 @@
 const dao = require('../dao')
 
 module.exports = {
+    bsonValidate: true,
     fields: ['receiver', 'amount', 'memo'],
     validate: (tx, ts, legitUser, cb) => {
         if (!validate.string(tx.data.receiver, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {

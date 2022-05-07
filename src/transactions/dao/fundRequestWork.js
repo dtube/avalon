@@ -1,6 +1,7 @@
 const dao = require('../../dao')
 
 module.exports = {
+    bsonValidate: true,
     fields: ['id','work'],
     validate: async (tx, ts, legitUser, cb) => {
         if (!config.daoEnabled)

@@ -2,6 +2,7 @@ const dao = require('../../dao')
 const cc = require('../../validate').chainConfig
 
 module.exports = {
+    bsonValidate: true,
     fields: ['title', 'description', 'url', 'changes'],
     validate: async (tx, ts, legitUser, cb) => {
         if (!config.daoEnabled)

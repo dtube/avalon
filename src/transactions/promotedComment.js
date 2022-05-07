@@ -1,6 +1,7 @@
 const dao = require('../dao')
 
 module.exports = {
+    bsonValidate: true,
     fields: ['link', 'pa', 'pp', 'json', 'vt', 'tag', 'burn'],
     validate: (tx, ts, legitUser, cb) => {
         // first verify that the user isn't editing an existing content
