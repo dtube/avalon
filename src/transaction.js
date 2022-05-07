@@ -107,11 +107,16 @@ let transaction = {
             && tx.sender !== config.masterName) {
             cb(false, 'only "'+config.masterName+'" can execute this transaction type'); return
         }
+        if (config.masterDao && tx.sender === config.masterName && !config.masterDaoTxs.includes(tx.type))
+            return cb(false, 'master dao account cannot transact with type '+tx.type)
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
         if (chain.getLatestBlock().timestamp - tx.ts > config.txExpirationTime) {
             cb(false, 'invalid timestamp'); return
         }
+        // enforce maximum transaction expiration
+        if (tx.ts - ts > config.txExpirationMax)
+            return cb(false, 'timestamp expiration exceeds max limit of '+config.txExpirationMax+'ms')
         // check if this tx hash was already added to chain recently
         if (transaction.isPublished(tx)) {
             cb(false, 'transaction already in chain'); return

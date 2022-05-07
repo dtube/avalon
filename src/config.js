@@ -186,6 +186,14 @@ let config = {
             fundRequestDeadlineExtSeconds: 2592000,
             fundRequestReviewPeriodSeconds: 259200,
 
+            // master dao
+            masterDao: true,
+            masterDaoTxs: [0,4,5,6,10,11,13,14,15,17,19,20,21,23,24,25,26,27,28,29,30,32],
+            masterDaoTxExp: 259200000,
+
+            // maximum tx expiration allowed (block ts + 1 hour)
+            txExpirationMax: 3600000,
+
             // update tx type restrictions
             txLimits: {
                 14: 2,

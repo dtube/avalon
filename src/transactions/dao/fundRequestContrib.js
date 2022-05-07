@@ -26,6 +26,8 @@ module.exports = {
         let notRaised = proposal.requested - proposal.raised
         if (tx.data.amount > notRaised)
             return cb(false, 'attempting to contribute '+(tx.data.amount/100)+' DTUBE but proposal only needs additional '+(notRaised/100)+' DTUBE in funding')
+        if (config.masterDao && tx.sender === config.masterName && tx.data.amount > Math.floor(proposal.requested/2))
+            return cb(false, 'master dao account can only fund up to half of requested amount')
 
         cb(true)
     },

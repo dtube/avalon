@@ -9,6 +9,7 @@ let cache = {
         distributed: {},
         proposals: {},
         playlists: {},
+        masterdao: {},
         state: {}
     },
     accounts: {},
@@ -16,6 +17,7 @@ let cache = {
     distributed: {},
     proposals: {},
     playlists: {},
+    masterdao: {},
     state: {},
     changes: [],
     inserts: [],
