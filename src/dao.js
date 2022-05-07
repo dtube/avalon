@@ -109,7 +109,8 @@ let dao = {
                 } else if (newStatus === dao.fundRequestStatus.fundingSuccess)
                     dao.updateProposalTrigger(p,proposal.deadline)
                 else if (newStatus === dao.fundRequestStatus.proposalComplete) {
-                    await dao.disburseFundRequest(proposal.receiver,proposal.raised+proposal.fee,ts)
+                    await dao.disburseFundRequest(proposal.receiver,proposal.raised,ts)
+                    await dao.refundProposalFee(proposal,ts)
                     updateOp.$set.paid = ts
                     updateOp.$set.state = dao.proposalState.success
                     dao.finalizeProposal(p)
