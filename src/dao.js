@@ -79,7 +79,12 @@ let dao = {
         for (let b = 1; b <= config.daoLeaderSnapshotBlocks; b++)
             if (chain.recentBlocks.length-b >= 0)
                 lastLeaders[chain.recentBlocks[chain.recentBlocks.length-b].miner] = 1
-        return Object.keys(lastLeaders)
+        let snapshot =  Object.keys(lastLeaders)
+        if (config.daoMembers)
+            for (let m in config.daoMembers)
+                if (!snapshot.includes(config.daoMembers[m]))
+                    snapshot.push(config.daoMembers[m])
+        return snapshot
     },
     runTriggers: async (ts) => {
         let feeBurn = 0

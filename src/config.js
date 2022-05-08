@@ -171,6 +171,7 @@ let config = {
             // avalon dao
             daoEnabled: true,
             daoLeaderSnapshotBlocks: 30,
+            daoMembers: [],
             daoVotingPeriodSeconds: 604800,
             daoVotingThreshold: 50000000,
             daoVotingLeaderBonus: 1000000,
