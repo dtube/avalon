@@ -8,7 +8,11 @@ module.exports = {
             return cb(false, 'dao is not enabled')
         if (!config.masterDao)
             return cb(false, 'master dao controller is not active')
-        
+
+        // infinite loop failsafe
+        if (tx.sender === config.masterName)
+            return cb(false, 'master account must not execute itself')
+
         // tx type integer
         if (!validate.integer(tx.data.id,false,false))
             return cb(false, 'invalid operation id')
