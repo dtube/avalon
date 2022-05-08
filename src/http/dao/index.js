@@ -34,17 +34,36 @@ module.exports = {
                 return res.send(op)
         })
 
-        app.get('/dao/master/queued', async (req,res) => {
-            try {
-                res.send(await db.collection('masterdao').find({executed: {$exists: false}},{}).toArray())
-            } catch (e) {
-                res.status(500).send({error: e.toString()})
+        app.get('/dao/master/ops/:status/:skip?', async (req,res) => {
+            const status = req.params.status
+            const query = {$and: []}
+            const sort = {}
+            switch (status) {
+                case 'queued':
+                    query.$and.push({executed: {$exists: false}})
+                    query.$and.push({expiration: {$gt: new Date().getTime()}})
+                    sort.ts = -1
+                    break
+                case 'expired':
+                    query.$and.push({executed: {$exists: false}})
+                    query.$and.push({expiration: {$lte: new Date().getTime()}})
+                    sort.ts = -1
+                    break
+                case 'executed':
+                    query.$and.push({executed: {$exists: true}})
+                    query.$and.push({error: {$exists: false}})
+                    sort.executed = -1
+                    break
+                case 'errored':
+                    query.$and.push({executed: {$exists: true}})
+                    query.$and.push({error: {$exists: true}})
+                    sort.executed = -1
+                    break
+                default:
+                    return res.status(400).send({error: 'invalid status'})
             }
-        })
-
-        app.get('/dao/master/executed/:skip?', async (req,res) => {
             try {
-                res.send(await db.collection('masterdao').find({executed: {$exists: true}},{limit: 50, skip: parseInt(req.params.skip) || 0, sort: {executed: -1} }).toArray())
+                res.send(await db.collection('masterdao').find(query,{limit: 50, skip: parseInt(req.params.skip) || 0, sort: sort}).toArray())
             } catch (e) {
                 res.status(500).send({error: e.toString()})
             }
