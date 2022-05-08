@@ -51,7 +51,7 @@ let config = {
             // the maximum number of follows a single account can do
             followsMax: 2000,
             // F
-            hotfix1: false,
+            hotfix1: true,
             // the max size of a stringified json input (content / user profile)
             // best if kept slightly lower than bwMax
             jsonMaxBytes: 60000,
@@ -59,8 +59,8 @@ let config = {
             keyIdMaxLength: 25,
             // how many max leaders there can be, and how much tokens and VT they earn per "mined" block
             leaderReward: 1,
-            leaderRewardVT: 500,
-            leaders: 10,
+            leaderRewardVT: 100,
+            leaders: 15,
             // how long of the end of the block hash is used for the leader pseudo random generator shuffle
             leaderShufflePrecision: 6,
             // the maximum number of leaders an account can vote for
@@ -115,46 +115,24 @@ let config = {
             // value: null/0 (default): enabled, 1: disabled, 2: master-only
             txLimits: {
                 14: 2,
-                15: 2,
-                19: 1
+                15: 2
             },
             // the number of ms needed for 0.01 DTC to generate 1 vt
             vtGrowth: 360000000, // +1 vt per hour per DTC (3600 * 1000 * 100)
-            vtPerBurn: 6 // can be updated in the future to modify incentives
-        },
-        1000090: {
-            leaders: 13,
-            leaderRewardVT: 100,
-            vtPerBurn: 44
-        },
-        4800000: {
-            // Author tip hardfork
-            txLimits: {
-                14: 2,
-                15: 2,
-                19: 0,
-                23: 1,
-                24: 1,
-                28: 1
-            }
-        },
-        4860000: {
-            hotfix1: true
-        },
-        8500050: {
+            vtPerBurn: 44, // can be updated in the future to modify incentives
+
+            // hf4
             maxKeys: 25,
             disallowVotingInactiveLeader: true,
             burnAccount: 'dtube.airdrop',
             preloadVt: 50, // 50% of vtPerBurn
             preloadBwGrowth: 2, // x2 more time of bwGrowth
             multisig: true,
-            leaders: 15
-        },
-        8595000: {
+
+            // hf5
             masterNoPreloadAcc: true
         },
-        25000000: {
-            /*
+        1000: {
             accountAuthEnabled: true,
             blockHashSerialization: 2,
             burnAccountIsBlackhole: true,
@@ -172,20 +150,20 @@ let config = {
             daoEnabled: true,
             daoLeaderSnapshotBlocks: 30,
             daoMembers: [],
-            daoVotingPeriodSeconds: 604800,
+            daoVotingPeriodSeconds: 3600, // 1h
             daoVotingThreshold: 50000000,
             daoVotingLeaderBonus: 1000000,
             chainUpdateFee: 30000,
             chainUpdateMaxParams: 20,
-            chainUpdateGracePeriodSeconds: 86400,
+            chainUpdateGracePeriodSeconds: 900, // 15m
             fundRequestBaseFee: 10000,
             fundRequestSubFee: 1,
             fundRequestSubMult: 100,
             fundRequestSubStart: 100000,
-            fundRequestContribPeriodSeconds: 1209600,
-            fundRequestDeadlineSeconds: 31536000,
-            fundRequestDeadlineExtSeconds: 2592000,
-            fundRequestReviewPeriodSeconds: 259200,
+            fundRequestContribPeriodSeconds: 21600, // 6h
+            fundRequestDeadlineSeconds: 172800, // 2d
+            fundRequestDeadlineExtSeconds: 86400, // 1d
+            fundRequestReviewPeriodSeconds: 10800, // 3h
 
             // master dao
             masterDao: true,
@@ -195,15 +173,8 @@ let config = {
             // maximum tx expiration allowed (block ts + 1 hour)
             txExpirationMax: 3600000,
 
-            // update tx type restrictions
-            txLimits: {
-                14: 2,
-                15: 2,
-                23: 0,
-                24: 0,
-                28: 0
-            }
-            */
+            // increase network capacity by ~10x
+            maxTxPerBlock: 200
         }
     },
     read: (blockNum) => {
