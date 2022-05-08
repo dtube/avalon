@@ -253,6 +253,16 @@ let cmds = {
     chainUpdateCreate: (privKey, sender, title, description, url, changes) => {
         let tx = '{"type":37,"data":{"title":"'+title+'","description":"'+description+'","url":"'+url+'","changes":'+changes+'}}'
         return sign(privKey, sender, tx)
+    },
+
+    mdQueue: (privKey, sender, txtype, payload) => {
+        let tx = '{"type":38,"data":{"txtype":'+txtype+',"payload":'+payload+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    mdSign: (privKey, sender, id) => {
+        let tx = '{"type":39,"data":{"id":'+id+'}}'
+        return sign(privKey, sender, tx)
     }
 }
 

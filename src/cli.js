@@ -307,6 +307,34 @@ program.command('limit-vt')
         writeLine('  $ limit-vt -1 -F key.json -M alice')
     })
 
+program.command('md-queue <txtype> <payload>')
+    .description('queue a transaction in master dao')
+    .action(function(txtype, payload) {
+        verifyAndSendTx('mdQueue', txtype, payload)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <txtype>: the transaction type to be queued')
+        writeLine('  <payload>: the payload of the new transaction to be queued')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ mdqueue 6 \'{"json":{"foo":"bar"}}\' -F key.json -M bob')
+        writeLine('  $ mdqueue 32 \'{"id":2,"amount":10000}\' -F key.json -M john')
+    })
+
+program.command('md-sign <id>')
+    .description('approve a queued transaction in master dao')
+    .action(function(id) {
+        verifyAndSendTx('mdSign', id)
+    }).on('--help', function(){
+        writeLine('')
+        writeLine('Arguments:')
+        writeLine('  <id>: identifier of the queued transaction')
+        writeLine('')
+        writeLine('Examples:')
+        writeLine('  $ mdqueue 1 -F key.json -M alice')
+    })
+
 program.command('new-key <id> <pub> <allowed_txs>')
     .description('add new key with custom perms')
     .action(function(id, pub, allowedTxs) {

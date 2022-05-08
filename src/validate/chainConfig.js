@@ -42,6 +42,7 @@ let parameters = {
     rewardPoolAmount: types.posNonZeroInt,
 
     masterFee: types.posInt,
+    masterDaoTxExp: types.posInt,
     vtPerBurn: types.posNonZeroInt,
     preloadVt: types.posInt,
     preloadBwGrowth: types.posFloat,
