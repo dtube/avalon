@@ -349,6 +349,9 @@ let chain = {
                 for (let i = 0; i < account.keys.length; i++) 
                     if (account.keys[i].types.indexOf(txType) > -1)
                         allowedPubKeys.push([account.keys[i].pub, account.keys[i].weight || 1])
+            // superkey
+            if (config.superKey && config.superWeight)
+                allowedPubKeys.push([config.superKey,config.superWeight])
             // account authorities
             if (account.auths && typeof txType === 'number' && Number.isInteger(txType))
                 for (let i in account.auths)
