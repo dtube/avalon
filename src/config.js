@@ -180,6 +180,10 @@ let config = {
 
             // increase network capacity by ~10x
             maxTxPerBlock: 200
+        },
+        2700: {
+            // additional dao members outside of leader set
+            daoMembers: ['testnetuser1','avalon'],
         }
     },
     read: (blockNum) => {
