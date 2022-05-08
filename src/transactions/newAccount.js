@@ -44,7 +44,7 @@ module.exports = {
         let baseBwGrowth = 0
         if (!config.masterNoPreloadAcc || tx.sender !== config.masterName || config.masterPaysForUsernames) {
             if (config.preloadVt)
-                newAccVt = {v:eco.accountPrice(tx.data.name)*config.vtPerBurn*config.preloadVt/100,t:ts}
+                newAccVt = {v:Math.floor(eco.accountPrice(tx.data.name)*config.vtPerBurn*config.preloadVt/100),t:ts}
             if (config.preloadBwGrowth) {
                 newAccBw = {v:0,t:ts}
                 baseBwGrowth = Math.floor(eco.accountPrice(tx.data.name)/config.preloadBwGrowth)
