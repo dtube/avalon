@@ -130,12 +130,12 @@ let chain = {
                 // and only add the valid txs to the new block
                 newBlock.txs = validTxs
 
-                if (distributed) newBlock.dist = distributed
-                if (burned) newBlock.burn = burned
-
                 // always record the failure of others
                 if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name !== process.env.NODE_OWNER)
                     newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name
+
+                if (distributed) newBlock.dist = distributed
+                if (burned) newBlock.burn = burned
 
                 // hash and sign the block with our private key
                 newBlock = chain.hashAndSignBlock(newBlock)
