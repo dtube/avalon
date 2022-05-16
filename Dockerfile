@@ -25,8 +25,8 @@ RUN apt-get -y update && apt-get install -y openssl vim tmux locales-all curl
 
 # Install nvm with node and npm
 ENV NVM_DIR /root/.nvm
-ENV NODE_VERSION v14.0.0
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh | bash \
+ENV NODE_VERSION v16.15.0
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
