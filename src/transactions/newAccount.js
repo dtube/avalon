@@ -31,7 +31,7 @@ module.exports = {
             else
                 cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                     if (err) throw err
-                    if (dao.availableBalance(account.balance) < eco.accountPrice(lowerUser))
+                    if (dao.availableBalance(account) < eco.accountPrice(lowerUser))
                         cb(false, 'invalid tx not enough balance')
                     else
                         cb(true)
