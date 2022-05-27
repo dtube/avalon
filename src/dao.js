@@ -57,7 +57,7 @@ let dao = {
         if (!proposal.contrib)
             return
         for (let c in proposal.contrib) {
-            let refundee = cache.findOnePromise('accounts',{ name: c })
+            let refundee = await cache.findOnePromise('accounts',{ name: c })
             await cache.updateOnePromise('accounts',{ name: c },{ $inc: { balance: proposal.contrib[c] }})
             await transaction.updateIntsAndNodeApprPromise(refundee,ts,proposal.contrib[c])
         }
