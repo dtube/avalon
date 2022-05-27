@@ -233,7 +233,7 @@ let p2p = {
                             if (i !== p2p.sockets.indexOf(ws)
                             && p2p.sockets[i].node_status
                             && p2p.sockets[i].node_status.nodeId === nodeId) {
-                                logr.warn('Peer disconnected because duplicate connections')
+                                logr.debug('Peer disconnected because duplicate connections')
                                 p2p.sockets[i].close()
                             }
     
