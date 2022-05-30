@@ -70,6 +70,7 @@ module.exports = {
         } else if (updateOp.$set.reviewDisapprovals > proposal.leaderSnapshot - threshold) {
             let newDeadline = Math.max(proposal.deadline,ts+(config.fundRequestDeadlineExtSeconds*1000))
             updateOp.$set.status = dao.fundRequestStatus.revisionRequired
+            updateOp.$set.state = dao.proposalState.success
             updateOp.$set.deadline = newDeadline
             updateOp.$unset.reviewDeadline = ''
             dao.updateProposalTrigger(tx.data.id,newDeadline)
