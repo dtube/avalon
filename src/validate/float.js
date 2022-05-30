@@ -13,7 +13,10 @@ module.exports = (value, canBeZero, canBeNegative, max, min) => {
         return false
     if (isNaN(value))
         return false
-    if (value.toString().split('.')[1].length > 6)
+    let parts = value.toString().split('.')
+    if (parts.length > 2)
+        return false
+    if (parts.length === 2 && parts[1].length > 6)
         return false
     if (!canBeZero && value === 0)
         return false
