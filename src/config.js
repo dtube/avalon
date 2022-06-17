@@ -154,7 +154,6 @@ let config = {
             masterNoPreloadAcc: true
         },
         25000000: {
-            /*
             accountAuthEnabled: true,
             blockHashSerialization: 2,
             burnAccountIsBlackhole: true,
@@ -203,7 +202,6 @@ let config = {
                 24: 0,
                 28: 0
             }
-            */
         }
     },
     read: (blockNum) => {
