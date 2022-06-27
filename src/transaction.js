@@ -5,7 +5,7 @@ const cloneDeep = require('clone-deep')
 const bson = require('bson')
 const Transaction = require('./transactions')
 const TransactionType = Transaction.Types
-const max_mempool = process.env.MEMPOOL_SIZE || 200
+const max_mempool = process.env.MEMPOOL_SIZE || 2000
 
 // probably due to non standard utf8 characters that were not properly written to mongodb/bson file
 // for now we skip them until such bug can be reproduced

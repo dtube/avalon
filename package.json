@@ -1,6 +1,6 @@
 {
   "name": "avalon",
-  "version": "1.5.2",
+  "version": "1.6",
   "description": "",
   "scripts": {
     "start": "node src/main.js",
