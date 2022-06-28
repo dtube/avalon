@@ -153,7 +153,7 @@ let config = {
         8595000: {
             masterNoPreloadAcc: true
         },
-        25000000: {
+        17150000: {
             accountAuthEnabled: true,
             blockHashSerialization: 2,
             burnAccountIsBlackhole: true,

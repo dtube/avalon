@@ -807,8 +807,7 @@ let chain = {
     applyHardfork: (block,cb) => {
         // Do something on hardfork block after tx executions and before leader rewards distribution
         // As this is not a real transaction, no actual transaction is considered executed here
-        // NOTE: Update block height to actual HF block activation
-        if (block._id === 25000000)
+        if (block._id === 17150000)
             // Clear @dtube.airdrop account
             cache.findOne('accounts', {name: config.burnAccount}, (e,burnAccount) => {
                 let burned = burnAccount.balance
