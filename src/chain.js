@@ -4,6 +4,8 @@ const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 const series = require('run-series')
 const cloneDeep = require('clone-deep')
+const dao = require('./dao')
+const daoMaster = require('./daoMaster')
 const transaction = require('./transaction.js')
 const notifications = require('./notifications.js')
 const txHistory = require('./txHistory')
@@ -123,15 +125,17 @@ let chain = {
             // so we will execute transactions in order and revalidate after each execution
             chain.executeBlockTransactions(newBlock, true, false, function(validTxs, distributed, burned) {
                 cache.rollback()
+                dao.resetID()
+                daoMaster.resetID()
                 // and only add the valid txs to the new block
                 newBlock.txs = validTxs
-
-                if (distributed) newBlock.dist = distributed
-                if (burned) newBlock.burn = burned
 
                 // always record the failure of others
                 if (chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name !== process.env.NODE_OWNER)
                     newBlock.missedBy = chain.schedule.shuffle[(newBlock._id-1)%config.leaders].name
+
+                if (distributed) newBlock.dist = distributed
+                if (burned) newBlock.burn = burned
 
                 // hash and sign the block with our private key
                 newBlock = chain.hashAndSignBlock(newBlock)
@@ -256,6 +260,8 @@ let chain = {
         chain.applyHardforkPostBlock(block._id)
         eco.appendHistory(block)
         eco.nextBlock()
+        dao.nextBlock()
+        daoMaster.nextBlock()
         leaderStats.processBlock(block)
         txHistory.processBlock(block)
 
@@ -434,6 +440,8 @@ let chain = {
     isValidBlockTxs: (newBlock, cb) => {
         chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
             cache.rollback()
+            dao.resetID()
+            daoMaster.resetID()
             if (validTxs.length !== newBlock.txs.length) {
                 logr.error('invalid block transaction')
                 cb(false); return
@@ -619,11 +627,15 @@ let chain = {
             // execute periodic burn
             let additionalBurn = await chain.decayBurnAccount(block)
 
+            // execute dao triggers
+            let daoBurn = await dao.runTriggers(block.timestamp)
+
             // add rewards for the leader who mined this block
             chain.leaderRewards(block.miner, block.timestamp, function(dist) {
                 distributedInBlock += dist
                 distributedInBlock = Math.round(distributedInBlock*1000) / 1000
                 burnedInBlock += additionalBurn
+                burnedInBlock += daoBurn
                 burnedInBlock = Math.round(burnedInBlock*1000) / 1000
                 cb(executedSuccesfully, distributedInBlock, burnedInBlock)
             })
@@ -795,8 +807,7 @@ let chain = {
     applyHardfork: (block,cb) => {
         // Do something on hardfork block after tx executions and before leader rewards distribution
         // As this is not a real transaction, no actual transaction is considered executed here
-        // NOTE: Update block height to actual HF block activation
-        if (block._id === 25000000)
+        if (block._id === 17150000)
             // Clear @dtube.airdrop account
             cache.findOne('accounts', {name: config.burnAccount}, (e,burnAccount) => {
                 let burned = burnAccount.balance
@@ -806,7 +817,16 @@ let chain = {
                         balance: 0,
                         bw: { v: 0, t: block.timestamp },
                         vt: { v: 0, t: block.timestamp }
-                    }}, () => cb(null, { executed: false, distributed: 0, burned: burned }))
+                    }}, () =>
+                        // disable @dtube leader
+                        transaction.execute({
+                            type: 18,
+                            data: {
+                                pub: ''
+                            },
+                            sender: 'dtube'
+                        },block.timestamp,() => cb(null, { executed: false, distributed: 0, burned: burned }))
+                    )
             })
         else
             cb(null, { executed: false, distributed: 0, burned: 0 })
@@ -874,6 +894,8 @@ let chain = {
                 // update the config if an update was scheduled
                 config = require('./config.js').read(blockToRebuild._id)
                 chain.applyHardforkPostBlock(blockToRebuild._id)
+                dao.nextBlock()
+                daoMaster.nextBlock()
                 eco.nextBlock()
                 eco.appendHistory(blockToRebuild)
                 chain.cleanMemory()

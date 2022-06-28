@@ -1,4 +1,4 @@
-const version = '1.5.2'
+const version = '1.6'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
@@ -233,7 +233,7 @@ let p2p = {
                             if (i !== p2p.sockets.indexOf(ws)
                             && p2p.sockets[i].node_status
                             && p2p.sockets[i].node_status.nodeId === nodeId) {
-                                logr.warn('Peer disconnected because duplicate connections')
+                                logr.debug('Peer disconnected because duplicate connections')
                                 p2p.sockets[i].close()
                             }
     

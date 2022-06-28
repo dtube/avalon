@@ -5,7 +5,7 @@ const cloneDeep = require('clone-deep')
 const bson = require('bson')
 const Transaction = require('./transactions')
 const TransactionType = Transaction.Types
-const max_mempool = process.env.MEMPOOL_SIZE || 200
+const max_mempool = process.env.MEMPOOL_SIZE || 2000
 
 // probably due to non standard utf8 characters that were not properly written to mongodb/bson file
 // for now we skip them until such bug can be reproduced
@@ -13,24 +13,7 @@ const skiphash = {
     '7dedc07cb42c96b5013710161bf487a2488fce789b80286e3df910075f98a4d1': '16de2c5c847962f3683aec852072e702fb8c4ffd81c3d23cf85b8d2da031bd8e' // tx in block 14,874,851
 }
 
-// transaction types with arbitrary string input that requires bson serialization validation
-const serializeValidation = [
-    TransactionType.TRANSFER,
-    TransactionType.COMMENT,
-    TransactionType.VOTE,
-    TransactionType.USER_JSON,
-    TransactionType.NEW_KEY,
-    TransactionType.PROMOTED_COMMENT,
-    TransactionType.ENABLE_NODE,
-    TransactionType.TIPPED_VOTE,
-    TransactionType.NEW_WEIGHTED_KEY,
-    TransactionType.PLAYLIST_JSON,
-    TransactionType.PLAYLIST_PUSH,
-    TransactionType.COMMENT_EDIT,
-    TransactionType.ACCOUNT_AUTHORIZE
-]
-
-transaction = {
+let transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     eventConfirmation: new EventEmitter(),
     addToPool: (txs) => {
@@ -124,11 +107,16 @@ transaction = {
             && tx.sender !== config.masterName) {
             cb(false, 'only "'+config.masterName+'" can execute this transaction type'); return
         }
+        if (config.masterDao && tx.sender === config.masterName && !config.masterDaoTxs.includes(tx.type))
+            return cb(false, 'master dao account cannot transact with type '+tx.type)
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
         if (chain.getLatestBlock().timestamp - tx.ts > config.txExpirationTime) {
             cb(false, 'invalid timestamp'); return
         }
+        // enforce maximum transaction expiration
+        if (tx.ts - ts > config.txExpirationMax)
+            return cb(false, 'timestamp expiration exceeds max limit of '+config.txExpirationMax+'ms')
         // check if this tx hash was already added to chain recently
         if (transaction.isPublished(tx)) {
             cb(false, 'transaction already in chain'); return
@@ -143,7 +131,7 @@ transaction = {
         }
         // ensure nothing gets lost when serialized in bson
         // skipped during replays or rebuilds
-        if (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks && serializeValidation.includes(tx.type)) {
+        if (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks && Transaction.transactions[tx.type].bsonValidate) {
             let bsonified = bson.deserialize(bson.serialize(newTx))
             let bsonifiedHash = CryptoJS.SHA256(JSON.stringify(bsonified)).toString()
             if (computedHash !== bsonifiedHash)
@@ -241,9 +229,25 @@ transaction = {
                 break
             }
 
-            // update both at the same time !
+            // update vote lock for proposals
+            let newLock = 0
+            let activeProposalVotes = []
+            if (account.voteLock)
+                for (let v in account.proposalVotes)
+                    if (account.proposalVotes[v].end > ts && account.proposalVotes[v].amount - account.proposalVotes[v].bonus > newLock) {
+                        newLock = account.proposalVotes[v].amount - account.proposalVotes[v].bonus
+                        activeProposalVotes.push(account.proposalVotes[v])
+                    }
+
+            // update all at the same time !
             let changes = {bw: bw}
             if (vt) changes.vt = vt
+            if (account.voteLock) {
+                if (account.voteLock !== newLock)
+                    changes.voteLock = newLock
+                if (account.proposalVotes.length !== activeProposalVotes.length)
+                    changes.proposalVotes = activeProposalVotes
+            }
             logr.trace('GrowInt Collect', account.name, changes)
             cache.updateOne('accounts', 
                 {name: account.name},
@@ -260,6 +264,11 @@ transaction = {
             Transaction.execute(tx, ts, function(executed, distributed, burned) {
                 cb(executed, distributed, burned)
             })
+        })
+    },
+    updateIntsAndNodeApprPromise: (account, ts, change) => {
+        return new Promise((rs) => {
+            transaction.updateGrowInts(account,ts,() => transaction.adjustNodeAppr(account,change,() => rs(true)))
         })
     },
     updateGrowInts: (account, ts, cb) => {

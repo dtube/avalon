@@ -218,6 +218,51 @@ let cmds = {
     accountRevoke: (privKey, sender, user, id) => {
         let tx = '{"type":30,"data":{"user":"'+user+'","id":"'+id+'"}}'
         return sign(privKey, sender, tx)
+    },
+
+    fundRequestCreate: (privKey, sender, title, description, url, requested, receiver) => {
+        let tx = '{"type":31,"data":{"title":"'+title+'","description":"'+description+'","url":"'+url+'","requested":'+requested+',"receiver":"'+receiver+'"}}'
+        return sign(privKey, sender, tx)
+    },
+
+    fundRequestContrib: (privKey, sender, id, amount) => {
+        let tx = '{"type":32,"data":{"id":'+id+',"amount":'+amount+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    fundRequestWork: (privKey, sender, id, work) => {
+        let tx = '{"type":33,"data":{"id":'+id+',"work":'+work+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    fundRequestWorkReview: (privKey, sender, id, approve, memo) => {
+        let tx = '{"type":34,"data":{"id":'+id+',"approve":'+approve+',"memo":"'+memo+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    proposalVote: (privKey, sender, id, amount) => {
+        let tx = '{"type":35,"data":{"id":'+id+',"amount":'+amount+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    proposalEdit: (privKey, sender, id, title, description, url) => {
+        let tx = '{"type":36,"data":{"id":'+id+',"title":"'+title+'","description":"'+description+'","url":"'+url+'"}}'
+        return sign(privKey, sender, tx)
+    },
+
+    chainUpdateCreate: (privKey, sender, title, description, url, changes) => {
+        let tx = '{"type":37,"data":{"title":"'+title+'","description":"'+description+'","url":"'+url+'","changes":'+changes+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    mdQueue: (privKey, sender, txtype, payload) => {
+        let tx = '{"type":38,"data":{"txtype":'+txtype+',"payload":'+payload+'}}'
+        return sign(privKey, sender, tx)
+    },
+
+    mdSign: (privKey, sender, id) => {
+        let tx = '{"type":39,"data":{"id":'+id+'}}'
+        return sign(privKey, sender, tx)
     }
 }
 

@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['id', 'pub', 'types', 'weight'],
     validate: (tx, ts, legitUser, cb) => {
         if (!config.multisig)

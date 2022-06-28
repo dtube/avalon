@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['json'],
     validate: (tx, ts, legitUser, cb) => {
         // handle arbitrary json input

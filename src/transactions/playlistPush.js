@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['link','seq'],
     validate: (tx, ts, legitUser, cb) => {
         if (!config.playlistEnabled)

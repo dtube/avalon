@@ -38,7 +38,7 @@ This is the fastest method that reverifies locally all the past blocks and trans
 
 ```bash
 cd /path/to/blocks/dir
-wget -c https://backup.d.tube/dump/avalon/blocks.bson
+wget -c https://backup.d.tube/blocks.bson
 cd /path/to/avalon/directory
 REBUILD_STATE=1 ./scripts/start.sh
 ```

@@ -7,12 +7,18 @@ let cache = {
         accounts: {},
         contents: {},
         distributed: {},
-        playlists: {}
+        proposals: {},
+        playlists: {},
+        masterdao: {},
+        state: {}
     },
     accounts: {},
     contents: {},
     distributed: {},
+    proposals: {},
     playlists: {},
+    masterdao: {},
+    state: {},
     changes: [],
     inserts: [],
     rebuild: {
@@ -54,10 +60,9 @@ let cache = {
         return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d)))
     },
     findOne: function(collection, query, cb) {
-        if (['accounts','blocks','contents','playlists'].indexOf(collection) === -1) {
-            cb(true)
-            return
-        }
+        if (!cache.copy[collection])
+            return cb('invalid collection')
+
         let key = cache.keyByCollection(collection)
         // searching in cache
         if (cache[collection][query[key]]) {
@@ -82,6 +87,9 @@ let cache = {
                 cb(null, res)
             }
         })
+    },
+    updateOnePromise: function (collection, query, changes) {
+        return new Promise((rs,rj) => cache.updateOne(collection,query,changes,(e,d) => e ? rj(e) : rs(true)))
     },
     updateOne: function(collection, query, changes, cb) {
         cache.findOne(collection, query, function(err, obj) {
@@ -306,7 +314,6 @@ let cache = {
         switch (collection) {
         case 'accounts':
             return 'name'
-        
         default:
             return '_id'
         }
