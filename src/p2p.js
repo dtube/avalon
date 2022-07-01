@@ -462,6 +462,7 @@ let p2p = {
                 dao.resetID()
                 daoMaster.resetID()
                 p2p.recoveredBlocks = []
+                p2p.recoverAttempt++
                 if (p2p.recoverAttempt > max_recover_attempts)
                     logr.error('Error Replay', newBlock._id)
                 else {
