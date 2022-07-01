@@ -272,6 +272,7 @@ let p2p = {
 
             case MessageType.BLOCK:
                 // a peer sends us a block we requested with QUERY_BLOCK
+                if (!message.d._id || !p2p.recoveringBlocks.includes(message.d._id)) return
                 for (let i = 0; i < p2p.recoveringBlocks.length; i++)
                     if (p2p.recoveringBlocks[i] === message.d._id) {
                         p2p.recoveringBlocks.splice(i, 1)
@@ -462,6 +463,7 @@ let p2p = {
                 dao.resetID()
                 daoMaster.resetID()
                 p2p.recoveredBlocks = []
+                p2p.recoveringBlocks = []
                 p2p.recoverAttempt++
                 if (p2p.recoverAttempt > max_recover_attempts)
                     logr.error('Error Replay', newBlock._id)
@@ -476,7 +478,8 @@ let p2p = {
                 p2p.recover()
                 if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) 
                     setTimeout(function() {
-                        p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
+                        if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
+                            p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
                     }, 1)
             }     
         })

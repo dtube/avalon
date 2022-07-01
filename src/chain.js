@@ -162,8 +162,7 @@ let chain = {
         if (chain.shuttingDown) return
         chain.isValidNewBlock(newBlock, revalidate, false, function(isValid) {
             if (!isValid) {
-                logr.error('Invalid block')
-                cb(true, newBlock); return
+                return cb(true, newBlock)
             }
             // straight execution
             chain.executeBlockTransactions(newBlock, revalidate, function(validTxs, distributed, burned) {
@@ -458,6 +457,7 @@ let chain = {
         })
     },
     isValidNewBlock: (newBlock, verifyHashAndSignature, verifyTxValidity, cb) => {
+        if (!newBlock) return
         // verify all block fields one by one
         if (!newBlock._id || typeof newBlock._id !== 'number') {
             logr.error('invalid block _id')
