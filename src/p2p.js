@@ -465,6 +465,7 @@ let p2p = {
                 if (p2p.recoverAttempt > max_recover_attempts)
                     logr.error('Error Replay', newBlock._id)
                 else {
+                    logr.warn('Recover attempt #'+p2p.recoverAttempt+' for block '+newBlock._id)
                     p2p.recovering = chain.getLatestBlock()._id
                     p2p.recover()
                 }
