@@ -123,7 +123,7 @@ let chain = {
             // at this point transactions in the pool seem all validated
             // BUT with a different ts and without checking for double spend
             // so we will execute transactions in order and revalidate after each execution
-            chain.executeBlockTransactions(newBlock, true, false, function(validTxs, distributed, burned) {
+            chain.executeBlockTransactions(newBlock, true, function(validTxs, distributed, burned) {
                 cache.rollback()
                 dao.resetID()
                 daoMaster.resetID()
@@ -166,7 +166,7 @@ let chain = {
                 cb(true, newBlock); return
             }
             // straight execution
-            chain.executeBlockTransactions(newBlock, revalidate, true, function(validTxs, distributed, burned) {
+            chain.executeBlockTransactions(newBlock, revalidate, function(validTxs, distributed, burned) {
                 // if any transaction is wrong, thats a fatal error
                 if (newBlock.txs.length !== validTxs.length) {
                     logr.error('Invalid tx(s) in block')
@@ -185,6 +185,9 @@ let chain = {
                     cb(true, newBlock); return
                 }
 
+                // add txs to recents
+                chain.addRecentTxsInBlock(newBlock.txs)
+
                 // remove all transactions from this block from our transaction pool
                 transaction.removeFromPool(newBlock.txs)
 
@@ -197,13 +200,18 @@ let chain = {
                     notifications.processBlock(newBlock)
 
                     // emit event to confirm new transactions in the http api
-                    for (let i = 0; i < newBlock.txs.length; i++)
-                        transaction.eventConfirmation.emit(newBlock.txs[i].hash)
+                    if (!p2p.recovering)
+                        for (let i = 0; i < newBlock.txs.length; i++)
+                            transaction.eventConfirmation.emit(newBlock.txs[i].hash)
 
                     cb(null, newBlock)
                 })
             })
         })
+    },
+    addRecentTxsInBlock: (txs = []) => {
+        for (let t in txs)
+            chain.recentTxs[txs[t].hash] = txs[t]
     },
     minerWorker: (block) => {
         if (p2p.recovering) return
@@ -438,7 +446,7 @@ let chain = {
         })
     },
     isValidBlockTxs: (newBlock, cb) => {
-        chain.executeBlockTransactions(newBlock, true, false, function(validTxs) {
+        chain.executeBlockTransactions(newBlock, true, function(validTxs) {
             cache.rollback()
             dao.resetID()
             daoMaster.resetID()
@@ -562,7 +570,7 @@ let chain = {
             })
     },
     isValidNewBlockPromise: (newBlock, verifyHashAndSig, verifyTxValidity) => new Promise((rs) => chain.isValidNewBlock(newBlock, verifyHashAndSig, verifyTxValidity, rs)),
-    executeBlockTransactions: (block, revalidate, isFinal, cb) => {
+    executeBlockTransactions: (block, revalidate, cb) => {
         // revalidating transactions in orders if revalidate = true
         // adding transaction to recent transactions (to prevent tx re-use) if isFinal = true
         let executions = []
@@ -577,8 +585,6 @@ let chain = {
                                     logr.fatal('Tx execution failure', tx)
                                     process.exit(1)
                                 }
-                                if (isFinal)
-                                    chain.recentTxs[tx.hash] = tx
                                 callback(null, {
                                     executed: executed,
                                     distributed: distributed,
@@ -594,8 +600,6 @@ let chain = {
                     transaction.execute(tx, block.timestamp, function(executed, distributed, burned) {
                         if (!executed)
                             logr.fatal('Tx execution failure', tx)
-                        if (isFinal)
-                            chain.recentTxs[tx.hash] = tx
                         callback(null, {
                             executed: executed,
                             distributed: distributed,
@@ -874,7 +878,7 @@ let chain = {
                 if (!isValidBlock)
                     return cb(true, blockNum)
             }
-            chain.executeBlockTransactions(blockToRebuild,process.env.REBUILD_NO_VALIDATE !== '1',true,(validTxs,dist,burn) => {
+            chain.executeBlockTransactions(blockToRebuild,process.env.REBUILD_NO_VALIDATE !== '1',(validTxs,dist,burn) => {
                 // if any transaction is wrong, thats a fatal error
                 // transactions should have been verified in isValidNewBlock
                 if (blockToRebuild.txs.length !== validTxs.length) {
@@ -892,6 +896,7 @@ let chain = {
                     return cb('Wrong burn amount ' + blockBurn + ' ' + burn, blockNum)
                 
                 // update the config if an update was scheduled
+                chain.addRecentTxsInBlock(blockToRebuild.txs)
                 config = require('./config.js').read(blockToRebuild._id)
                 chain.applyHardforkPostBlock(blockToRebuild._id)
                 dao.nextBlock()

@@ -5,6 +5,7 @@ const discovery_interval = 60000
 const keep_alive_interval = 2500
 const max_blocks_buffer = 100
 const max_peers = process.env.MAX_PEERS || 15
+const max_recover_attempts = 100
 const history_interval = 10000
 const keep_history_for = 20000
 const p2p_port = process.env.P2P_PORT || default_port
@@ -16,6 +17,8 @@ const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 const blocks = require('./blocks')
+const dao = require('./dao')
+const daoMaster = require('./daoMaster')
 
 const MessageType = {
     QUERY_NODE_STATUS: 0,
@@ -32,6 +35,7 @@ let p2p = {
     recoveringBlocks: [],
     recoveredBlocks: [],
     recovering: false,
+    recoverAttempt: 0,
     nodeId: null,
     init: () => {
         p2p.generateNodeId()
@@ -452,9 +456,20 @@ let p2p = {
     },
     addRecursive: (block) => {
         chain.validateAndAddBlock(block, true, function(err, newBlock) {
-            if (err)
-                logr.error('Error Replay', newBlock._id)
-            else {
+            if (err) {
+                // try another peer if bad block
+                cache.rollback()
+                dao.resetID()
+                daoMaster.resetID()
+                p2p.recoveredBlocks = []
+                if (p2p.recoverAttempt > max_recover_attempts)
+                    logr.error('Error Replay', newBlock._id)
+                else {
+                    p2p.recovering = chain.getLatestBlock()._id
+                    p2p.recover()
+                }
+            } else {
+                p2p.recoverAttempt = 0
                 delete p2p.recoveredBlocks[newBlock._id]
                 p2p.recover()
                 if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) 
