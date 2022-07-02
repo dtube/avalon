@@ -1,6 +1,6 @@
 {
   "name": "avalon",
-  "version": "1.6",
+  "version": "1.6.1",
   "description": "",
   "scripts": {
     "start": "node src/main.js",
@@ -55,7 +55,7 @@
     "title": "Avalon API Documentation",
     "description": "REST API documentation for Avalon blockchain",
     "sampleUrl": "https://api.avalonblocks.com",
-    "version": "1.6.0"
+    "version": "1.6.1"
   },
   "devDependencies": {
     "apidoc": "^0.50.2",
