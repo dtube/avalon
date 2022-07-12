@@ -21,7 +21,14 @@ module.exports = {
     execute: (tx, ts, cb) => {
         // bandwidth efficient content json edit without spending vp
         if (process.env.CONTENTS === '1')
-            cache.updateOne('contents', {_id: tx.sender+'/'+tx.data.link}, {$set: {json: tx.data.json}}, () => cb(true))
+            cache.updateOne('contents', {_id: tx.sender+'/'+tx.data.link}, {$set: {json: tx.data.json}}, async () => {
+                if (process.env.RANKINGS === '1') {
+                    let edited = await cache.findOnePromise('contents',{_id: tx.sender+'/'+tx.data.link})
+                    if (!edited.pa && !edited.pp)
+                        rankings.new(edited)
+                }
+                cb(true)
+            })
         else
             cb(true)
     }
