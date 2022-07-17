@@ -234,8 +234,9 @@ let transaction = {
             let activeProposalVotes = []
             if (account.voteLock)
                 for (let v in account.proposalVotes)
-                    if (account.proposalVotes[v].end > ts && account.proposalVotes[v].amount - account.proposalVotes[v].bonus > newLock) {
-                        newLock = account.proposalVotes[v].amount - account.proposalVotes[v].bonus
+                    if (account.proposalVotes[v].end > ts) {
+                        if (account.proposalVotes[v].amount - account.proposalVotes[v].bonus > newLock)
+                            newLock = account.proposalVotes[v].amount - account.proposalVotes[v].bonus
                         activeProposalVotes.push(account.proposalVotes[v])
                     }
 

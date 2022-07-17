@@ -821,16 +821,8 @@ let chain = {
                         balance: 0,
                         bw: { v: 0, t: block.timestamp },
                         vt: { v: 0, t: block.timestamp }
-                    }}, () =>
-                        // disable @dtube leader
-                        transaction.execute({
-                            type: 18,
-                            data: {
-                                pub: ''
-                            },
-                            sender: 'dtube'
-                        },block.timestamp,() => cb(null, { executed: false, distributed: 0, burned: burned }))
-                    )
+                    }}, () => cb(null, { executed: false, distributed: 0, burned: burned })
+                )
             })
         else
             cb(null, { executed: false, distributed: 0, burned: 0 })
