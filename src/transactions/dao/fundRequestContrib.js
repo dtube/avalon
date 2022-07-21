@@ -21,7 +21,7 @@ module.exports = {
         let status = dao.getFundRequestStatus(proposal,ts)
         if (status !== dao.fundRequestStatus.fundingActive)
             return cb(false, 'proposal not in funding stage')
-        if (dao.availableBalance(contributor) < tx.data.amount)
+        if (dao.availableBalance(contributor,ts) < tx.data.amount)
             return cb(false, 'insufficient balance')
         let notRaised = proposal.requested - proposal.raised
         if (tx.data.amount > notRaised)
