@@ -2,7 +2,7 @@ const secp256k1 = require('secp256k1')
 const CryptoJS = require('crypto-js')
 const bs58 = require('base-x')(config.b58Alphabet)
 const cloneDeep = require('clone-deep')
-const consensus_need = 2
+const consensus_need = 0
 const consensus_total = 3
 const consensus_threshold = consensus_need/consensus_total
 
