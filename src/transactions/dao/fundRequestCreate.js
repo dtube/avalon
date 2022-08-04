@@ -30,7 +30,7 @@ module.exports = {
         let fee = dao.fundRequestCreationFee(tx.data.requested)
         if (!receipient)
             return cb(false, 'receipient does not exist')
-        if (dao.availableBalance(creator) < fee)
+        if (dao.availableBalance(creator,ts) < fee)
             return cb(false, 'insufficient balance for proposal creation fee of '+(fee/100)+' DTUBE')
 
         cb(true)

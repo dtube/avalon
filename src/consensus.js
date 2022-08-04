@@ -78,14 +78,6 @@ let consensus = {
                 else
                     possBlocksById[consensus.possBlocks[i].block._id] = [consensus.possBlocks[i]]
             }
-            for (let i in possBlocksById)
-                if (possBlocksById[i].length > 1) {
-                    let collisions = []
-                    for (let j in possBlocksById[i])
-                        collisions.push([possBlocksById[i][j].block.miner,possBlocksById[i][j].block.timestamp])
-                    logr.info('Block collision detected at height '+i+', the leaders are:',collisions)
-                    logr.cons('Poss blocks',possBlocksById[i])
-                }
             consensus.possBlocks.sort((a,b) => {
                 // valid blocks with different _id must have a different timestamp
                 if (a.block.timestamp !== b.block.timestamp)
@@ -107,9 +99,13 @@ let consensus = {
                 consensus.finalizing = true
 
                 // log which block got applied if collision exists
-                if (possBlocksById[possBlock.block._id] && possBlocksById[possBlock.block._id].length > 1)
-                    logr.info('Applying block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' by '+possBlock.block.miner+' with timestamp '+possBlock.block.timestamp)
-                else
+                if (possBlocksById[possBlock.block._id] && possBlocksById[possBlock.block._id].length > 1) {
+                    let collisions = []
+                    for (let j in possBlocksById[possBlock.block._id])
+                        collisions.push([possBlocksById[possBlock.block._id][j].block.miner,possBlocksById[possBlock.block._id][j].block.timestamp])
+                    logr.info('Block collision detected at height '+possBlock.block._id+', the leaders are:',collisions)
+                    logr.cons('Poss blocks',possBlocksById[possBlock.block._id])
+                } else
                     logr.cons('block '+possBlock.block._id+'#'+possBlock.block.hash.substr(0,4)+' got finalized')
 
                 chain.validateAndAddBlock(possBlock.block, false, function(err) {

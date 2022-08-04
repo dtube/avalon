@@ -41,6 +41,8 @@ let dao = {
                 return dao.fundRequestStatus.proposalExpired
             else
                 return dao.fundRequestStatus.fundingSuccess
+        else if (typeof proposal.reviewApprovals === 'number' && typeof proposal.reviewDeadline === 'undefined' && proposal.deadline < ts)
+            return dao.fundRequestStatus.proposalExpired
         else if (!proposal.paid)
             if (!proposal.reviewDeadline)
                 return dao.fundRequestStatus.revisionRequired

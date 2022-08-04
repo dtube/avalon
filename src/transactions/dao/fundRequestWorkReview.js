@@ -66,11 +66,11 @@ module.exports = {
             await dao.disburseFundRequest(proposal.receiver,proposal.raised+proposal.fee,ts)
             updateOp.$set.paid = ts
             updateOp.$set.status = dao.fundRequestStatus.proposalComplete
+            updateOp.$set.state = dao.proposalState.success
             dao.finalizeProposal(tx.data.id)
-        } else if (updateOp.$set.reviewDisapprovals > proposal.leaderSnapshot - threshold) {
+        } else if (updateOp.$set.reviewDisapprovals > proposal.leaderSnapshot.length - threshold) {
             let newDeadline = Math.max(proposal.deadline,ts+(config.fundRequestDeadlineExtSeconds*1000))
             updateOp.$set.status = dao.fundRequestStatus.revisionRequired
-            updateOp.$set.state = dao.proposalState.success
             updateOp.$set.deadline = newDeadline
             updateOp.$unset.reviewDeadline = ''
             dao.updateProposalTrigger(tx.data.id,newDeadline)
