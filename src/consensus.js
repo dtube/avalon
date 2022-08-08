@@ -2,8 +2,8 @@ const secp256k1 = require('secp256k1')
 const CryptoJS = require('crypto-js')
 const bs58 = require('base-x')(config.b58Alphabet)
 const cloneDeep = require('clone-deep')
-const consensus_need = process.env.CONS_NEED || 2
-const consensus_total = process.env.CONS_TOTAL || 3
+const consensus_need = parseInt(process.env.CONS_NEED) || 2
+const consensus_total = parseInt(process.env.CONS_TOTAL) || 3
 const consensus_threshold = consensus_need/consensus_total
 
 // all p2p.sockets referenced here are verified nodes with a node_status
