@@ -703,7 +703,11 @@ let chain = {
         cache.findOne('accounts', {name: name}, function(err, account) {
             let newBalance = account.balance + config.leaderReward
             let newVt = new GrowInt(account.vt, {growth:account.balance/(config.vtGrowth)}).grow(ts)
-            if (!newVt) 
+            let newBw = new GrowInt(account.bw, {
+                growth: Math.max(account.baseBwGrowth || 0, account.balance)/(config.bwGrowth),
+                max: config.bwMax
+            }).grow(ts)
+            if (!newVt || !newBw) 
                 logr.debug('error growing grow int', account, ts)
             
             if (config.leaderRewardVT) {
@@ -716,15 +720,14 @@ let chain = {
                     {name: account.name},
                     {$set: {
                         vt: newVt,
+                        bw: newBw,
                         balance: newBalance
                     }},
                     function(err) {
                         if (err) throw err
                         if (config.leaderReward > 0)
-                            transaction.updateGrowInts(account, ts, function() {
-                                transaction.adjustNodeAppr(account, config.leaderReward, function() {
-                                    cb(config.leaderReward)
-                                })
+                            transaction.adjustNodeAppr(account, config.leaderReward, function() {
+                                cb(config.leaderReward)
                             })
                         else
                             cb(0)
