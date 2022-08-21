@@ -405,8 +405,8 @@ let chain = {
     isValidMultisig: (account,threshold,allowedPubKeys,hash,signatures,cb) => {
         let validWeights = 0
         let validSigs = []
-        let hashBuf = Buffer.from(hash, 'hex')
         try {
+            let hashBuf = Buffer.from(hash, 'hex')
             for (let s = 0; s < signatures.length; s++) {
                 let signBuf = bs58.decode(signatures[s][0])
                 let recoveredPub = bs58.encode(secp256k1.ecdsaRecover(signBuf,signatures[s][1],hashBuf))
