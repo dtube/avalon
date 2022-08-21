@@ -302,14 +302,14 @@ let transaction = {
     adjustNodeAppr: (acc, newCoins, cb) => {
         // updates the node_appr values for the node owners the account approves (when balance changes)
         // account.balance is the one before the change (!)
+        // account object may skip cloneDeep operation
         if (!acc.approves || acc.approves.length === 0 || !newCoins) {
             cb(true)
             return
         }
 
         let node_appr_before = Math.floor(acc.balance/acc.approves.length)
-        acc.balance += newCoins
-        let node_appr = Math.floor(acc.balance/acc.approves.length)
+        let node_appr = Math.floor((acc.balance+newCoins)/acc.approves.length)
         
         let node_owners = []
         for (let i = 0; i < acc.approves.length; i++)

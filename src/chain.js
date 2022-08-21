@@ -712,10 +712,8 @@ let chain = {
             if (!newVt || !newBw) 
                 logr.debug('error growing grow int', account, ts)
             
-            if (config.leaderRewardVT) {
+            if (config.leaderRewardVT)
                 newVt.v += config.leaderRewardVT
-                account.vt = newVt
-            }
 
             if (config.leaderReward > 0 || config.leaderRewardVT > 0)
                 cache.updateOne('accounts', 
@@ -736,7 +734,7 @@ let chain = {
                     }
                 )
             else cb(0)
-        })
+        },true)
     },
     decayBurnAccount: (block) => {
         return new Promise((rs) => {

@@ -56,18 +56,20 @@ let cache = {
         // and reset the econ data for nextBlock
         eco.nextBlock()
     },
-    findOnePromise: function(collection, query) {
-        return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d)))
+    findOnePromise: function(collection, query, skipClone) {
+        return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d),skipClone))
     },
-    findOne: function(collection, query, cb) {
+    findOne: function(collection, query, cb, skipClone) {
         if (!cache.copy[collection])
             return cb('invalid collection')
 
         let key = cache.keyByCollection(collection)
         // searching in cache
         if (cache[collection][query[key]]) {
-            let res = cloneDeep(cache[collection][query[key]])
-            cb(null, res)
+            if (!skipClone)
+                cb(null, cloneDeep(cache[collection][query[key]]))
+            else
+                cb(null, cache[collection][query[key]])
             return
         }
         
@@ -83,8 +85,10 @@ let cache = {
                 cache[collection][obj[key]] = obj
 
                 // cloning the object before sending it
-                let res = cloneDeep(obj)
-                cb(null, res)
+                if (!skipClone)
+                    cb(null, cloneDeep(obj))
+                else
+                    cb(null, obj)
             }
         })
     },
@@ -160,7 +164,7 @@ let cache = {
                 changes: changes
             })
             cb(null, true)
-        })
+        }, true)
     },
     updateMany: function(collection, query, changes, cb) {
         let key = cache.keyByCollection(collection)
@@ -202,7 +206,7 @@ let cache = {
         if (!isRollback)
             cache.leaderChanges.push([leader,1])
         // make sure account is cached
-        cache.findOne('accounts',{name:leader},() => cb())
+        cache.findOne('accounts',{name:leader},() => cb(),true)
     },
     removeLeader: (leader,isRollback) => {
         if (cache.leaders[leader])
