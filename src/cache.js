@@ -99,7 +99,7 @@ let cache = {
             }
             let key = cache.keyByCollection(collection)
 
-            if (!cache.copy[collection][obj[key]])
+            if (!cache.copy[collection][obj[key]] && (!chain.restoredBlocks || chain.getLatestBlock()._id >= chain.restoredBlocks))
                 cache.copy[collection][obj[key]] = cloneDeep(cache[collection][obj[key]])
             
             for (let c in changes) 

@@ -650,7 +650,7 @@ let chain = {
         let rand = parseInt('0x'+hash.substr(hash.length-config.leaderShufflePrecision))
         if (!p2p.recovering)
             logr.debug('Generating schedule... NRNG: ' + rand)
-        let miners = chain.generateLeaders(true, config.leaders, 0)
+        let miners = chain.generateLeaders(true, false, config.leaders, 0)
         miners = miners.sort(function(a,b) {
             if(a.name < b.name) return -1
             if(a.name > b.name) return 1
@@ -674,7 +674,7 @@ let chain = {
             shuffle: shuffledMiners
         }
     },
-    generateLeaders: (withLeaderPub, limit, start) => {
+    generateLeaders: (withLeaderPub, withWs, limit, start) => {
         let leaders = []
         let leaderAccs = withLeaderPub ? cache.leaders : cache.accounts
         for (const key in leaderAccs) {
@@ -682,16 +682,18 @@ let chain = {
                 continue
             if (withLeaderPub && !cache.accounts[key].pub_leader)
                 continue
-            let newLeader = cloneDeep(cache.accounts[key])
-            leaders.push({
-                name: newLeader.name,
-                pub: newLeader.pub,
-                pub_leader: newLeader.pub_leader,
-                balance: newLeader.balance,
-                approves: newLeader.approves,
-                node_appr: newLeader.node_appr,
-                json: newLeader.json,
-            })
+            let leader = cache.accounts[key]
+            let leaderDetails = {
+                name: leader.name,
+                pub: leader.pub,
+                pub_leader: leader.pub_leader,
+                balance: leader.balance,
+                approves: leader.approves,
+                node_appr: leader.node_appr,
+            }
+            if (withWs && leader.json && leader.json.node && typeof leader.json.node.ws === 'string')
+                leaderDetails.ws = leader.json.node.ws
+            leaders.push(leaderDetails)
         }
         leaders = leaders.sort(function(a,b) {
             return b.node_appr - a.node_appr

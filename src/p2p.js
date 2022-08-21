@@ -58,14 +58,14 @@ let p2p = {
         logr.info('P2P ID: '+p2p.nodeId.pub)
     },
     discoveryWorker: (isInit = false) => {
-        let leaders = chain.generateLeaders(false, config.leaders*3, 0)
+        let leaders = chain.generateLeaders(false, true, config.leaders*3, 0)
         for (let i = 0; i < leaders.length; i++) {
             if (p2p.sockets.length >= max_peers) {
                 logr.debug('We already have maximum peers: '+p2p.sockets.length+'/'+max_peers)
                 break
             }
                 
-            if (leaders[i].json && leaders[i].json.node && leaders[i].json.node.ws) {
+            if (leaders[i].ws) {
                 let excluded = (process.env.DISCOVERY_EXCLUDE ? process.env.DISCOVERY_EXCLUDE.split(',') : [])
                 if (excluded.indexOf(leaders[i].name) > -1)
                     continue
@@ -75,18 +75,18 @@ let p2p = {
                     if (ip.indexOf('::ffff:') > -1)
                         ip = ip.replace('::ffff:', '')
                     try {
-                        let leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
+                        let leaderIp = leaders[i].ws.split('://')[1].split(':')[0]
                         if (leaderIp === ip) {
                             logr.trace('Already peered with '+leaders[i].name)
                             isConnected = true
                         }
                     } catch (error) {
-                        logr.warn('Wrong json.node.ws for leader '+leaders[i].name+' '+leaders[i].json.node.ws, error)
+                        logr.debug('Wrong ws for leader '+leaders[i].name+' '+leaders[i].ws, error)
                     }
                 }
                 if (!isConnected) {
-                    logr[isInit ? 'info' : 'debug']('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
-                    p2p.connect([leaders[i].json.node.ws],isInit)
+                    logr[isInit ? 'info' : 'debug']('Trying to connect to '+leaders[i].name+' '+leaders[i].ws)
+                    p2p.connect([leaders[i].ws],isInit)
                 }
             }
         }
