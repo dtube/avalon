@@ -1,4 +1,4 @@
-const version = '1.6.3'
+const version = '1.6.4'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
