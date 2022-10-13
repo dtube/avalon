@@ -445,13 +445,24 @@ let chain = {
         })
     },
     isValidBlockTxs: (newBlock, cb) => {
-        chain.executeBlockTransactions(newBlock, true, function(validTxs) {
+        chain.executeBlockTransactions(newBlock, true, function(validTxs, dist, burn) {
             cache.rollback()
             dao.resetID()
             daoMaster.resetID()
             if (validTxs.length !== newBlock.txs.length) {
                 logr.error('invalid block transaction')
                 cb(false); return
+            }
+            let blockDist = newBlock.dist || 0
+            if (blockDist !== dist) {
+                logr.error('Wrong dist amount',blockDist,dist)
+                return cb(false)
+            }
+
+            let blockBurn = newBlock.burn || 0
+            if (blockBurn !== burn) {
+                logr.error('Wrong burn amount',blockBurn,burn)
+                return cb(false)
             }
             cb(true)
         })
