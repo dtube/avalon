@@ -36,7 +36,7 @@ ENV NODE_PATH $NVM_DIR/versions/node/$NODE_VERSION/lib/node_modules
 ENV PATH      $NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH
 
 LABEL "project.home"="https://github.com/dtube/avalon"
-RUN git clone git://github.com/dtube/avalon
+RUN git clone https://github.com/dtube/avalon
 WORKDIR /avalon
 RUN npm install
 RUN npm install --save axios
