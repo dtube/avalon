@@ -28,16 +28,17 @@ RUN apt-get -y update && apt-get install -y openssl vim tmux locales-all curl
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs
 
 LABEL "project.home"="https://github.com/dtube/avalon"
-RUN git clone https://github.com/dtube/avalon
+RUN cd / && git clone https://github.com/dtube/avalon
 
-
+RUN mkdir /avalon/log
 WORKDIR /avalon
 RUN npm install
 RUN npm install --save axios
 RUN echo "" > avalon.log
 
+VOLUME $HOME/avalon/logs /avalon/log
 VOLUME $HOME/avalon/mongodb /data/db
-VOLUME $HOME/avalon/blocks /data/blocks
+VOLUME $HOME/avalon/blocks /avalon/blocks
 
 COPY ./scripts/start_dtube.sh ./scripts/start_dtube.sh
 COPY ./scripts/start_mainnet.sh ./scripts/start_mainnet.sh

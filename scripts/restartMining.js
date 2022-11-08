@@ -5,8 +5,8 @@ const db_name = process.env.DB_NAME || 'avalon'
 const db_url = process.env.DB_URL || 'mongodb://localhost:27017'
 const MongoClient = require('mongodb').MongoClient
 
-const backupUrlMain = process.env.BACKUP_URL || "http://backup.d.tube/"
-const backupUrlOrig = "http://backup.d.tube/"
+const backupUrlMain = process.env.BACKUP_URL || "https://dtube.fso.ovh/"
+const backupUrlOrig = "https://backup.d.tube/"
 
 var createNet = parseInt(process.env.CREATE_NET || 0)
 var shouldGetGenesisBlocks = parseInt(process.env.GET_GENESIS_BLOCKS || 0)
@@ -26,8 +26,8 @@ let config = {
     testnetDir: "/home/ec2-user/avalon_testnet/tavalon/avalon_testnet/",
     mainnetDir: "/home/ec2-user/tavalon/avalon/",
     scriptPath: "./scripts/start_mainnet.sh",
-    logPath: "/avalon/avalon.log",
-    replayLogPath: "/avalon/avalon.log",
+    logPath: "/avalon/log/avalon.log",
+    replayLogPath: "/avalon/log/avalon_replay.log",
     backupUrl: backupUrlMain + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
     blockBackupUrl: backupUrlMain + "blocks.bson",
     genesisSourceUrl: backupUrlMain + "genesis.zip",
@@ -127,9 +127,9 @@ function getGenesisBlocks() {
                             shouldGetGenesisBlocks = 0
                             cmd = "cd /avalon"
                             cmd += " && "
-                            cmd += " unset REBUILD_FINISHED"
+                            cmd += "unset REBUILD_FINISHED"
                             cmd += " && "
-                            cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis`; `cd /avalon/genesis`; `wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
+                            cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir -p /avalon/genesis`; fi; wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + ";"
                             runCmd(cmd)
                         }
                 })
@@ -143,31 +143,27 @@ function replayAndRebuildStateFromBlocks(cb) {
 
     cmd = "pgrep \"src/main\" | xargs --no-run-if-empty kill  -9"
     runCmd(cmd)
-    let mtime = null;
-    if (fs.existsSync('/data/blocks/blocks.bson')) {
-        const blocks_file = fs.statSync('/data/blocks/blocks.bson', (error, stats) => {
+    let mtime = null
+    if (fs.existsSync('/data/avalon/blocks/blocks.bson')) {
+        mtime = fs.statSync('/data/avalon/blocks/blocks.bson', (error, stats) => {
             if(error) {
-
+                console.log(error)
             } else {
-                mtime = blocks_file.mtime.getTime()
+                return stats.mtime.getTime()
             }
         })
-    } else {
-	mtime = new Date("1970-01-01 00:00:00")
     }
     backupUrl = config.blockBackupUrl
     cmd = "cd /avalon"
     cmd += " && "
     cmd += " unset REBUILD_FINISHED"
     cmd += " && "
-    cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis`; `cd /avalon/genesis`; `wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
+    cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis; cd /avalon/genesis; wget -O /avalon/genesis/genesis.zip -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
     cmd += " && "
-    if(mtime > Date.now() + 86400000) { // if the file is older than 1 day, then re-download it.
-    	cmd += "if [[ ! -d \"/avalon/dump\" ]]; then `mkdir /avalon/dump`; else `rm -rf /avalon/dump/*`; fi"
+    if(Date.now() - mtime > 86400000) { // if the file is older than 1 day, then re-download it.
+    	cmd += "if [[ ! -d \"/data/avalon/blocks\" ]]; then `mkdir -p /data/avalon/blocks`; else `rm -rf /data/avalon/blocks/*`; fi;"
     	cmd += " && "
-    	cmd += "cd /avalon/dump"
-    	cmd += " && "
-    	cmd += " rm -rf *"
+    	cmd += "cd /data/avalon/blocks"
     	cmd += " && "
     	cmd += "wget -q --show-progress --progress=bar:force " + config.blockBackupUrl + " >> " + config.replayLogPath + " 2>&1"
     	cmd += " && "
