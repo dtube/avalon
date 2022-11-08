@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
 RUN apt-get -y update && apt-get install -y openssl vim tmux locales-all curl
 
 # Install nvm with node and npm
-ENV NVM_DIR /root/.nvm
+ENV NVM_DIR $HOME/.nvm
 ENV NODE_VERSION v18.12.1
 RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash \
     && . $NVM_DIR/nvm.sh \
