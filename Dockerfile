@@ -3,7 +3,7 @@ FROM mongo:6.0.2
 EXPOSE 6001
 EXPOSE 3001
 
-VOLUME ~/avalon/mongodb /data/db
+
 
 # Set debconf to run non-interactively
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
@@ -19,28 +19,25 @@ RUN apt-get update && apt-get install -y -q --no-install-recommends \
         git \
         libssl-dev \
         wget \
+	unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get -y update && apt-get install -y openssl vim tmux locales-all curl
 
 # Install nvm with node and npm
-ENV NVM_DIR $HOME/.nvm
-ENV NODE_VERSION v18.12.1
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.2/install.sh | bash \
-    && . $NVM_DIR/nvm.sh \
-    && nvm install $NODE_VERSION \
-    && nvm alias default $NODE_VERSION \
-    && nvm use default
-
-ENV NODE_PATH $NVM_DIR/versions/node/$NODE_VERSION/lib/node_modules
-ENV PATH      $NVM_DIR/versions/node/$NODE_VERSION/bin:$PATH
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs
 
 LABEL "project.home"="https://github.com/dtube/avalon"
 RUN git clone https://github.com/dtube/avalon
+
+
 WORKDIR /avalon
 RUN npm install
 RUN npm install --save axios
 RUN echo "" > avalon.log
+
+VOLUME $HOME/avalon/mongodb /data/db
+VOLUME $HOME/avalon/blocks /data/blocks
 
 COPY ./scripts/start_dtube.sh ./scripts/start_dtube.sh
 COPY ./scripts/start_mainnet.sh ./scripts/start_mainnet.sh
