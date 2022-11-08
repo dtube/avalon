@@ -1,4 +1,4 @@
-FROM mongo:4.2.12
+FROM mongo:6.0.2
 
 EXPOSE 6001
 EXPOSE 3001
