@@ -28,7 +28,7 @@ let config = {
     scriptPath: "./scripts/start_mainnet.sh",
     logPath: "/avalon/log/avalon.log",
     replayLogPath: "/avalon/log/avalon_replay.log",
-    backupUrl: backupUrlMain + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
+    backupUrl: backupUrlOrig + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
     blockBackupUrl: backupUrlMain + "blocks.bson",
     genesisSourceUrl: backupUrlMain + "genesis.zip",
     mongodbPath: "/data/db"
