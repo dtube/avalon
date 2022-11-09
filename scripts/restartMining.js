@@ -161,7 +161,7 @@ function replayAndRebuildStateFromBlocks(cb) {
     cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis; cd /avalon/genesis; wget -O /avalon/genesis/genesis.zip -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
     cmd += " && "
     if(Date.now() - mtime > 86400000) { // if the file is older than 1 day, then re-download it.
-    	cmd += "if [[ ! -d \"/data/avalon/blocks\" ]]; then `mkdir -p /data/avalon/blocks`; else `rm -rf /data/avalon/blocks/*`; fi;"
+    	cmd += "if [[ ! -d \"/data/avalon/blocks\" ]]; then `mkdir -p /data/avalon/blocks`; else `rm -rf /data/avalon/blocks/*`; fi"
     	cmd += " && "
     	cmd += "cd /data/avalon/blocks"
     	cmd += " && "
