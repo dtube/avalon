@@ -311,11 +311,11 @@ function checkHeightAndRun() {
                 replayCheck++
                 if (replayCheck == 5000) {
                     checkRestartCmd = ""
-                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 10"
+                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
                     restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
                     checkRestartCmd =  restartMongoDB + " && "
-                    checkRestartCmd += "mongosh --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 15 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
+                    checkRestartCmd += "mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
                     logr.info("Check restart command = " + checkRestartCmd)
                     runCmd(checkRestartCmd)
                     replayState = 0
@@ -332,12 +332,12 @@ function checkHeightAndRun() {
 
         if (replayState == 0) {
             checkRestartCmd = ""
-            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 10"
+            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
             restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
             checkRestartCmd =  restartMongoDB + " && "
             // increasing max sort byte
-            checkRestartCmd += " mongosh --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 15 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
+            checkRestartCmd += " mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
             logr.info("Check restart command = " + checkRestartCmd)
             runCmd(checkRestartCmd)
         }

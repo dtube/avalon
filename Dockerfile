@@ -31,6 +31,7 @@ LABEL "project.home"="https://github.com/dtube/avalon"
 RUN cd / && git clone https://github.com/dtube/avalon
 
 RUN mkdir /avalon/log
+RUN mkdir /avalon/genesis
 WORKDIR /avalon
 RUN npm install
 RUN npm install --save axios
