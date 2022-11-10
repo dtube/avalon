@@ -1,5 +1,6 @@
 # Be an avalon leader in minutes.
 # You will be an observer node by default.
+
 # Only top 15(may expand in tiers in future) elected nodes can mine dtube blocks on avalon chain, account @dtube excluded.
 # Check Block explorer for current stats: 
       Run by leader fasolo97: https://explorer.dtube.fso.ovh/#/
