@@ -5,8 +5,8 @@ const db_name = process.env.DB_NAME || 'avalon'
 const db_url = process.env.DB_URL || 'mongodb://localhost:27017'
 const MongoClient = require('mongodb').MongoClient
 
-const backupUrlMain = process.env.BACKUP_URL || "https://dtube.club/backup/"
-const backupUrlOrig = "http://backup.d.tube/"
+const backupUrlMain = process.env.BACKUP_URL || "https://dtube.fso.ovh/"
+const backupUrlOrig = "https://backup.d.tube/"
 
 var createNet = parseInt(process.env.CREATE_NET || 0)
 var shouldGetGenesisBlocks = parseInt(process.env.GET_GENESIS_BLOCKS || 0)
@@ -26,10 +26,10 @@ let config = {
     testnetDir: "/home/ec2-user/avalon_testnet/tavalon/avalon_testnet/",
     mainnetDir: "/home/ec2-user/tavalon/avalon/",
     scriptPath: "./scripts/start_mainnet.sh",
-    logPath: "/avalon/avalon.log",
-    replayLogPath: "/avalon/avalon.log",
-    backupUrl: backupUrlMain + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
-    blockBackupUrl: backupUrlMain + "blocks.zip",
+    logPath: "/avalon/log/avalon.log",
+    replayLogPath: "/avalon/log/avalon_replay.log",
+    backupUrl: backupUrlOrig + "$(TZ=GMT date +\"%d%h%Y_%H\").tar.gz",
+    blockBackupUrl: backupUrlMain + "blocks.bson",
     genesisSourceUrl: backupUrlMain + "genesis.zip",
     mongodbPath: "/data/db"
 }
@@ -127,9 +127,9 @@ function getGenesisBlocks() {
                             shouldGetGenesisBlocks = 0
                             cmd = "cd /avalon"
                             cmd += " && "
-                            cmd += " unset REBUILD_FINISHED"
+                            cmd += "unset REBUILD_FINISHED"
                             cmd += " && "
-                            cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis`; `cd /avalon/genesis`; `wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
+                            cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir -p /avalon/genesis`; fi; wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + ";"
                             runCmd(cmd)
                         }
                 })
@@ -143,22 +143,31 @@ function replayAndRebuildStateFromBlocks(cb) {
 
     cmd = "pgrep \"src/main\" | xargs --no-run-if-empty kill  -9"
     runCmd(cmd)
-
+    let mtime = null
+    if (fs.existsSync('/data/avalon/blocks/blocks.bson')) {
+        mtime = fs.statSync('/data/avalon/blocks/blocks.bson', (error, stats) => {
+            if(error) {
+                console.log(error)
+            } else {
+                return stats.mtime.getTime()
+            }
+        })
+    }
     backupUrl = config.blockBackupUrl
     cmd = "cd /avalon"
     cmd += " && "
     cmd += " unset REBUILD_FINISHED"
     cmd += " && "
-    cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis`; `cd /avalon/genesis`; `wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
+    cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis; cd /avalon/genesis; wget -O /avalon/genesis/genesis.zip -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
     cmd += " && "
-    cmd += "if [[ ! -d \"/avalon/dump\" ]]; then `mkdir /avalon/dump`; else `rm -rf /avalon/dump/*`; fi"
-    cmd += " && "
-    cmd += "cd /avalon/dump"
-    cmd += " && "
-    cmd += " rm -rf *"
-    cmd += " && "
-    cmd += "wget -q --show-progress --progress=bar:force " + config.blockBackupUrl + " >> " + config.replayLogPath + " 2>&1"
-    cmd += " && "
+    if(Date.now() - mtime > 86400000) { // if the file is older than 1 day, then re-download it.
+    	cmd += "if [[ ! -d \"/data/avalon/blocks\" ]]; then `mkdir -p /data/avalon/blocks`; else `rm -rf /data/avalon/blocks/*`; fi"
+    	cmd += " && "
+    	cmd += "cd /data/avalon/blocks"
+    	cmd += " && "
+    	cmd += "wget -q --show-progress --progress=bar:force " + config.blockBackupUrl + " >> " + config.replayLogPath + " 2>&1"
+    	cmd += " && "
+    }
     cmd += "cd /avalon"
     cmd += " && "
     cmd += "REBUILD_STATE=1 " + config.scriptPath + " >> " + config.logPath + " 2>&1"
@@ -302,11 +311,11 @@ function checkHeightAndRun() {
                 replayCheck++
                 if (replayCheck == 5000) {
                     checkRestartCmd = ""
-                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 10"
+                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
                     restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
                     checkRestartCmd =  restartMongoDB + " && "
-                    checkRestartCmd += "mongo --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongo --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 15 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
+                    checkRestartCmd += "mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
                     logr.info("Check restart command = " + checkRestartCmd)
                     runCmd(checkRestartCmd)
                     replayState = 0
@@ -323,12 +332,12 @@ function checkHeightAndRun() {
 
         if (replayState == 0) {
             checkRestartCmd = ""
-            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 10"
+            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
             restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
             checkRestartCmd =  restartMongoDB + " && "
             // increasing max sort byte
-            checkRestartCmd += " mongo --quiet " + db_name + " --eval \"db.adminCommand({setParameter: 1, internalQueryExecMaxBlockingSortBytes: 935544320})\" && mongo --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongo --quiet " + db_name + " --eval \"db.blocks.count()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 15 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
+            checkRestartCmd += " mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
             logr.info("Check restart command = " + checkRestartCmd)
             runCmd(checkRestartCmd)
         }

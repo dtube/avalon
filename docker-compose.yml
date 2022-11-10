@@ -20,7 +20,8 @@ services:
 
     volumes:
       - $HOME/avalon/mongodb:/var/lib/mongodb
-      - $HOME/avalon/logs:/avalon/logs
+      - $HOME/avalon/logs:/data/avalon/log
+      - $HOME/avalon/blocks:/data/avalon/blocks
 
     #restart: on-failure
 
@@ -30,12 +31,12 @@ services:
       - P2P_PORT=${P2P_PORT}
         #- HTTP_HOST=0.0.0.0
         #- P2P_HOST=0.0.0.0
-
         # mongodb configuration
       - DB_NAME=${DB_NAME}
       - DB_URL=${DB_URL}
       - MONGODBDIR=/var/lib/mongodb
-
+      # Directory to folder containing blocks.bson file
+      - BLOCKS_DIR=/data/avalon/blocks/
         # peering configuration
         #- OFFLINE=${OFFLINE}
         #- NO_DISCOVERY=${NO_DISCOVERY}
