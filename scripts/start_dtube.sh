@@ -15,4 +15,4 @@ do
     sleep 1
 done
 echo
-tail -f avalon.log
+tail -f log/avalon.log

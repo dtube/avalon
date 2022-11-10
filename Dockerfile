@@ -34,7 +34,7 @@ RUN mkdir /avalon/log
 WORKDIR /avalon
 RUN npm install
 RUN npm install --save axios
-RUN echo "" > avalon.log
+RUN echo "" > log/avalon.log
 
 VOLUME $HOME/avalon/logs /avalon/log
 VOLUME $HOME/avalon/mongodb /data/db
