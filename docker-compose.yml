@@ -1,0 +1,96 @@
+version: "3.2"
+services:
+  avalon:
+    build:
+        context: .
+        dockerfile: Dockerfile
+        args:
+          - rebuild
+
+    image: avalon:1.0.0
+    hostname: avalon
+    container_name: avalon
+
+    deploy:
+      #run as 'docker-compose --compatibility up' to avoid warning
+      resources:
+        limits:
+          cpus: '3'
+          memory: 8G
+
+    volumes:
+      - $HOME/avalon/mongodb:/var/lib/mongodb
+      - $HOME/avalon/logs:/data/avalon/log
+      - $HOME/avalon/blocks:/data/avalon/blocks
+
+    #restart: on-failure
+
+    environment:
+        # ports configuration
+      - HTTP_PORT=${HTTP_PORT}
+      - P2P_PORT=${P2P_PORT}
+        #- HTTP_HOST=0.0.0.0
+        #- P2P_HOST=0.0.0.0
+        # mongodb configuration
+      - DB_NAME=${DB_NAME}
+      - DB_URL=${DB_URL}
+      - MONGODBDIR=/var/lib/mongodb
+      # Directory to folder containing blocks.bson file
+      - BLOCKS_DIR=/data/avalon/blocks/
+        # peering configuration
+        #- OFFLINE=${OFFLINE}
+        #- NO_DISCOVERY=${NO_DISCOVERY}
+        #- DISCOVERY_EXCLUDE=${DISCOVERY_EXCLUDE}
+
+        # enable more modules
+        #- NOTIFICATIONS=${NOTIFICATIONS}
+        #- RANKINGS=${RANKINGS}
+        #- CONTENTS=${CONTENTS}
+
+        # Cache warmup option
+      - WARMUP_ACCOUNTS=${WARMUP_ACCOUNTS}
+      - WARMUP_CONTENTS=${WARMUP_CONTENTS}
+
+        # Warn when a transactions takes more than X ms
+      - WARN_SLOW_VALID=${WARN_SLOW_VALID}
+      - WARN_SLOW_EXEC=${WARN_SLOW_EXEC}
+
+        # log level
+        # trace / perf / econ / cons / debug / info / warn
+      - LOG_LEVEL=${LOG_LEVEL}
+
+        # groups blocks during replay output to lower screen spam
+      - REPLAY_OUTPUT=${REPLAY_OUTPUT}
+
+        # Rebuild chain state from dump, verifying every block and transactions
+        # Do not forget to comment this out after rebuild
+      - REBUILD_STATE=${REBUILD_STATE}
+      - REBUILD_WRITE_INTERVAL=${REBUILD_WRITE_INTERVAL}
+      - REBUILD_RESUME_BLK=${REBUILD_RESUME_BLK}
+
+        # default peers to connect with 
+      - PEERS=${PEERS}
+      - MAX_PEERS=${MAX_PEERS}
+
+        # your user and keys (only useful for active node owners)
+      - NODE_OWNER=${NODE_OWNER}
+      - NODE_OWNER_PUB=${NODE_OWNER_PUB}
+      - NODE_OWNER_PRIV=${NODE_OWNER_PRIV}
+
+       # Memory limit for in-memory rebuild (in MB)
+      - NODE_OPTIONS=${NODE_OPTIONS}
+
+       # Stack size
+       # STACK_SIZE
+
+
+    ports:
+      - $HTTP_PORT:$HTTP_PORT
+      - $P2P_PORT:$P2P_PORT
+
+    #command: /avalon/scripts/start.sh
+    #command: ["node", "--stack-size=65500", "src/main.js"]
+    #command: tail -f /dev/null
+    command: ["./scripts/start_dtube.sh"]
+
+    #command: "node --version"
