@@ -1,23 +1,47 @@
 const axios = require('axios')
 const fs = require('fs')
 const logr = require('./src/logger')
+const MongoClient = require('mongodb').MongoClient
+const stream = require('stream')
+const { resolve } = require('dns')
+const promisify = require('util').promisify;
+
+// https://stackoverflow.com/a/61269447  ===> CC BY-SA 4.0
+
+const finished = promisify(stream.finished);
+
+async function downloadFile(fileUrl, outputLocationPath) {
+  const writer = fs.createWriteStream(outputLocationPath);
+  return axios({
+    method: 'get',
+    url: fileUrl,
+    responseType: 'stream',
+  }).then(response => {
+    response.data.pipe(writer);
+    return finished(writer); //this is a Promise
+  });
+}
+// END OF COPY-PASTED, SLIGHTLY MODIFIED CODE WITH CC BY-SA 4.0 LICENSE <===
+
 const db_name = process.env.DB_NAME || 'avalon'
 const db_url = process.env.DB_URL || 'mongodb://localhost:27017'
-const MongoClient = require('mongodb').MongoClient
 
+const genesisFilePath = "/avalon/genesis/genesis.zip"
 const backupUrlMain = process.env.BACKUP_URL || "https://dtube.fso.ovh/"
 const backupUrlOrig = "https://backup.d.tube/"
 
-var createNet = parseInt(process.env.CREATE_NET || 0)
-var shouldGetGenesisBlocks = parseInt(process.env.GET_GENESIS_BLOCKS || 0)
+let createNet = parseInt(process.env.CREATE_NET || 0)
+let shouldGetGenesisBlocks = parseInt(process.env.GET_GENESIS_BLOCKS || 0)
 
-var replayState = parseInt(process.env.REPLAY_STATE || 0)
-var rebuildState = parseInt(process.env.REBUILD_STATE || 0)
-var replayCheck = 0
+let replayState = parseInt(process.env.REPLAY_STATE || 0)
+let rebuildState = parseInt(process.env.REBUILD_STATE || 0)
+let replayCheck = 0
+let rebuildUnfinished = 0
 
-
-if (rebuildState)
+if (rebuildState) {
     replayState = 0
+    rebuildUnfinished = 1
+}
 
 let config = {
     host: 'http://localhost',
@@ -34,14 +58,14 @@ let config = {
     mongodbPath: "/data/db"
 }
 
-var curbHeight = 0
-var prevbHeight = 0
+let curbHeight = 0
+let prevbHeight = 0
 var replayFromDatabaseCount = 0
 var reRunCount = 0
 // try restarting before replaying for non-zero same height
-var tryRestartForSameHeight = 0
-var restartThreshold = 3
-var sameHeightCount = 0
+let tryRestartForSameHeight = 3
+let restartThreshold = 3
+let sameHeightCount = 0
 // How many times same height before replaying from database
 var sameHeightThreshold = 5
 var replayCount = 0
@@ -64,8 +88,17 @@ var mongo = {
     dropDatabase: (cb) => {
         db.dropDatabase(function() {
             logr.info("Dropped avalon mongo db.")
-            cb()
+            if (typeof cb == 'function') {
+                cb()
+            }
         })
+    },
+    getHeadBlock: () => {
+        if (typeof db !== 'undefined' && typeof db.state !== 'undefined') {
+            let blockState = db.state.findOne({"id": 1})
+            return blockState.headBlock
+        }
+        return -1
     }
 }
 
@@ -113,68 +146,79 @@ function replayFromSelfBackup() {
     backupUrl = config.mongodbPath + "/backup"
 }
 
-function getGenesisBlocks() {
-            mongo.init(function() {
+async function getGenesisBlocks() {
+    return new Promise((resolve, reject) => {
+        mongo.init(()=> {
+            if (mongo.getHeadBlock() > 0) {
+                logr.info("Skipping getGenesisBlock as we already have block data.")
+            } else {
                 logr.info("Genesis collection started.")
                 logr.info("Dropping avalon mongo db (getting genesis blocks)")
-                mongo.dropDatabase(function(){
-                    const genesisFilePath = "/avalon/genesis/genesis.zip"
-                        if (fs.existsSync(genesisFilePath)) {
-                            logr.info("Genesis.zip already exists")
-                            shouldGetGenesisBlocks =  0
-                        } else {
-                            logr.info("Getting genesis.zip")
-                            shouldGetGenesisBlocks = 0
-                            cmd = "cd /avalon"
-                            cmd += " && "
-                            cmd += "unset REBUILD_FINISHED"
-                            cmd += " && "
-                            cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir -p /avalon/genesis`; fi; wget -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + ";"
-                            runCmd(cmd)
-                        }
-                })
+                mongo.dropDatabase()
+            }
+        })
+        if (fs.existsSync(genesisFilePath) || mongo.getHeadBlock() > 0) {
+            logr.info("Genesis.zip already exists")
+            shouldGetGenesisBlocks = 0
+            resolve(true)
+        } else {
+            logr.info("Getting genesis.zip")
+            shouldGetGenesisBlocks = 0
+            cmd = "cd /avalon"
+            cmd += " && "
+            cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir -p /avalon/genesis`; fi;"
+            runCmd(cmd)
+            downloadFile(config.genesisSourceUrl, "/avalon/genesis/genesis.zip").then(()=>{resolve(true)})
+        }
+    })
+}
+
+async function downloadBlocksFile(cb) {
+    return new Promise((resolve, reject) => {
+        let mtime = null
+        if (fs.existsSync('/data/avalon/blocks/blocks.bson')) {
+            mtime = fs.statSync('/data/avalon/blocks/blocks.bson', (error, stats) => {
+                if(error) {
+                    console.log(error)
+                } else {
+                    return stats.mtime.getTime()
+                }
             })
-    logr.info("Getting genesis blocks")
+        }
+        if(Date.now() - mtime > 86400000) { // if the file is older than 1 day, then re-download it.
+            backupUrl = config.blockBackupUrl
+            logr.info("Downloading blocks.bson file... it may take a while.")
+            downloadFile(backupUrl, "/data/avalon/blocks/blocks.bson").then(() =>{
+                if (typeof cb == 'function') {
+                    cb()
+                }
+                resolve(true)
+            })
+        } else {
+            resolve(true)
+        }
+    })
 }
 
 function replayAndRebuildStateFromBlocks(cb) {
+    rebuildUnfinished = 1
     cmd = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep mongod` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi"
     runCmd(cmd)
 
     cmd = "pgrep \"src/main\" | xargs --no-run-if-empty kill  -9"
     runCmd(cmd)
-    let mtime = null
-    if (fs.existsSync('/data/avalon/blocks/blocks.bson')) {
-        mtime = fs.statSync('/data/avalon/blocks/blocks.bson', (error, stats) => {
-            if(error) {
-                console.log(error)
-            } else {
-                return stats.mtime.getTime()
+    downloadBlocksFile().then(()=>{
+        getGenesisBlocks().then(()=>{
+            cmd = "cd /avalon"
+            cmd += " && sleep 2 && "
+            cmd += "REBUILD_STATE=1 " + config.scriptPath + " >> " + config.logPath + " 2>&1"
+            logr.info("Rebuilding state from blocks commands = ", cmd)
+            runCmd(cmd)
+            if (typeof cb == 'function') {
+                cb()
             }
         })
-    }
-    backupUrl = config.blockBackupUrl
-    cmd = "cd /avalon"
-    cmd += " && "
-    cmd += " unset REBUILD_FINISHED"
-    cmd += " && "
-    cmd += "if [[ ! -d \"/avalon/genesis\" ]]; then `mkdir /avalon/genesis; cd /avalon/genesis; wget -O /avalon/genesis/genesis.zip -q --show-progress --progress=bar:force " + config.genesisSourceUrl + " >> " + config.replayLogPath + " 2>&1" + "`; fi"
-    cmd += " && "
-    if(Date.now() - mtime > 86400000) { // if the file is older than 1 day, then re-download it.
-    	cmd += "if [[ ! -d \"/data/avalon/blocks\" ]]; then `mkdir -p /data/avalon/blocks`; else `rm -rf /data/avalon/blocks/*`; fi"
-    	cmd += " && "
-    	cmd += "cd /data/avalon/blocks"
-    	cmd += " && "
-    	cmd += "wget -q --show-progress --progress=bar:force " + config.blockBackupUrl + " >> " + config.replayLogPath + " 2>&1"
-    	cmd += " && "
-    }
-    cmd += "cd /avalon"
-    cmd += " && "
-    cmd += "REBUILD_STATE=1 " + config.scriptPath + " >> " + config.logPath + " 2>&1"
-
-    logr.info("Rebuilding state from blocks commands = ", cmd)
-    runCmd(cmd)
-    cb()
+    })
 }
 
 function replayFromAvalonBackup(cb) {
@@ -220,20 +264,19 @@ function checkHeightAndRun() {
                 var mineStartCmd = "curl http://localhost:3001/mineBlock"
                 runCmd(mineStartCmd)
             }
-        } else if (shouldGetGenesisBlocks) {
-
         } else if (prevbHeight == curbHeight) {
             //runCmd(runAvalonScriptCmd)
             if (replayState) {
                 logr.info("Replaying from database")
             } else if (rebuildState) {
+                if (!fs.existsSync(genesisFilePath)) {
+                    getGenesisBlocks()
+                }
                 logr.info("Rebuilding state from blocks")
-                    mongo.init(function() {
+                    mongo.init(()=> {
                         logr.info("Dropping avalon mongo db (replayState from database snapshot)")
-                        mongo.dropDatabase(function(){
-                            replayAndRebuildStateFromBlocks(function() {
-                                rebuildState = 0
-                            })
+                        mongo.dropDatabase(()=>{
+                            replayAndRebuildStateFromBlocks()
                         })
                     })
             } else {
@@ -284,9 +327,6 @@ function checkHeightAndRun() {
             replayCheck = 0
         }
         prevbHeight = curbHeight
-
-        setTimeout(() => checkHeightAndRun(), 5000)
-
     }).catch(() => {
         if(createNet) {
             mongo.init(function() {
@@ -302,57 +342,60 @@ function checkHeightAndRun() {
                     runCmd(runAvalonScriptCmd)
                 });
             })
-        } else if (shouldGetGenesisBlocks) {
-            getGenesisBlocks()
-        }
-        else {
+        } else {
             if (replayState == 1) {
-                logr.info("Replaying from database.. 2nd case")
+                logr.info("Replaying from database dump.. 2nd case")
                 replayCheck++
                 if (replayCheck == 5000) {
                     checkRestartCmd = ""
-                    restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
-                    restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
+                    restartMongoDB = "if [[ ! $(ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath') ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
+                    restartAvalon = "if [[ ! $(ps aux | grep -v grep | grep -v defunct | grep src/main) ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
 
                     checkRestartCmd =  restartMongoDB + " && "
-                    checkRestartCmd += "mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
+                    checkRestartCmd += "echo '"+mongo.getHeadBlock()+"' > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 && echo '" + mongo.getHeadBlock() + "'> tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ]; then ` "+ restartAvalon + " `; fi"
                     logr.info("Check restart command = " + checkRestartCmd)
                     runCmd(checkRestartCmd)
                     replayState = 0
                 }
             } else if(rebuildState == 1) {
-                logr.info("Rebuilding from blocks")
-                replayAndRebuildStateFromBlocks(function() {
-                })
                 rebuildState = 0
-            } else {
+                logr.info("Rebuilding from blocks")
+                replayAndRebuildStateFromBlocks()
+            } else if(process.env.REBUILD_STATE || process.env.REPLAY_STATE) {
                 logr.info("Replay/Rebuild didn't start yet or finished.")
             }
         }
-
-        if (replayState == 0) {
+        if (rebuildState == 0 && replayState == 0 && ! rebuildUnfinished) {
             checkRestartCmd = ""
-            restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " > mongo.log 2>&1 &`; fi && sleep 20"
-            restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
+            restartMongoDB = "if [[ ! $(ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath') ]]; then mongod --dbpath /data/db >> /avalon/log/mongo.log 2>&1; fi && sleep 20"
+            restartAvalon = "if [[ ! $(ps aux | grep -v grep | grep -v defunct | grep src/main) ]]; then `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi;"
 
-            checkRestartCmd =  restartMongoDB + " && "
-            // increasing max sort byte
-            checkRestartCmd += " mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 5 &&  mongosh --quiet " + db_name + " --eval \"db.blocks.countDocuments()\" > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 30 && if [ $a == $b ] ; then " + restartAvalon + "; fi"
-            logr.info("Check restart command = " + checkRestartCmd)
+            checkRestartCmd = restartMongoDB + " && "
+            checkRestartCmd += "echo '"+mongo.getHeadBlock()+"' > tmp.out 2>&1 && a=$(cat tmp.out) && sleep 15 && echo '"+mongo.getHeadBlock()+"' > tmp2.out 2>&1 && b=$(cat tmp2.out) && sleep 2 && if [ \"$a\" == \"$b\" ] ; then "+restartAvalon+" fi;"
+            logr.debug("Check restart command = " + checkRestartCmd)
             runCmd(checkRestartCmd)
         }
-
-        sleep(7000).then(() =>
-            checkHeightAndRun()
-        )
     })
+    if (rebuildState == 0 && replayState == 0)
+        sleep(7000).then(() => checkHeightAndRun())
 }
 
-// running first time
-restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " &`; sleep 5; fi"
-runCmd(restartMongoDB)
 
+restartMongoDB = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep 'mongod --dbpath'` ]]; then `mongod --dbpath " + config.mongodbPath + " &`; sleep 15; fi"
 restartAvalon = "if [[ ! `ps aux | grep -v grep | grep -v defunct | grep src/main` ]]; then `echo \" Restarting avalon\" >> " + config.logPath + " `; `" + config.scriptPath + " >> " + config.logPath + " 2>1&" + "`; fi"
-runCmd(restartAvalon)
-
-checkHeightAndRun()
+// running first time
+if (shouldGetGenesisBlocks) {
+    getGenesisBlocks().then(()=>{
+        runCmd(restartMongoDB)
+        if(rebuildState == 0) {
+            runCmd(restartAvalon)
+        }
+        checkHeightAndRun()
+    })
+} else {
+    runCmd(restartMongoDB)
+    if(rebuildState == 0) {
+        runCmd(restartAvalon)
+    }
+    checkHeightAndRun()
+}
