@@ -1,4 +1,7 @@
+const dao = require('../dao')
+
 module.exports = {
+    bsonValidate: true,
     fields: ['link', 'pa', 'pp', 'json', 'vt', 'tag', 'burn'],
     validate: (tx, ts, legitUser, cb) => {
         // first verify that the user isn't editing an existing content
@@ -24,9 +27,8 @@ module.exports = {
                     }
                     cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                         if (err) throw err
-                        if (account.balance < tx.data.burn) {
-                            cb(false, 'invalid tx not enough balance to burn'); return
-                        }
+                        if (dao.availableBalance(account,ts) < tx.data.burn)
+                            return cb(false, 'invalid tx not enough balance to burn')
                         cb(true)
                     })
                 } else

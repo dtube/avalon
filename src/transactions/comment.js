@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['link', 'pa', 'pp', 'json', 'vt', 'tag'],
     validate: (tx, ts, legitUser, cb) => {
         // permlink

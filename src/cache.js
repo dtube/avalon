@@ -7,12 +7,18 @@ let cache = {
         accounts: {},
         contents: {},
         distributed: {},
-        playlists: {}
+        proposals: {},
+        playlists: {},
+        masterdao: {},
+        state: {}
     },
     accounts: {},
     contents: {},
     distributed: {},
+    proposals: {},
     playlists: {},
+    masterdao: {},
+    state: {},
     changes: [],
     inserts: [],
     rebuild: {
@@ -50,19 +56,20 @@ let cache = {
         // and reset the econ data for nextBlock
         eco.nextBlock()
     },
-    findOnePromise: function(collection, query) {
-        return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d)))
+    findOnePromise: function(collection, query, skipClone) {
+        return new Promise((rs,rj) => cache.findOne(collection,query,(e,d) => e ? rj(e) : rs(d),skipClone))
     },
-    findOne: function(collection, query, cb) {
-        if (['accounts','blocks','contents','playlists'].indexOf(collection) === -1) {
-            cb(true)
-            return
-        }
+    findOne: function(collection, query, cb, skipClone) {
+        if (!cache.copy[collection])
+            return cb('invalid collection')
+
         let key = cache.keyByCollection(collection)
         // searching in cache
         if (cache[collection][query[key]]) {
-            let res = cloneDeep(cache[collection][query[key]])
-            cb(null, res)
+            if (!skipClone)
+                cb(null, cloneDeep(cache[collection][query[key]]))
+            else
+                cb(null, cache[collection][query[key]])
             return
         }
         
@@ -78,10 +85,15 @@ let cache = {
                 cache[collection][obj[key]] = obj
 
                 // cloning the object before sending it
-                let res = cloneDeep(obj)
-                cb(null, res)
+                if (!skipClone)
+                    cb(null, cloneDeep(obj))
+                else
+                    cb(null, obj)
             }
         })
+    },
+    updateOnePromise: function (collection, query, changes) {
+        return new Promise((rs,rj) => cache.updateOne(collection,query,changes,(e,d) => e ? rj(e) : rs(true)))
     },
     updateOne: function(collection, query, changes, cb) {
         cache.findOne(collection, query, function(err, obj) {
@@ -91,7 +103,7 @@ let cache = {
             }
             let key = cache.keyByCollection(collection)
 
-            if (!cache.copy[collection][obj[key]])
+            if (!cache.copy[collection][obj[key]] && (!chain.restoredBlocks || chain.getLatestBlock()._id >= chain.restoredBlocks))
                 cache.copy[collection][obj[key]] = cloneDeep(cache[collection][obj[key]])
             
             for (let c in changes) 
@@ -152,7 +164,7 @@ let cache = {
                 changes: changes
             })
             cb(null, true)
-        })
+        }, true)
     },
     updateMany: function(collection, query, changes, cb) {
         let key = cache.keyByCollection(collection)
@@ -194,7 +206,7 @@ let cache = {
         if (!isRollback)
             cache.leaderChanges.push([leader,1])
         // make sure account is cached
-        cache.findOne('accounts',{name:leader},() => cb())
+        cache.findOne('accounts',{name:leader},() => cb(),true)
     },
     removeLeader: (leader,isRollback) => {
         if (cache.leaders[leader])
@@ -306,7 +318,6 @@ let cache = {
         switch (collection) {
         case 'accounts':
             return 'name'
-        
         default:
             return '_id'
         }

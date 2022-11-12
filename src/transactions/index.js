@@ -33,7 +33,16 @@ const transactions = [
     require('./playlistPop.js'),
     require('./commentEdit.js'),
     require('./accountAuthorize.js'),
-    require('./accountRevoke.js')
+    require('./accountRevoke.js'),
+    require('./dao/fundRequestCreate.js'),
+    require('./dao/fundRequestContrib'),
+    require('./dao/fundRequestWork'),
+    require('./dao/fundRequestWorkReview.js'),
+    require('./dao/proposalVote.js'),
+    require('./dao/proposalEdit.js'),
+    require('./dao/chainUpdateCreate.js'),
+    require('./dao/mdQueue.js'),
+    require('./dao/mdSign.js')
 ]
 
 module.exports = {
@@ -68,7 +77,16 @@ module.exports = {
         PLAYLIST_POP: 27,
         COMMENT_EDIT: 28,
         ACCOUNT_AUTHORIZE: 29,
-        ACCOUNT_REVOKE: 30
+        ACCOUNT_REVOKE: 30,
+        FUND_REQUEST_CREATE: 31,
+        FUND_REQUEST_CONTRIB: 32,
+        FUND_REQUEST_WORK: 33,
+        FUND_REQUEST_WORK_REVIEW: 34,
+        PROPOSAL_VOTE: 35,
+        PROPOSAL_EDIT: 36,
+        CHAIN_UPDATE_CREATE: 37,
+        MD_QUEUE: 38,
+        MD_SIGN: 39
     },
     validate: (tx, ts, legitUser, cb) => {
         // logr.debug('tx:'+tx.type+' validation begins')
@@ -112,5 +130,6 @@ module.exports = {
 
             cb(isValid, dist, burn)
         })
-    }
+    },
+    transactions: transactions
 }

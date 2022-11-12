@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['link', 'author', 'vt', 'tag'],
     validate: (tx, ts, legitUser, cb) => {
         if (!validate.string(tx.data.author, config.accountMaxLength, config.accountMinLength, config.allowedUsernameChars, config.allowedUsernameCharsOnlyMiddle)) {

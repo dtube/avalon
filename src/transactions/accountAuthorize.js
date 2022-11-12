@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['user','id','types','weight'],
     validate: (tx, ts, legitUser, cb) => {
         if (!config.accountAuthEnabled)

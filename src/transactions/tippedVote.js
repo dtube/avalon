@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['link', 'author', 'vt', 'tag', 'tip'],
     validate: (tx, ts, legitUser, cb) => {
         // Check if author vote exists and whether author has claimed the reward

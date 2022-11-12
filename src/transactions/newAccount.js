@@ -1,3 +1,5 @@
+const dao = require('../dao')
+
 module.exports = {
     fields: ['name', 'pub'],
     validate: (tx, ts, legitUser, cb) => {
@@ -29,7 +31,7 @@ module.exports = {
             else
                 cache.findOne('accounts', {name: tx.sender}, function(err, account) {
                     if (err) throw err
-                    if (account.balance < eco.accountPrice(lowerUser))
+                    if (dao.availableBalance(account,ts) < eco.accountPrice(lowerUser))
                         cb(false, 'invalid tx not enough balance')
                     else
                         cb(true)
@@ -42,7 +44,7 @@ module.exports = {
         let baseBwGrowth = 0
         if (!config.masterNoPreloadAcc || tx.sender !== config.masterName || config.masterPaysForUsernames) {
             if (config.preloadVt)
-                newAccVt = {v:eco.accountPrice(tx.data.name)*config.vtPerBurn*config.preloadVt/100,t:ts}
+                newAccVt = {v:Math.floor(eco.accountPrice(tx.data.name)*config.vtPerBurn*config.preloadVt/100),t:ts}
             if (config.preloadBwGrowth) {
                 newAccBw = {v:0,t:ts}
                 baseBwGrowth = Math.floor(eco.accountPrice(tx.data.name)/config.preloadBwGrowth)

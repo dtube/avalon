@@ -1,10 +1,11 @@
-const version = '1.5.2'
+const version = '1.6.5'
 const default_port = 6001
 const replay_interval = 1500
 const discovery_interval = 60000
 const keep_alive_interval = 2500
 const max_blocks_buffer = 100
 const max_peers = process.env.MAX_PEERS || 15
+const max_recover_attempts = 25
 const history_interval = 10000
 const keep_history_for = 20000
 const p2p_port = process.env.P2P_PORT || default_port
@@ -16,6 +17,8 @@ const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
 const blocks = require('./blocks')
+const dao = require('./dao')
+const daoMaster = require('./daoMaster')
 
 const MessageType = {
     QUERY_NODE_STATUS: 0,
@@ -32,6 +35,7 @@ let p2p = {
     recoveringBlocks: [],
     recoveredBlocks: [],
     recovering: false,
+    recoverAttempt: 0,
     nodeId: null,
     init: () => {
         p2p.generateNodeId()
@@ -54,14 +58,14 @@ let p2p = {
         logr.info('P2P ID: '+p2p.nodeId.pub)
     },
     discoveryWorker: (isInit = false) => {
-        let leaders = chain.generateLeaders(false, config.leaders*3, 0)
+        let leaders = chain.generateLeaders(false, true, config.leaders*3, 0)
         for (let i = 0; i < leaders.length; i++) {
             if (p2p.sockets.length >= max_peers) {
                 logr.debug('We already have maximum peers: '+p2p.sockets.length+'/'+max_peers)
                 break
             }
                 
-            if (leaders[i].json && leaders[i].json.node && leaders[i].json.node.ws) {
+            if (leaders[i].ws) {
                 let excluded = (process.env.DISCOVERY_EXCLUDE ? process.env.DISCOVERY_EXCLUDE.split(',') : [])
                 if (excluded.indexOf(leaders[i].name) > -1)
                     continue
@@ -71,18 +75,18 @@ let p2p = {
                     if (ip.indexOf('::ffff:') > -1)
                         ip = ip.replace('::ffff:', '')
                     try {
-                        let leaderIp = leaders[i].json.node.ws.split('://')[1].split(':')[0]
+                        let leaderIp = leaders[i].ws.split('://')[1].split(':')[0]
                         if (leaderIp === ip) {
                             logr.trace('Already peered with '+leaders[i].name)
                             isConnected = true
                         }
                     } catch (error) {
-                        logr.warn('Wrong json.node.ws for leader '+leaders[i].name+' '+leaders[i].json.node.ws, error)
+                        logr.debug('Wrong ws for leader '+leaders[i].name+' '+leaders[i].ws, error)
                     }
                 }
                 if (!isConnected) {
-                    logr[isInit ? 'info' : 'debug']('Trying to connect to '+leaders[i].name+' '+leaders[i].json.node.ws)
-                    p2p.connect([leaders[i].json.node.ws],isInit)
+                    logr[isInit ? 'info' : 'debug']('Trying to connect to '+leaders[i].name+' '+leaders[i].ws)
+                    p2p.connect([leaders[i].ws],isInit)
                 }
             }
         }
@@ -97,7 +101,12 @@ let p2p = {
             let port = parseInt(colonSplit.pop())
             let address = colonSplit.join(':').replace('[','').replace(']','')
             if (!net.isIP(address))
-                address = (await dns.lookup(address)).address
+                try {
+                    address = (await dns.lookup(address)).address
+                } catch (e) {
+                    logr.debug('dns lookup failed for '+address)
+                    continue
+                }
             for (let s in p2p.sockets)
                 if (p2p.sockets[s]._socket.remoteAddress.replace('::ffff:','') === address && p2p.sockets[s]._socket.remotePort === port) {
                     connected = true
@@ -228,7 +237,7 @@ let p2p = {
                             if (i !== p2p.sockets.indexOf(ws)
                             && p2p.sockets[i].node_status
                             && p2p.sockets[i].node_status.nodeId === nodeId) {
-                                logr.warn('Peer disconnected because duplicate connections')
+                                logr.debug('Peer disconnected because duplicate connections')
                                 p2p.sockets[i].close()
                             }
     
@@ -263,6 +272,7 @@ let p2p = {
 
             case MessageType.BLOCK:
                 // a peer sends us a block we requested with QUERY_BLOCK
+                if (!message.d._id || !p2p.recoveringBlocks.includes(message.d._id)) return
                 for (let i = 0; i < p2p.recoveringBlocks.length; i++)
                     if (p2p.recoveringBlocks[i] === message.d._id) {
                         p2p.recoveringBlocks.splice(i, 1)
@@ -447,14 +457,29 @@ let p2p = {
     },
     addRecursive: (block) => {
         chain.validateAndAddBlock(block, true, function(err, newBlock) {
-            if (err)
-                logr.error('Error Replay', newBlock._id)
-            else {
+            if (err) {
+                // try another peer if bad block
+                cache.rollback()
+                dao.resetID()
+                daoMaster.resetID()
+                p2p.recoveredBlocks = []
+                p2p.recoveringBlocks = []
+                p2p.recoverAttempt++
+                if (p2p.recoverAttempt > max_recover_attempts)
+                    logr.error('Error Replay', newBlock._id)
+                else {
+                    logr.warn('Recover attempt #'+p2p.recoverAttempt+' for block '+newBlock._id)
+                    p2p.recovering = chain.getLatestBlock()._id
+                    p2p.recover()
+                }
+            } else {
+                p2p.recoverAttempt = 0
                 delete p2p.recoveredBlocks[newBlock._id]
                 p2p.recover()
                 if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1]) 
                     setTimeout(function() {
-                        p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
+                        if (p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
+                            p2p.addRecursive(p2p.recoveredBlocks[chain.getLatestBlock()._id+1])
                     }, 1)
             }     
         })

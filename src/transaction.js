@@ -2,12 +2,18 @@ const GrowInt = require('growint')
 const CryptoJS = require('crypto-js')
 const { EventEmitter } = require('events')
 const cloneDeep = require('clone-deep')
-
+const bson = require('bson')
 const Transaction = require('./transactions')
 const TransactionType = Transaction.Types
-const max_mempool = process.env.MEMPOOL_SIZE || 200
+const max_mempool = process.env.MEMPOOL_SIZE || 2000
 
-transaction = {
+// probably due to non standard utf8 characters that were not properly written to mongodb/bson file
+// for now we skip them until such bug can be reproduced
+const skiphash = {
+    '7dedc07cb42c96b5013710161bf487a2488fce789b80286e3df910075f98a4d1': '16de2c5c847962f3683aec852072e702fb8c4ffd81c3d23cf85b8d2da031bd8e' // tx in block 14,874,851
+}
+
+let transaction = {
     pool: [], // the pool holds temporary txs that havent been published on chain yet
     eventConfirmation: new EventEmitter(),
     addToPool: (txs) => {
@@ -101,11 +107,16 @@ transaction = {
             && tx.sender !== config.masterName) {
             cb(false, 'only "'+config.masterName+'" can execute this transaction type'); return
         }
+        if (config.masterDao && tx.sender === config.masterName && !config.masterDaoTxs.includes(tx.type))
+            return cb(false, 'master dao account cannot transact with type '+tx.type)
         // avoid transaction reuse
         // check if we are within 1 minute of timestamp seed
         if (chain.getLatestBlock().timestamp - tx.ts > config.txExpirationTime) {
             cb(false, 'invalid timestamp'); return
         }
+        // enforce maximum transaction expiration
+        if (tx.ts - ts > config.txExpirationMax)
+            return cb(false, 'timestamp expiration exceeds max limit of '+config.txExpirationMax+'ms')
         // check if this tx hash was already added to chain recently
         if (transaction.isPublished(tx)) {
             cb(false, 'transaction already in chain'); return
@@ -114,8 +125,17 @@ transaction = {
         let newTx = cloneDeep(tx)
         delete newTx.signature
         delete newTx.hash
-        if (CryptoJS.SHA256(JSON.stringify(newTx)).toString() !== tx.hash) {
+        let computedHash = CryptoJS.SHA256(JSON.stringify(newTx)).toString()
+        if (computedHash !== tx.hash && (skiphash[tx.hash] !== computedHash || (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks))) {
             cb(false, 'invalid tx hash does not match'); return
+        }
+        // ensure nothing gets lost when serialized in bson
+        // skipped during replays or rebuilds
+        if (!p2p.recovering && chain.getLatestBlock()._id > chain.restoredBlocks && Transaction.transactions[tx.type].bsonValidate) {
+            let bsonified = bson.deserialize(bson.serialize(newTx))
+            let bsonifiedHash = CryptoJS.SHA256(JSON.stringify(bsonified)).toString()
+            if (computedHash !== bsonifiedHash)
+                return cb(false, 'unserializable transaction, perhaps due to non-utf8 character?')
         }
         // checking transaction signature
         chain.isValidSignature(tx.sender, tx.type, tx.hash, tx.signature, function(legitUser,e) {
@@ -209,9 +229,26 @@ transaction = {
                 break
             }
 
-            // update both at the same time !
+            // update vote lock for proposals
+            let newLock = 0
+            let activeProposalVotes = []
+            if (account.voteLock)
+                for (let v in account.proposalVotes)
+                    if (account.proposalVotes[v].end > ts) {
+                        if (account.proposalVotes[v].amount - account.proposalVotes[v].bonus > newLock)
+                            newLock = account.proposalVotes[v].amount - account.proposalVotes[v].bonus
+                        activeProposalVotes.push(account.proposalVotes[v])
+                    }
+
+            // update all at the same time !
             let changes = {bw: bw}
             if (vt) changes.vt = vt
+            if (account.voteLock) {
+                if (account.voteLock !== newLock)
+                    changes.voteLock = newLock
+                if (account.proposalVotes.length !== activeProposalVotes.length)
+                    changes.proposalVotes = activeProposalVotes
+            }
             logr.trace('GrowInt Collect', account.name, changes)
             cache.updateOne('accounts', 
                 {name: account.name},
@@ -228,6 +265,11 @@ transaction = {
             Transaction.execute(tx, ts, function(executed, distributed, burned) {
                 cb(executed, distributed, burned)
             })
+        })
+    },
+    updateIntsAndNodeApprPromise: (account, ts, change) => {
+        return new Promise((rs) => {
+            transaction.updateGrowInts(account,ts,() => transaction.adjustNodeAppr(account,change,() => rs(true)))
         })
     },
     updateGrowInts: (account, ts, cb) => {
@@ -260,14 +302,14 @@ transaction = {
     adjustNodeAppr: (acc, newCoins, cb) => {
         // updates the node_appr values for the node owners the account approves (when balance changes)
         // account.balance is the one before the change (!)
+        // account object may skip cloneDeep operation
         if (!acc.approves || acc.approves.length === 0 || !newCoins) {
             cb(true)
             return
         }
 
         let node_appr_before = Math.floor(acc.balance/acc.approves.length)
-        acc.balance += newCoins
-        let node_appr = Math.floor(acc.balance/acc.approves.length)
+        let node_appr = Math.floor((acc.balance+newCoins)/acc.approves.length)
         
         let node_owners = []
         for (let i = 0; i < acc.approves.length; i++)

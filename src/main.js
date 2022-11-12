@@ -11,12 +11,14 @@ rankings = require('./rankings.js')
 consensus = require('./consensus')
 leaderStats = require('./leaderStats')
 
+const dao = require('./dao')
+const daoMaster = require('./daoMaster')
 const blocks = require('./blocks')
 const mongo = require('./mongo')
 const http = require('./http')
 
 // verify node version
-const allowNodeV = [14, 16]
+const allowNodeV = [14, 16, 18]
 const currentNodeV = parseInt(process.versions.node.split('.')[0])
 if (allowNodeV.indexOf(currentNodeV) === -1) {
     logr.fatal('Wrong NodeJS version. Allowed versions: v'+allowNodeV.join(', v'))
@@ -47,6 +49,13 @@ mongo.init(async function(state) {
 
     // Warmup leader stats
     await leaderStats.loadIndex()
+
+    // Load proposal head ID and active proposals
+    await dao.loadID()
+    await dao.loadActiveFundRequests()
+    await dao.loadActiveChainUpdateProposals()
+    await dao.loadGovConfig()
+    await daoMaster.loadID()
 
     // Rebuild chain state if specified
     let rebuildResumeBlock = state && state.headBlock ? state.headBlock+1 : 0
@@ -115,7 +124,7 @@ function startRebuild(startBlock) {
         let cacheWriteStart = new Date().getTime()
         cache.writeToDisk(true,() => {
             logr.info('Rebuild data written to disk in ' + (new Date().getTime() - cacheWriteStart) + ' ms')
-            if (chain.shuttingDown) {
+            if (chain.shuttingDown || process.env.TERMINATE_AFTER_REBUILD === '1') {
                 if (blocks.isOpen)
                     blocks.close()
                 return process.exit(0)

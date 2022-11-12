@@ -1,4 +1,5 @@
 module.exports = {
+    bsonValidate: true,
     fields: ['id', 'pub', 'types'],
     validate: (tx, ts, legitUser, cb) => {
         if (!validate.string(tx.data.id, config.keyIdMaxLength)) {
