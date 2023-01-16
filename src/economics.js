@@ -256,8 +256,8 @@ let eco = {
             // increase the dist amount for display
             // and update the votes array
             cache.updateOne('contents', {_id: author+'/'+link}, {
-                $inc: {dist: eco.round(newCoins-newBurn), distGross: newCoins, burn: newBurn},
-                $set: {votes: newVotes}
+                $inc: {distGross: newCoins, burn: newBurn},
+                $set: {votes: newVotes, dist: eco.round((content.dist || 0)+newCoins-newBurn)}
             }, function() {
                 if (config.masterFee > 0 && newCoins > 0) {
                     // apply the master fee
