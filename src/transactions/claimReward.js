@@ -44,7 +44,7 @@ module.exports = {
                         $set: {votes: content.votes}
                     }, function() {
                         cache.updateOne('accounts', {name: tx.sender}, {
-                            $inc: {balance: reward}
+                            $inc: {balance: reward, claimedReward: reward}
                         }, function() {
                             cache.insertOne('distributed', {
                                 name: tx.sender,
