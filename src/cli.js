@@ -5,7 +5,7 @@ const program = require('commander')
 const { randomBytes } = require('crypto')
 const secp256k1 = require('secp256k1')
 const bs58 = require('base-x')(config.b58Alphabet)
-const fetch = require('node-fetch')
+const fetch = require('node-fetch-commonjs')
 const fs = require('fs')
 const defaultPort = 3001
 

@@ -21,7 +21,7 @@
     "growint": "^1.0.1",
     "log4js": "^6.6.0",
     "mongodb": "^4.2.2",
-    "node-fetch": "^2.3.0",
+    "node-fetch-commonjs": "^3.2.4",
     "oembed-parser": "^1.2.2",
     "open-graph-scraper": "^4.11.0",
     "run-parallel": "^1.1.10",

@@ -1,5 +1,5 @@
 const sharp = require('sharp')
-const fetch = require('node-fetch')
+const fetch = require('node-fetch-commonjs')
 const QUALITY = 95
 const AVATAR_WIDTH = {
     small: 64,
