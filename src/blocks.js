@@ -51,7 +51,7 @@ let blocks = {
             let docIndexBuf = Buffer.alloc(8)
             fs.readSync(blocks.fdIndex,docIndexBuf,{offset: 0, position: indexSize-8, length: 8})
             docPosition = BigInt(Number(BigInt(docIndexBuf.readUInt32LE(0)) << 8n) + docIndexBuf.readUInt32LE(4))
-            assert(Number(docPosition) < blocks.bsonSize, 'Latest indexed position greater than or equal to blocks.bson size')
+            assert(docPosition < blocks.bsonSize, 'Latest indexed position greater than or equal to blocks.bson size')
             fs.readSync(blocks.fd,docSizeBuf,{offset: 0, position: docPosition, length: 4})
             let docSize = BigInt(docSizeBuf.readInt32LE(0))
             docPosition += docSize
