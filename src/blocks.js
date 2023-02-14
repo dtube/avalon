@@ -37,8 +37,9 @@ let blocks = {
         blocks.bsonSize = BigInt(fs.statSync(bsonPath).size)
 
         // Open blocks.index file
-        let indexSize = fs.statSync(indexPath).size
         blocks.fdIndex = fs.openSync(indexPath,'a+')
+
+        let indexSize = fs.statSync(indexPath).size
         blocks.height = (indexSize / 8) - 1
         blocks.isOpen = true
 
